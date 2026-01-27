@@ -95,7 +95,9 @@ fn build_window(label: &str, title: &str) -> (Window, bool) {
             {
                 builder = builder
                     .title_bar_style(tauri::TitleBarStyle::Overlay)
-                    .hidden_title(true);
+                    .hidden_title(true)
+                    .minimizable(false)
+                    .maximizable(false);
             }
             #[cfg(not(target_os = "macos"))]
             {

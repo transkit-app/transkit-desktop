@@ -1,17 +1,19 @@
 import { readDir, BaseDirectory, readTextFile, exists } from '@tauri-apps/api/fs';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
-import { appWindow, currentMonitor } from '@tauri-apps/api/window';
+import { appWindow, currentMonitor, LogicalSize } from '@tauri-apps/api/window';
 import { appConfigDir, join } from '@tauri-apps/api/path';
 import { convertFileSrc } from '@tauri-apps/api/tauri';
 import { Spacer, Button } from '@nextui-org/react';
 import { AiFillCloseCircle } from 'react-icons/ai';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { BsPinFill } from 'react-icons/bs';
 
 import LanguageArea from './components/LanguageArea';
 import SourceArea from './components/SourceArea';
 import TargetArea from './components/TargetArea';
+import { getServiceName, whetherPluginService } from '../../utils/service_instance';
+import * as builtinServices from '../../services/translate';
 import { osType } from '../../utils/env';
 import { useConfig } from '../../hooks';
 import { store } from '../../utils/store';
@@ -83,6 +85,8 @@ export default function Translate() {
     const [pined, setPined] = useState(false);
     const [pluginList, setPluginList] = useState(null);
     const [serviceInstanceConfigMap, setServiceInstanceConfigMap] = useState(null);
+    const [headerButtons, setHeaderButtons] = useState(null);
+    const contentRef = useRef(null);
     const reorder = (list, startIndex, endIndex) => {
         const result = Array.from(list);
         const [removed] = result.splice(startIndex, 1);
@@ -228,115 +232,270 @@ export default function Translate() {
         collectionServiceInstanceList,
     ]);
 
+    // Auto-resize window based on content height
+    useEffect(() => {
+        if (!contentRef.current) return;
+
+        const resizeWindow = async () => {
+            if (rememberWindowSize) return;
+
+            try {
+                // Wait a bit for content to render
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                const contentHeight = contentRef.current.offsetHeight;
+                const headerHeight = 32;
+                const minHeight = 80;
+                const maxHeight = 700;
+
+                // Calculate desired height
+                let desiredHeight = Math.min(Math.max(contentHeight + headerHeight, minHeight), maxHeight);
+
+                // Get current size
+                const currentSize = await appWindow.outerSize();
+                const monitor = await currentMonitor();
+                const factor = monitor?.scaleFactor || 1;
+                const logicalSize = currentSize.toLogical(factor);
+
+                // Resize if needed
+                if (Math.abs(logicalSize.height - desiredHeight) > 15) {
+                    await appWindow.setSize(new LogicalSize(logicalSize.width, desiredHeight));
+                }
+            } catch (error) {
+                console.error('Failed to resize window:', error);
+            }
+        };
+
+        // Initial resize
+        resizeWindow();
+
+        // Watch for content changes
+        const resizeObserver = new ResizeObserver(() => {
+            resizeWindow();
+        });
+
+        resizeObserver.observe(contentRef.current);
+
+        return () => {
+            resizeObserver.disconnect();
+        };
+    }, [rememberWindowSize, translateServiceInstanceList, serviceInstanceConfigMap]);
+
     return (
         pluginList && (
             <div
-                className={`bg-background h-screen w-screen ${
+                className={`bg-background w-screen ${
                     osType === 'Linux' && 'rounded-[10px] border-1 border-default-100'
                 }`}
             >
-                <div
-                    className='fixed top-[5px] left-[5px] right-[5px] h-[30px]'
-                    data-tauri-drag-region='true'
-                />
-                <div className={`h-[35px] w-full flex ${osType === 'Darwin' ? 'justify-end' : 'justify-between'}`}>
-                    <Button
-                        isIconOnly
-                        size='sm'
-                        variant='flat'
-                        disableAnimation
-                        className='my-auto bg-transparent'
-                        onPress={() => {
-                            if (pined) {
-                                if (closeOnBlur) {
-                                    unlisten = listenBlur();
-                                }
-                                appWindow.setAlwaysOnTop(false);
-                            } else {
-                                unlistenBlur();
-                                appWindow.setAlwaysOnTop(true);
-                            }
-                            setPined(!pined);
-                        }}
-                    >
-                        <BsPinFill className={`text-[20px] ${pined ? 'text-primary' : 'text-default-400'}`} />
-                    </Button>
-                    <Button
-                        isIconOnly
-                        size='sm'
-                        variant='flat'
-                        disableAnimation
-                        className={`my-auto ${osType === 'Darwin' && 'hidden'} bg-transparent`}
-                        onPress={() => {
-                            void appWindow.close();
-                        }}
-                    >
-                        <AiFillCloseCircle className='text-[20px] text-default-400' />
-                    </Button>
-                </div>
-                <div className={`${osType === 'Linux' ? 'h-[calc(100vh-37px)]' : 'h-[calc(100vh-35px)]'} px-[8px]`}>
-                    <div className='h-full overflow-y-auto'>
-                        <div>
-                            {serviceInstanceConfigMap !== null && (
-                                <SourceArea
-                                    pluginList={pluginList}
-                                    serviceInstanceConfigMap={serviceInstanceConfigMap}
-                                />
-                            )}
-                        </div>
-                        <div className={`${hideLanguage && 'hidden'}`}>
-                            <LanguageArea />
-                            <Spacer y={2} />
-                        </div>
-                        <DragDropContext onDragEnd={onDragEnd}>
-                            <Droppable
-                                droppableId='droppable'
-                                direction='vertical'
-                            >
-                                {(provided) => (
-                                    <div
-                                        ref={provided.innerRef}
-                                        {...provided.droppableProps}
-                                    >
-                                        {translateServiceInstanceList !== null &&
-                                            serviceInstanceConfigMap !== null &&
-                                            translateServiceInstanceList.map((serviceInstanceKey, index) => {
-                                                const config = serviceInstanceConfigMap[serviceInstanceKey] ?? {};
-                                                const enable = config['enable'] ?? true;
+                {/* Drag region - positioned to not overlap buttons */}
+                {osType === 'Darwin' ? (
+                    // macOS: drag region in center, avoiding left (system buttons) and right (our buttons)
+                    <div
+                        className='fixed top-[5px] left-[80px] right-[80px] h-[30px]'
+                        data-tauri-drag-region='true'
+                    />
+                ) : (
+                    // Windows/Linux: drag region in center, avoiding sides
+                    <div
+                        className='fixed top-[5px] left-[80px] right-[80px] h-[30px]'
+                        data-tauri-drag-region='true'
+                    />
+                )}
 
-                                                return enable ? (
-                                                    <Draggable
-                                                        key={serviceInstanceKey}
-                                                        draggableId={serviceInstanceKey}
-                                                        index={index}
-                                                    >
-                                                        {(provided) => (
-                                                            <div
-                                                                ref={provided.innerRef}
-                                                                {...provided.draggableProps}
-                                                            >
-                                                                <TargetArea
-                                                                    {...provided.dragHandleProps}
-                                                                    index={index}
-                                                                    name={serviceInstanceKey}
-                                                                    translateServiceInstanceList={
-                                                                        translateServiceInstanceList
-                                                                    }
-                                                                    pluginList={pluginList}
-                                                                    serviceInstanceConfigMap={serviceInstanceConfigMap}
-                                                                />
-                                                                <Spacer y={2} />
-                                                            </div>
-                                                        )}
-                                                    </Draggable>
-                                                ) : (
-                                                    <></>
-                                                );
-                                            })}
+                <div className={`h-[32px] w-full flex ${osType === 'Darwin' ? 'justify-between' : 'justify-between'}`}>
+                    {/* Left side: Empty space on macOS (system buttons), Action buttons on Windows */}
+                    <div className='flex gap-1 items-center pl-1'>
+                        {osType === 'Darwin' ? (
+                            // macOS: leave space for system buttons
+                            <div className='w-[70px]' />
+                        ) : (
+                            // Windows: show action buttons on left
+                            <div id='translate-actions' className='flex gap-0.5'></div>
+                        )}
+                    </div>
+
+                    {/* Right side: Pin + Actions on macOS, Pin + Close on Windows */}
+                    <div className='flex gap-1 items-center pr-1'>
+                        {osType === 'Darwin' ? (
+                            // macOS: show action buttons + pin on right
+                            <>
+                                <div id='translate-actions' className='flex gap-0.5 items-center'>
+                                    {translateServiceInstanceList && translateServiceInstanceList[0] && (
+                                        <div className='flex items-center px-1.5 py-0.5 bg-content2/50 rounded-md mr-1'>
+                                            <img
+                                                src={
+                                                    whetherPluginService(translateServiceInstanceList[0])
+                                                        ? pluginList['translate'][getServiceName(translateServiceInstanceList[0])].icon
+                                                        : builtinServices[getServiceName(translateServiceInstanceList[0])].info.icon
+                                                }
+                                                className='h-[16px] w-[16px]'
+                                                alt=''
+                                            />
+                                        </div>
+                                    )}
+                                    {headerButtons}
+                                </div>
+                                <Button
+                                    isIconOnly
+                                    size='sm'
+                                    variant='light'
+                                    className='h-[26px] w-[26px] min-w-0 bg-transparent'
+                                    onPress={() => {
+                                        if (pined) {
+                                            if (closeOnBlur) {
+                                                unlisten = listenBlur();
+                                            }
+                                            appWindow.setAlwaysOnTop(false);
+                                        } else {
+                                            unlistenBlur();
+                                            appWindow.setAlwaysOnTop(true);
+                                        }
+                                        setPined(!pined);
+                                    }}
+                                >
+                                    <BsPinFill className={`text-[16px] ${pined ? 'text-primary' : 'text-default-400'}`} />
+                                </Button>
+                            </>
+                        ) : (
+                            // Windows: show pin + close
+                            <>
+                                <div className='flex gap-0.5 items-center'>
+                                    {translateServiceInstanceList && translateServiceInstanceList[0] && (
+                                        <div className='flex items-center px-1.5 py-0.5 bg-content2/50 rounded-md mr-1'>
+                                            <img
+                                                src={
+                                                    whetherPluginService(translateServiceInstanceList[0])
+                                                        ? pluginList['translate'][getServiceName(translateServiceInstanceList[0])].icon
+                                                        : builtinServices[getServiceName(translateServiceInstanceList[0])].info.icon
+                                                }
+                                                className='h-[16px] w-[16px]'
+                                                alt=''
+                                            />
+                                        </div>
+                                    )}
+                                    {headerButtons}
+                                </div>
+                                <Button
+                                    isIconOnly
+                                    size='sm'
+                                    variant='light'
+                                    className='h-[26px] w-[26px] min-w-0 bg-transparent'
+                                    onPress={() => {
+                                        if (pined) {
+                                            if (closeOnBlur) {
+                                                unlisten = listenBlur();
+                                            }
+                                            appWindow.setAlwaysOnTop(false);
+                                        } else {
+                                            unlistenBlur();
+                                            appWindow.setAlwaysOnTop(true);
+                                        }
+                                        setPined(!pined);
+                                    }}
+                                >
+                                    <BsPinFill className={`text-[16px] ${pined ? 'text-primary' : 'text-default-400'}`} />
+                                </Button>
+                                <Button
+                                    isIconOnly
+                                    size='sm'
+                                    variant='light'
+                                    className='h-[26px] w-[26px] min-w-0 bg-transparent'
+                                    onPress={() => {
+                                        void appWindow.close();
+                                    }}
+                                >
+                                    <AiFillCloseCircle className='text-[16px] text-default-400' />
+                                </Button>
+                            </>
+                        )}
+                    </div>
+                </div>
+                <div
+                    ref={contentRef}
+                    className='px-[6px] pb-[6px] text-[12px] flex flex-col bg-background/80 backdrop-blur-xl rounded-xl border border-content3 shadow-2xl overflow-hidden'
+                >
+                    {/* Source Area */}
+                    <div>
+                        {serviceInstanceConfigMap !== null && (
+                            <SourceArea
+                                pluginList={pluginList}
+                                serviceInstanceConfigMap={serviceInstanceConfigMap}
+                            />
+                        )}
+                    </div>
+
+                    {/* Language Selector */}
+                    <div className={`${hideLanguage && 'hidden'}`}>
+                        <LanguageArea />
+                        <Spacer y={1} />
+                    </div>
+
+                    {/* Single Active Translation Result */}
+                    <div className='relative group'>
+                        {translateServiceInstanceList !== null &&
+                            serviceInstanceConfigMap !== null &&
+                            translateServiceInstanceList.map((serviceInstanceKey, index) => {
+                                const config = serviceInstanceConfigMap[serviceInstanceKey] ?? {};
+                                const enable = config['enable'] ?? true;
+
+                                // Only show the first enabled service
+                                if (!enable || index !== 0) return null;
+
+                                return (
+                                    <div key={serviceInstanceKey}>
+                                        <TargetArea
+                                            index={index}
+                                            name={serviceInstanceKey}
+                                            translateServiceInstanceList={translateServiceInstanceList}
+                                            pluginList={pluginList}
+                                            serviceInstanceConfigMap={serviceInstanceConfigMap}
+                                            setHeaderButtons={setHeaderButtons}
+                                        />
                                     </div>
-                                )}
-                            </Droppable>
-                        </DragDropContext>
+                                );
+                            })}
+
+                        {/* Provider Tabs - Horizontal at bottom, show on hover */}
+                        <div className='absolute bottom-0 left-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-gradient-to-t from-background via-background to-transparent pt-8 pb-1 px-2'>
+                            <div className='flex gap-1 justify-center items-center bg-content2/80 backdrop-blur-sm rounded-lg p-1 border border-content3'>
+                                {translateServiceInstanceList !== null &&
+                                    serviceInstanceConfigMap !== null &&
+                                    translateServiceInstanceList.map((serviceInstanceKey, index) => {
+                                        const config = serviceInstanceConfigMap[serviceInstanceKey] ?? {};
+                                        const enable = config['enable'] ?? true;
+                                        if (!enable) return null;
+
+                                        const isActive = index === 0; // First one is active
+
+                                        return (
+                                            <Button
+                                                key={serviceInstanceKey}
+                                                size='sm'
+                                                variant={isActive ? 'flat' : 'light'}
+                                                className={`h-[28px] min-w-[32px] px-1.5 ${isActive ? 'bg-primary/20 border-1 border-primary/50' : ''}`}
+                                                onPress={() => {
+                                                    // Switch active provider
+                                                    const items = Array.from(translateServiceInstanceList);
+                                                    const [removed] = items.splice(index, 1);
+                                                    items.unshift(removed);
+                                                    setTranslateServiceInstanceList(items);
+                                                }}
+                                            >
+                                                <img
+                                                    src={
+                                                        whetherPluginService(serviceInstanceKey)
+                                                            ? pluginList['translate'][getServiceName(serviceInstanceKey)].icon
+                                                            : builtinServices[getServiceName(serviceInstanceKey)].info.icon
+                                                    }
+                                                    className='h-[18px] w-[18px]'
+                                                    alt=''
+                                                />
+                                            </Button>
+                                        );
+                                    })}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

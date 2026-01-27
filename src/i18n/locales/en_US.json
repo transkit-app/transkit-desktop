@@ -458,7 +458,8 @@
             "copy": "Copy",
             "retry": "Try again",
             "delete_newline": "Delete Newline",
-            "translate_back": "Translation back to the original"
+            "translate_back": "Translation back to the original",
+            "loading": "Translating..."
         },
         "recognize": {
             "recognize": "Recognize",

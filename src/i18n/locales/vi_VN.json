@@ -458,7 +458,8 @@
             "copy": "Sao chép",
             "retry": "Thử lại",
             "delete_newline": "Xóa xuống dòng",
-            "translate_back": "Dịch ngược lại ngôn ngữ gốc"
+            "translate_back": "Dịch ngược lại ngôn ngữ gốc",
+            "loading": "Đang dịch..."
         },
         "recognize": {
             "recognize": "Nhận dạng",

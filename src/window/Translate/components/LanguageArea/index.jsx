@@ -41,15 +41,17 @@ export default function LanguageArea() {
     return (
         <Card
             shadow='none'
-            className='bg-content2 h-[35px] rounded-[10px]'
+            className='bg-content2 h-[28px] rounded-[8px] border-1 border-content3'
         >
-            <CardFooter className='bg-content2 flex justify-between p-0 rounded-[10px]'>
+            <CardFooter className='bg-content2 flex justify-between p-0 rounded-[8px]'>
                 <div className='flex'>
                     <Dropdown>
                         <DropdownTrigger>
                             <Button
                                 radius='sm'
                                 variant='light'
+                                size='sm'
+                                className='h-[26px] text-[12px] font-medium'
                             >
                                 {t(`languages.${sourceLanguage}`)}
                             </Button>
@@ -73,7 +75,7 @@ export default function LanguageArea() {
                         isIconOnly
                         size='sm'
                         variant='light'
-                        className='text-[20px]'
+                        className='h-[26px] w-[26px] min-w-0 text-[16px]'
                         onPress={async () => {
                             if (sourceLanguage !== 'auto') {
                                 const oldSourceLanguage = sourceLanguage;
@@ -105,6 +107,8 @@ export default function LanguageArea() {
                             <Button
                                 radius='sm'
                                 variant='light'
+                                size='sm'
+                                className='h-[26px] text-[12px] font-medium'
                             >
                                 {t(`languages.${targetLanguage}`)}
                             </Button>
