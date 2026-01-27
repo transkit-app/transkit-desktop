@@ -10,8 +10,9 @@ import { listen } from '@tauri-apps/api/event';
 import { BsPinFill } from 'react-icons/bs';
 
 import LanguageArea from './components/LanguageArea';
-import SourceArea from './components/SourceArea';
+import SourceArea, { windowTypeAtom } from './components/SourceArea';
 import TargetArea from './components/TargetArea';
+import { useAtomValue } from 'jotai';
 import { getServiceName, whetherPluginService } from '../../utils/service_instance';
 import * as builtinServices from '../../services/translate';
 import { osType } from '../../utils/env';
@@ -87,6 +88,7 @@ export default function Translate() {
     const [serviceInstanceConfigMap, setServiceInstanceConfigMap] = useState(null);
     const [headerButtons, setHeaderButtons] = useState(null);
     const contentRef = useRef(null);
+    const windowType = useAtomValue(windowTypeAtom);
     const reorder = (list, startIndex, endIndex) => {
         const result = Array.from(list);
         const [removed] = result.splice(startIndex, 1);
@@ -256,7 +258,7 @@ export default function Translate() {
                 // Calculate responsive max sizes - generous limits for long content
                 // 85% of monitor height, 75% of monitor width
                 const maxHeight = Math.min(1200, Math.floor((monitorHeight / factor) * 0.85));
-                const minHeight = 120;
+                const minHeight = 80; // Reduced for short content to avoid extra white space
 
                 // Dynamic width based on content - wider for better readability
                 const minWidth = 500;
@@ -448,76 +450,161 @@ export default function Translate() {
                         <Spacer y={1} />
                     </div>
 
-                    {/* Single Active Translation Result */}
-                    <div className='relative group'>
-                        {translateServiceInstanceList !== null &&
-                            serviceInstanceConfigMap !== null &&
-                            translateServiceInstanceList.map((serviceInstanceKey, index) => {
-                                const config = serviceInstanceConfigMap[serviceInstanceKey] ?? {};
-                                const enable = config['enable'] ?? true;
-
-                                // Only show the first enabled service
-                                if (!enable || index !== 0) return null;
-
-                                return (
-                                    <div key={serviceInstanceKey}>
-                                        <TargetArea
-                                            index={index}
-                                            name={serviceInstanceKey}
-                                            translateServiceInstanceList={translateServiceInstanceList}
-                                            pluginList={pluginList}
-                                            serviceInstanceConfigMap={serviceInstanceConfigMap}
-                                            setHeaderButtons={setHeaderButtons}
-                                        />
-                                    </div>
-                                );
-                            })}
-
-                        {/* Provider Tabs - Horizontal at bottom, show on hover */}
-                        <div className='absolute bottom-0 left-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-gradient-to-t from-background via-background to-transparent pt-8 pb-1 px-2'>
-                            <div className='flex gap-1 justify-center items-center bg-content2/80 backdrop-blur-sm rounded-lg p-1 border border-content3'>
+                    {/* Translation Results Section - Different layout based on window type */}
+                    {windowType === '[INPUT_TRANSLATE]' ? (
+                        // INPUT mode: Tabs always visible at bottom
+                        <div className='flex flex-col gap-2'>
+                            {/* Active Translation Result */}
+                            <div>
                                 {translateServiceInstanceList !== null &&
                                     serviceInstanceConfigMap !== null &&
                                     translateServiceInstanceList.map((serviceInstanceKey, index) => {
                                         const config = serviceInstanceConfigMap[serviceInstanceKey] ?? {};
                                         const enable = config['enable'] ?? true;
-                                        if (!enable) return null;
 
-                                        const isActive = index === 0; // First one is active
+                                        // Only show the first enabled service
+                                        if (!enable || index !== 0) return null;
 
                                         return (
-                                            <Button
-                                                key={serviceInstanceKey}
-                                                size='sm'
-                                                variant='light'
-                                                className={`h-[28px] min-w-[32px] px-1.5 ${
-                                                    isActive
-                                                        ? 'border-2 border-primary shadow-sm'
-                                                        : 'border-1 border-transparent hover:border-default-300'
-                                                }`}
-                                                onPress={() => {
-                                                    // Switch active provider
-                                                    const items = Array.from(translateServiceInstanceList);
-                                                    const [removed] = items.splice(index, 1);
-                                                    items.unshift(removed);
-                                                    setTranslateServiceInstanceList(items);
-                                                }}
-                                            >
-                                                <img
-                                                    src={
-                                                        whetherPluginService(serviceInstanceKey)
-                                                            ? pluginList['translate'][getServiceName(serviceInstanceKey)].icon
-                                                            : builtinServices[getServiceName(serviceInstanceKey)].info.icon
-                                                    }
-                                                    className='h-[18px] w-[18px]'
-                                                    alt=''
+                                            <div key={serviceInstanceKey}>
+                                                <TargetArea
+                                                    index={index}
+                                                    name={serviceInstanceKey}
+                                                    translateServiceInstanceList={translateServiceInstanceList}
+                                                    pluginList={pluginList}
+                                                    serviceInstanceConfigMap={serviceInstanceConfigMap}
+                                                    setHeaderButtons={setHeaderButtons}
                                                 />
-                                            </Button>
+                                            </div>
                                         );
                                     })}
                             </div>
+
+                            {/* Provider Tabs - Always visible */}
+                            {translateServiceInstanceList !== null &&
+                                serviceInstanceConfigMap !== null &&
+                                translateServiceInstanceList.filter(key => {
+                                    const config = serviceInstanceConfigMap[key] ?? {};
+                                    return config['enable'] ?? true;
+                                }).length > 1 && (
+                                    <div className='flex justify-center pb-1 px-2'>
+                                        <div className='flex gap-1 justify-center items-center bg-content2/60 backdrop-blur-sm rounded-lg p-1 border border-content3/50 hover:bg-content2/90 hover:border-content3 transition-all duration-200'>
+                                            {translateServiceInstanceList.map((serviceInstanceKey, index) => {
+                                                const config = serviceInstanceConfigMap[serviceInstanceKey] ?? {};
+                                                const enable = config['enable'] ?? true;
+                                                if (!enable) return null;
+
+                                                const isActive = index === 0;
+
+                                                return (
+                                                    <Button
+                                                        key={serviceInstanceKey}
+                                                        size='sm'
+                                                        variant='light'
+                                                        className={`h-[28px] min-w-[32px] px-1.5 ${
+                                                            isActive
+                                                                ? 'border-2 border-primary shadow-sm'
+                                                                : 'border-1 border-transparent hover:border-default-300'
+                                                        }`}
+                                                        onPress={() => {
+                                                            const items = Array.from(translateServiceInstanceList);
+                                                            const [removed] = items.splice(index, 1);
+                                                            items.unshift(removed);
+                                                            setTranslateServiceInstanceList(items);
+                                                        }}
+                                                    >
+                                                        <img
+                                                            src={
+                                                                whetherPluginService(serviceInstanceKey)
+                                                                    ? pluginList['translate'][getServiceName(serviceInstanceKey)].icon
+                                                                    : builtinServices[getServiceName(serviceInstanceKey)].info.icon
+                                                            }
+                                                            className='h-[18px] w-[18px]'
+                                                            alt=''
+                                                        />
+                                                    </Button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
                         </div>
-                    </div>
+                    ) : (
+                        // SELECTION/IMAGE mode: Tabs on hover (absolute positioned)
+                        <div className='relative group'>
+                            {translateServiceInstanceList !== null &&
+                                serviceInstanceConfigMap !== null &&
+                                translateServiceInstanceList.map((serviceInstanceKey, index) => {
+                                    const config = serviceInstanceConfigMap[serviceInstanceKey] ?? {};
+                                    const enable = config['enable'] ?? true;
+
+                                    // Only show the first enabled service
+                                    if (!enable || index !== 0) return null;
+
+                                    return (
+                                        <div key={serviceInstanceKey}>
+                                            <TargetArea
+                                                index={index}
+                                                name={serviceInstanceKey}
+                                                translateServiceInstanceList={translateServiceInstanceList}
+                                                pluginList={pluginList}
+                                                serviceInstanceConfigMap={serviceInstanceConfigMap}
+                                                setHeaderButtons={setHeaderButtons}
+                                            />
+                                        </div>
+                                    );
+                                })}
+
+                            {/* Provider Tabs - Show on hover */}
+                            {translateServiceInstanceList !== null &&
+                                serviceInstanceConfigMap !== null &&
+                                translateServiceInstanceList.filter(key => {
+                                    const config = serviceInstanceConfigMap[key] ?? {};
+                                    return config['enable'] ?? true;
+                                }).length > 1 && (
+                                    <div className='absolute bottom-0 left-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-gradient-to-t from-background via-background to-transparent pt-8 pb-1 px-2'>
+                                        <div className='flex gap-1 justify-center items-center bg-content2/80 backdrop-blur-sm rounded-lg p-1 border border-content3'>
+                                            {translateServiceInstanceList.map((serviceInstanceKey, index) => {
+                                                const config = serviceInstanceConfigMap[serviceInstanceKey] ?? {};
+                                                const enable = config['enable'] ?? true;
+                                                if (!enable) return null;
+
+                                                const isActive = index === 0;
+
+                                                return (
+                                                    <Button
+                                                        key={serviceInstanceKey}
+                                                        size='sm'
+                                                        variant='light'
+                                                        className={`h-[28px] min-w-[32px] px-1.5 ${
+                                                            isActive
+                                                                ? 'border-2 border-primary shadow-sm'
+                                                                : 'border-1 border-transparent hover:border-default-300'
+                                                        }`}
+                                                        onPress={() => {
+                                                            const items = Array.from(translateServiceInstanceList);
+                                                            const [removed] = items.splice(index, 1);
+                                                            items.unshift(removed);
+                                                            setTranslateServiceInstanceList(items);
+                                                        }}
+                                                    >
+                                                        <img
+                                                            src={
+                                                                whetherPluginService(serviceInstanceKey)
+                                                                    ? pluginList['translate'][getServiceName(serviceInstanceKey)].icon
+                                                                    : builtinServices[getServiceName(serviceInstanceKey)].info.icon
+                                                            }
+                                                            className='h-[18px] w-[18px]'
+                                                            alt=''
+                                                        />
+                                                    </Button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+                        </div>
+                    )}
                 </div>
             </div>
         )

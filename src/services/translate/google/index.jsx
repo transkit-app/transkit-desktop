@@ -37,31 +37,47 @@ export async function translate(text, from, to, options = {}) {
         // 词典模式
         if (result[1]) {
             let target = { pronunciations: [], explanations: [], associations: [], sentence: [] };
-            // 发音
-            if (result[0][1][3]) {
-                target.pronunciations.push({ symbol: result[0][1][3], voice: '' });
+            // 发音 - Safe access with optional chaining
+            try {
+                if (result[0]?.[1]?.[3]) {
+                    target.pronunciations.push({ symbol: result[0][1][3], voice: '' });
+                }
+            } catch (e) {
+                // Ignore pronunciation errors
             }
             // 释义
-            for (let i of result[1]) {
-                target.explanations.push({
-                    trait: i[0],
-                    explains: i[2].map((x) => {
-                        return x[0];
-                    }),
-                });
+            try {
+                for (let i of result[1]) {
+                    if (i && i[0] && i[2]) {
+                        target.explanations.push({
+                            trait: i[0],
+                            explains: i[2].map((x) => {
+                                return x[0];
+                            }),
+                        });
+                    }
+                }
+            } catch (e) {
+                // Ignore explanation errors
             }
             // 例句
-            if (result[13]) {
-                for (let i of result[13][0]) {
-                    target.sentence.push({ source: i[0] });
+            try {
+                if (result[13] && result[13][0]) {
+                    for (let i of result[13][0]) {
+                        if (i && i[0]) {
+                            target.sentence.push({ source: i[0] });
+                        }
+                    }
                 }
+            } catch (e) {
+                // Ignore sentence errors
             }
             return target;
         } else {
             // 翻译模式
             let target = '';
             for (let r of result[0]) {
-                if (r[0]) {
+                if (r && r[0]) {
                     target = target + r[0];
                 }
             }

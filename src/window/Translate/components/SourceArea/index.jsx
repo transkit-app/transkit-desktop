@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { HiTranslate } from 'react-icons/hi';
 import { LuDelete } from 'react-icons/lu';
 import { invoke } from '@tauri-apps/api';
-import { atom, useAtom } from 'jotai';
+import { atom, useAtom, useSetAtom } from 'jotai';
 import { getServiceName, getServiceSouceType, ServiceSourceType } from '../../../../utils/service_instance';
 import { useConfig, useSyncAtom, useVoice, useToastStyle } from '../../../../hooks';
 import { invoke_plugin } from '../../../../utils/invoke_plugin';
@@ -25,6 +25,7 @@ import { debug } from 'tauri-plugin-log-api';
 
 export const sourceTextAtom = atom('');
 export const detectLanguageAtom = atom('');
+export const windowTypeAtom = atom('[SELECTION_TRANSLATE]');
 
 let unlisten = null;
 let timer = null;
@@ -43,7 +44,7 @@ export default function SourceArea(props) {
     const [hideWindow] = useConfig('translate_hide_window', false);
     const [hideSource] = useConfig('hide_source', false);
     const [ttsPluginInfo, setTtsPluginInfo] = useState();
-    const [windowType, setWindowType] = useState('[SELECTION_TRANSLATE]');
+    const [windowType, setWindowType] = useAtom(windowTypeAtom);
     const toastStyle = useToastStyle();
     const { t } = useTranslation();
     const textAreaRef = useRef();
