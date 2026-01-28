@@ -52,7 +52,7 @@ export default function About() {
     return (
         <div className='h-full w-full overflow-y-auto'>
             {/* Hero Section */}
-            <div className='flex flex-col items-center justify-center pt-12 pb-8 px-8'>
+            <div className='flex flex-col items-center justify-center pt-2 pb-8 px-8'>
                 <div className='relative group'>
                     <div className='absolute inset-0 bg-gradient-to-r from-primary/20 to-secondary/20 rounded-full blur-2xl group-hover:blur-3xl transition-all duration-300'></div>
                     <img
