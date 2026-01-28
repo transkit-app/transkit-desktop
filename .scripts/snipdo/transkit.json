@@ -1,0 +1,12 @@
+{
+    "name": "TransKit Translation",
+    "identifier": "com.transkit.snipdoext.desktop",
+    "icon": "transkit.png",
+    "actions": [
+        {
+            "title": "TransKit Translation",
+            "icon": "transkit.png",
+            "powershellFile": "transkit.ps1"
+        }
+    ]
+}

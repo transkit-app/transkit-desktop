@@ -7,7 +7,7 @@
         "withGlobalTauri": false
     },
     "package": {
-        "productName": "pot",
+        "productName": "TransKit",
         "version": "3.0.7"
     },
     "tauri": {
@@ -67,9 +67,9 @@
             "category": "Utility",
             "copyright": "GPLv3",
             "targets": "all",
-            "identifier": "com.pot-app.desktop",
+            "identifier": "com.transkit.desktop",
             "longDescription": "A cross-platform text translation and ocr software",
-            "shortDescription": "Pot App",
+            "shortDescription": "TransKit",
             "externalBin": [],
             "resources": [],
             "icon": [
@@ -124,10 +124,10 @@
             "active": true,
             "dialog": false,
             "endpoints": [
-                "https://dl.pot-app.com/https://github.com/pot-app/pot-desktop/releases/download/updater/update.json",
-                "https://github.com/pot-app/pot-desktop/releases/download/updater/update.json"
+                "https://transkit.app/transkit-desktop/updater/update.json",
+                "https://github.com/transkit-app/transkit-desktop/releases/download/updater/update.json"
             ],
-            "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDVBRTQxQTNDQjM5QzQzM0EKUldRNlE1eXpQQnJrV21mM1Bram5LRlF6UDA3K0Jab2FYL2lZSWhXTE5McWs2NUdJS0dtYkd5VGMK"
+            "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEM0MDY3ODA3OEMzOTdBRUIKUldUcmVqbU1CM2dHeER2UGQ3YU42YlQ2cWRBVkdGbjB0UTUyL0tKRW5sbHNTa252YVg3THNNWVEK"
         }
     }
 }

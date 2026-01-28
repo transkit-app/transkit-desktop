@@ -1,10 +1,10 @@
 [package]
-name = "pot"
+name = "transkit"
 version = "0.0.0"
-description = "Pot App"
-authors = ["pot-app"]
+description = "TransKit - A cross-platform translation and OCR software"
+authors = ["transkit-app"]
 license = "GPL-3.0-only"
-repository = "https://github.com/pot-app/pot-desktop"
+repository = "https://github.com/transkit-app/transkit-desktop"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -14,7 +14,7 @@ tauri-build = { version = "1.5", features = [] }
 
 [dependencies]
 
-tauri = { version = "1.8", features = [ "dialog-save", "dialog-open", "fs-all", "protocol-asset", "shell-all", "clipboard-all", "os-all", "http-all", "http-multipart", "updater", "notification-all", "global-shortcut-all", "window-all", "path-all", "system-tray", "devtools"] }
+tauri = { version = "1.8", features = [ "updater", "dialog-save", "dialog-open", "fs-all", "protocol-asset", "shell-all", "clipboard-all", "os-all", "http-all", "http-multipart", "notification-all", "global-shortcut-all", "window-all", "path-all", "system-tray", "devtools"] }
 tauri-plugin-single-instance = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
 tauri-plugin-autostart = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
 tauri-plugin-fs-watch = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }

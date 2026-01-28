@@ -1,1 +1,1 @@
-zip pot.pbar pot.json pot.png pot.ps1
+zip transkit.pbar transkit.json transkit.png transkit.ps1

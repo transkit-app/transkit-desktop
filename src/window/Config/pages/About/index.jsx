@@ -21,7 +21,7 @@ export default function About() {
                 draggable={false}
             />
             <div className='content-center'>
-                <h1 className='font-bold text-2xl text-center'>Pot</h1>
+                <h1 className='font-bold text-2xl text-center'>TransKit</h1>
                 <p className='text-center text-sm text-gray-500 mb-[5px]'>{appVersion}</p>
                 <Divider />
                 <div className='flex justify-between'>
@@ -30,7 +30,7 @@ export default function About() {
                         className='my-[5px]'
                         size='sm'
                         onPress={() => {
-                            open('https://pot-app.com');
+                            open('https://transkit.app');
                         }}
                     >
                         {t('config.about.website')}
@@ -40,7 +40,7 @@ export default function About() {
                         className='my-[5px]'
                         size='sm'
                         onPress={() => {
-                            open('https://github.com/pot-app/pot-desktop');
+                            open('https://github.com/transkit-app/transkit-desktop');
                         }}
                     >
                         {t('config.about.github')}
@@ -65,7 +65,7 @@ export default function About() {
                                     className='my-[5px]'
                                     size='sm'
                                     onPress={() => {
-                                        open('https://github.com/pot-app/pot-desktop/issues');
+                                        open('https://github.com/transkit-app/transkit-desktop/issues');
                                     }}
                                 >
                                     {t('config.about.issue')}
@@ -75,7 +75,7 @@ export default function About() {
                                     className='my-[5px]'
                                     size='sm'
                                     onPress={() => {
-                                        open('mailto:support@pot-app.com');
+                                        open('mailto:support@transkit.app');
                                     }}
                                 >
                                     {t('config.about.email')}
@@ -119,7 +119,7 @@ export default function About() {
                                         className='my-[5px]'
                                         size='lg'
                                         onPress={() => {
-                                            open('https://pot-app.com/img/qq_group.png');
+                                            open('https://transkit.app/community/qq');
                                         }}
                                     >
                                         <BsTencentQq />
@@ -132,7 +132,7 @@ export default function About() {
                                         className='my-[5px]'
                                         size='lg'
                                         onPress={() => {
-                                            open('https://t.me/pot_app');
+                                            open('https://t.me/transkit_app');
                                         }}
                                     >
                                         <BsTelegram />
@@ -145,7 +145,7 @@ export default function About() {
                                         className='my-[5px]'
                                         size='lg'
                                         onPress={() => {
-                                            open('https://github.com/pot-app/pot-desktop/discussions');
+                                            open('https://github.com/transkit-app/transkit-desktop/discussions');
                                         }}
                                     >
                                         <BsGithub />
