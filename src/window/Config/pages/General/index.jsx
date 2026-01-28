@@ -81,74 +81,7 @@ export default function General() {
     return (
         <>
             <Toaster />
-            <Card className='mb-[10px]'>
-                <CardBody>
-                    <div className='config-item'>
-                        <h3>{t('config.general.auto_start')}</h3>
-                        <Switch
-                            isSelected={autoStart}
-                            onValueChange={(v) => {
-                                setAutoStart(v);
-                                if (v) {
-                                    enable().then(() => {
-                                        info('Auto start enabled');
-                                    });
-                                } else {
-                                    disable().then(() => {
-                                        info('Auto start disabled');
-                                    });
-                                }
-                            }}
-                        />
-                    </div>
-                    <div className='config-item'>
-                        <h3>{t('config.general.check_update')}</h3>
-                        {checkUpdate !== null && (
-                            <Switch
-                                isSelected={checkUpdate}
-                                onValueChange={(v) => {
-                                    setCheckUpdate(v);
-                                }}
-                            />
-                        )}
-                    </div>
-                    <div className='config-item'>
-                        <h3 className='my-auto'>{t('config.general.server_port')}</h3>
-                        {serverPort !== null && (
-                            <Input
-                                type='number'
-                                variant='bordered'
-                                value={serverPort}
-                                labelPlacement='outside-left'
-                                onValueChange={(v) => {
-                                    if (parseInt(v) !== serverPort) {
-                                        if (timer) {
-                                            clearTimeout(timer);
-                                        }
-                                        timer = setTimeout(() => {
-                                            toast.success(t('config.general.server_port_change'), {
-                                                duration: 3000,
-                                                style: toastStyle,
-                                            });
-                                        }, 1000);
-                                    }
-                                    if (v === '') {
-                                        setServerPort(0);
-                                    } else if (parseInt(v) > 65535) {
-                                        setServerPort(65535);
-                                    } else if (parseInt(v) < 0) {
-                                        setServerPort(0);
-                                    } else {
-                                        setServerPort(parseInt(v));
-                                    }
-                                }}
-                                className='max-w-[100px]'
-                            />
-                        )}
-                    </div>
-                </CardBody>
-            </Card>
-            <Card className='mb-[10px]'>
+             <Card className='mb-[10px]'>
                 <CardBody>
                     <div className='config-item'>
                         <h3 className='my-auto'>{t('config.general.app_language')}</h3>
@@ -499,6 +432,74 @@ export default function General() {
                     </div>
                 </CardBody>
             </Card>
+            <Card className='mb-[10px]'>
+                <CardBody>
+                    <div className='config-item'>
+                        <h3>{t('config.general.auto_start')}</h3>
+                        <Switch
+                            isSelected={autoStart}
+                            onValueChange={(v) => {
+                                setAutoStart(v);
+                                if (v) {
+                                    enable().then(() => {
+                                        info('Auto start enabled');
+                                    });
+                                } else {
+                                    disable().then(() => {
+                                        info('Auto start disabled');
+                                    });
+                                }
+                            }}
+                        />
+                    </div>
+                    <div className='config-item'>
+                        <h3>{t('config.general.check_update')}</h3>
+                        {checkUpdate !== null && (
+                            <Switch
+                                isSelected={checkUpdate}
+                                onValueChange={(v) => {
+                                    setCheckUpdate(v);
+                                }}
+                            />
+                        )}
+                    </div>
+                    <div className='config-item'>
+                        <h3 className='my-auto'>{t('config.general.server_port')}</h3>
+                        {serverPort !== null && (
+                            <Input
+                                type='number'
+                                variant='bordered'
+                                value={serverPort}
+                                labelPlacement='outside-left'
+                                onValueChange={(v) => {
+                                    if (parseInt(v) !== serverPort) {
+                                        if (timer) {
+                                            clearTimeout(timer);
+                                        }
+                                        timer = setTimeout(() => {
+                                            toast.success(t('config.general.server_port_change'), {
+                                                duration: 3000,
+                                                style: toastStyle,
+                                            });
+                                        }, 1000);
+                                    }
+                                    if (v === '') {
+                                        setServerPort(0);
+                                    } else if (parseInt(v) > 65535) {
+                                        setServerPort(65535);
+                                    } else if (parseInt(v) < 0) {
+                                        setServerPort(0);
+                                    } else {
+                                        setServerPort(parseInt(v));
+                                    }
+                                }}
+                                className='max-w-[100px]'
+                            />
+                        )}
+                    </div>
+                </CardBody>
+            </Card>
+           
             <Card>
                 <CardBody>
                     <div className='config-item'>

@@ -118,9 +118,9 @@ fn build_window(label: &str, title: &str) -> (Window, bool) {
 pub fn config_window() {
     let (window, _exists) = build_window("config", "Config");
     window
-        .set_min_size(Some(tauri::LogicalSize::new(800, 400)))
+        .set_min_size(Some(tauri::LogicalSize::new(800, 550)))
         .unwrap();
-    window.set_size(tauri::LogicalSize::new(800, 600)).unwrap();
+    window.set_size(tauri::LogicalSize::new(800, 750)).unwrap();
     window.center().unwrap();
 }
 

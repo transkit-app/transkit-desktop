@@ -298,14 +298,13 @@ export default function Translate() {
                     </div>
                     <div className='config-item'>
                         <h3 className='my-auto mx-0'>{t('config.translate.fixed_providers')}</h3>
-                        {fixedProviders !== null && (
-                            <Switch
-                                isSelected={fixedProviders}
-                                onValueChange={(v) => {
-                                    setFixedProviders(v);
-                                }}
-                            />
-                        )}
+                        <Switch
+                            key={`fixed-providers-${fixedProviders}`}
+                            isSelected={fixedProviders ?? false}
+                            onValueChange={(v) => {
+                                setFixedProviders(v);
+                            }}
+                        />
                     </div>
                     <div className='config-item'>
                         <h3 className='my-auto mx-0'>{t('config.translate.hide_source')}</h3>
