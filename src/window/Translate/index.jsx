@@ -481,8 +481,8 @@ export default function Translate() {
                                         const config = serviceInstanceConfigMap[serviceInstanceKey] ?? {};
                                         const enable = config['enable'] ?? true;
 
-                                        // Only show the first enabled service
-                                        if (!enable || index !== 0) return null;
+                                        // Only show the selected service
+                                        if (!enable || index !== selectedProviderIndex) return null;
 
                                         return (
                                             <div key={serviceInstanceKey}>
@@ -513,23 +513,20 @@ export default function Translate() {
                                                 const enable = config['enable'] ?? true;
                                                 if (!enable) return null;
 
-                                                const isActive = index === 0;
+                                                const isActive = index === selectedProviderIndex;
 
                                                 return (
                                                     <Button
                                                         key={serviceInstanceKey}
                                                         size='sm'
                                                         variant='light'
-                                                        className={`h-[28px] min-w-[32px] px-1.5 ${
+                                                        className={`relative h-[28px] min-w-[32px] px-1.5 ${
                                                             isActive
-                                                                ? 'border-2 border-primary shadow-sm'
+                                                                ? 'border-2 border-primary'
                                                                 : 'border-1 border-transparent hover:border-default-300'
                                                         }`}
                                                         onPress={() => {
-                                                            const items = Array.from(translateServiceInstanceList);
-                                                            const [removed] = items.splice(index, 1);
-                                                            items.unshift(removed);
-                                                            setTranslateServiceInstanceList(items);
+                                                            setSelectedProviderIndex(index);
                                                         }}
                                                     >
                                                         <img
@@ -541,6 +538,11 @@ export default function Translate() {
                                                             className='h-[18px] w-[18px]'
                                                             alt=''
                                                         />
+                                                        {isActive && (
+                                                            <div className='absolute -top-0.5 -right-0.5 bg-primary rounded-full w-3.5 h-3.5 flex items-center justify-center'>
+                                                                <IoMdCheckmark className='text-white text-[10px]' />
+                                                            </div>
+                                                        )}
                                                     </Button>
                                                 );
                                             })}
@@ -592,8 +594,9 @@ export default function Translate() {
                                     const config = serviceInstanceConfigMap[key] ?? {};
                                     return config['enable'] ?? true;
                                 }).length > 1 && (
-                                    <div className={`absolute bottom-0 left-0 right-0 ${fixedProviders ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity duration-200 bg-gradient-to-t from-background via-background to-transparent pt-1.5 pb-1 px-[10px]`}>
-                                        <div className='flex gap-1 justify-center items-center bg-content2/80 backdrop-blur-sm rounded-lg p-1 border border-content3 mx-[-2px]'>
+                                    <div className={`absolute bottom-0 left-0 right-0 ${fixedProviders ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity duration-200 pt-1.5 pb-1`}>
+                                        <div className='flex justify-center'>
+                                            <div className='flex gap-1 items-center bg-content2/80 backdrop-blur-sm rounded-lg p-1 border border-content3'>
                                             {translateServiceInstanceList.map((serviceInstanceKey, index) => {
                                                 const config = serviceInstanceConfigMap[serviceInstanceKey] ?? {};
                                                 const enable = config['enable'] ?? true;
@@ -608,7 +611,7 @@ export default function Translate() {
                                                         variant='light'
                                                         className={`relative h-[28px] min-w-[32px] px-1.5 ${
                                                             isActive
-                                                                ? 'border-2 border-primary shadow-lg shadow-primary/50'
+                                                                ? 'border-2 border-primary'
                                                                 : 'border-1 border-transparent hover:border-default-300'
                                                         }`}
                                                         onPress={() => {
@@ -632,6 +635,7 @@ export default function Translate() {
                                                     </Button>
                                                 );
                                             })}
+                                            </div>
                                         </div>
                                     </div>
                                 )}

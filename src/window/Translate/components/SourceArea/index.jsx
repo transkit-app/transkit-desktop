@@ -445,14 +445,15 @@ export default function SourceArea(props) {
                             </Tooltip>
                         </ButtonGroup>
                         {detectLanguage !== '' && (
-                            <Chip
+                            <Button
                                 size='sm'
+                                variant='flat'
                                 color='secondary'
-                                variant='dot'
-                                className='my-auto'
+                                className='min-w-0 px-2 text-xs'
+                                startContent={<span className='w-1.5 h-1.5 bg-current rounded-full'></span>}
                             >
                                 {t(`languages.${detectLanguage}`)}
-                            </Chip>
+                            </Button>
                         )}
                     </div>
                     <Tooltip content={t('translate.translate')}>
