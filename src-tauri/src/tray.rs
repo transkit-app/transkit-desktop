@@ -54,6 +54,7 @@ pub fn update_tray(app_handle: tauri::AppHandle, mut language: String, mut copy_
             "pt_br" => tray_menu_pt_br(),
             "fa" => tray_menu_fa(),
             "uk" => tray_menu_uk(),
+            "vi" | "vi_vn" => tray_menu_vi(),
             _ => tray_menu_en(),
         })
         .unwrap();
@@ -627,6 +628,42 @@ fn tray_menu_uk() -> tauri::SystemTrayMenu {
         .add_item(config)
         .add_item(check_update)
         .add_item(view_log)
+        .add_native_item(SystemTrayMenuItem::Separator)
+        .add_item(restart)
+        .add_item(quit)
+}
+
+fn tray_menu_vi() -> tauri::SystemTrayMenu {
+    let input_translate = CustomMenuItem::new("input_translate", "Mở hộp thoại dịch");
+    let clipboard_monitor = CustomMenuItem::new("clipboard_monitor", "Dịch từ clipboard");
+    let copy_source = CustomMenuItem::new("copy_source", "Ngôn ngữ nguồn");
+    let copy_target = CustomMenuItem::new("copy_target", "Ngôn ngữ đích");
+    let copy_source_target = CustomMenuItem::new("copy_source_target", "Nguồn+Đích");
+    let copy_disable = CustomMenuItem::new("copy_disable", "Tắt");
+    let ocr_recognize = CustomMenuItem::new("ocr_recognize", "OCR - Nhận dạng văn bản");
+    let ocr_translate = CustomMenuItem::new("ocr_translate", "OCR - Dịch ảnh chụp màn hình");
+    let config = CustomMenuItem::new("config", "Cài đặt");
+    let check_update = CustomMenuItem::new("check_update", "Kiểm tra cập nhật");
+    let restart = CustomMenuItem::new("restart", "Khởi động lại");
+    let quit = CustomMenuItem::new("quit", "Thoát");
+    SystemTrayMenu::new()
+        .add_item(input_translate)
+        .add_item(clipboard_monitor)
+        .add_submenu(SystemTraySubmenu::new(
+            "Tự động sao chép",
+            SystemTrayMenu::new()
+                .add_item(copy_source)
+                .add_item(copy_target)
+                .add_item(copy_source_target)
+                .add_native_item(SystemTrayMenuItem::Separator)
+                .add_item(copy_disable),
+        ))
+        .add_native_item(SystemTrayMenuItem::Separator)
+        .add_item(ocr_recognize)
+        .add_item(ocr_translate)
+        .add_native_item(SystemTrayMenuItem::Separator)
+        .add_item(config)
+        .add_item(check_update)
         .add_native_item(SystemTrayMenuItem::Separator)
         .add_item(restart)
         .add_item(quit)
