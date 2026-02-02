@@ -359,13 +359,13 @@ export default function Translate() {
                             // macOS: show action buttons + pin on right
                             <>
                                 <div id='translate-actions' className='flex gap-0.5 items-center'>
-                                    {translateServiceInstanceList && translateServiceInstanceList[0] && (
+                                    {translateServiceInstanceList && translateServiceInstanceList[selectedProviderIndex] && (
                                         <div className='flex items-center px-1.5 py-0.5 bg-content2/50 rounded-md mr-1'>
                                             <img
                                                 src={
-                                                    whetherPluginService(translateServiceInstanceList[0])
-                                                        ? pluginList['translate'][getServiceName(translateServiceInstanceList[0])].icon
-                                                        : builtinServices[getServiceName(translateServiceInstanceList[0])].info.icon
+                                                    whetherPluginService(translateServiceInstanceList[selectedProviderIndex])
+                                                        ? pluginList['translate'][getServiceName(translateServiceInstanceList[selectedProviderIndex])].icon
+                                                        : builtinServices[getServiceName(translateServiceInstanceList[selectedProviderIndex])].info.icon
                                                 }
                                                 className='h-[16px] w-[16px]'
                                                 alt=''
@@ -399,13 +399,13 @@ export default function Translate() {
                             // Windows: show pin + close
                             <>
                                 <div className='flex gap-0.5 items-center'>
-                                    {translateServiceInstanceList && translateServiceInstanceList[0] && (
+                                    {translateServiceInstanceList && translateServiceInstanceList[selectedProviderIndex] && (
                                         <div className='flex items-center px-1.5 py-0.5 bg-content2/50 rounded-md mr-1'>
                                             <img
                                                 src={
-                                                    whetherPluginService(translateServiceInstanceList[0])
-                                                        ? pluginList['translate'][getServiceName(translateServiceInstanceList[0])].icon
-                                                        : builtinServices[getServiceName(translateServiceInstanceList[0])].info.icon
+                                                    whetherPluginService(translateServiceInstanceList[selectedProviderIndex])
+                                                        ? pluginList['translate'][getServiceName(translateServiceInstanceList[selectedProviderIndex])].icon
+                                                        : builtinServices[getServiceName(translateServiceInstanceList[selectedProviderIndex])].info.icon
                                                 }
                                                 className='h-[16px] w-[16px]'
                                                 alt=''
