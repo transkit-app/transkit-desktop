@@ -171,7 +171,8 @@
                 "install_plugin": "安装外部插件",
                 "view_plugin_list": "查看插件列表",
                 "uninstall_success": "插件卸载成功",
-                "homepage": "插件主页"
+                "homepage": "插件主页",
+                "more_services": "更多服务"
             },
             "history": {
                 "label": "历史记录",
@@ -283,6 +284,24 @@
                     "api_key": "Api Key",
                     "stream": "流式输出",
                     "prompt_description": "通过自定义Prompt自定义Gemini Pro的行为, $text $from $to $detect 将会被替换为 待翻译文本，源语言，目标语言和检测到的语言。",
+                    "add": "添加 Prompt"
+                },
+                "openrouter": {
+                    "title": "OpenRouter",
+                    "request_path": "请求地址",
+                    "api_key": "Api Key",
+                    "model": "模型",
+                    "stream": "流式输出",
+                    "prompt_description": "通过自定义Prompt自定义OpenRouter的行为, $text $from $to $detect 将会被替换为 待翻译文本，源语言，目标语言和检测到的语言。",
+                    "add": "添加 Prompt"
+                },
+                "groq": {
+                    "title": "Groq",
+                    "request_path": "请求地址",
+                    "api_key": "Api Key",
+                    "model": "模型",
+                    "stream": "流式输出",
+                    "prompt_description": "通过自定义Prompt自定义Groq的行为, $text $from $to $detect 将会被替换为 待翻译文本，源语言，目标语言和检测到的语言。",
                     "add": "添加 Prompt"
                 },
                 "chatglm": {

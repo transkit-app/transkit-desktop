@@ -171,7 +171,8 @@
                 "install_plugin": "Install Plugin",
                 "view_plugin_list": "View Plugin List",
                 "uninstall_success": "Plugin Uninstall Successfully",
-                "homepage": "Homepage"
+                "homepage": "Homepage",
+                "more_services": "More Services"
             },
             "history": {
                 "label": "History",
@@ -283,6 +284,24 @@
                     "api_key": "Api Key",
                     "stream": "Stream Mode",
                     "prompt_description": "By customizing the Prompt, you can customize the behavior of Gemini Pro. $text $from $to $detect will be replaced with the text to be translated, source language, target language and detected language.",
+                    "add": "Add Prompt"
+                },
+                "openrouter": {
+                    "title": "OpenRouter",
+                    "request_path": "Request Path",
+                    "api_key": "Api Key",
+                    "model": "Model",
+                    "stream": "Stream Mode",
+                    "prompt_description": "By customizing the Prompt, you can customize the behavior of OpenRouter. $text $from $to $detect will be replaced with the text to be translated, source language, target language and detected language.",
+                    "add": "Add Prompt"
+                },
+                "groq": {
+                    "title": "Groq",
+                    "request_path": "Request Path",
+                    "api_key": "Api Key",
+                    "model": "Model",
+                    "stream": "Stream Mode",
+                    "prompt_description": "By customizing the Prompt, you can customize the behavior of Groq. $text $from $to $detect will be replaced with the text to be translated, source language, target language and detected language.",
                     "add": "Add Prompt"
                 },
                 "chatglm": {

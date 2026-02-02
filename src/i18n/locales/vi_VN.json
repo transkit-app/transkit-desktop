@@ -171,7 +171,8 @@
                 "install_plugin": "Cài đặt Plugin",
                 "view_plugin_list": "Xem danh sách Plugin",
                 "uninstall_success": "Gỡ cài đặt Plugin thành công",
-                "homepage": "Trang chủ"
+                "homepage": "Trang chủ",
+                "more_services": "Dịch vụ khác"
             },
             "history": {
                 "label": "Lịch sử",
@@ -283,6 +284,24 @@
                     "api_key": "Api Key",
                     "stream": "Chế độ Stream",
                     "prompt_description": "Bằng cách tùy chỉnh Prompt, bạn có thể tùy chỉnh hành vi của Gemini Pro. $text $from $to $detect sẽ được thay thế bằng văn bản cần dịch, ngôn ngữ nguồn, ngôn ngữ đích và ngôn ngữ được phát hiện.",
+                    "add": "Thêm Prompt"
+                },
+                "openrouter": {
+                    "title": "OpenRouter",
+                    "request_path": "Đường dẫn yêu cầu",
+                    "api_key": "Api Key",
+                    "model": "Mô hình",
+                    "stream": "Chế độ Stream",
+                    "prompt_description": "Bằng cách tùy chỉnh Prompt, bạn có thể tùy chỉnh hành vi của OpenRouter. $text $from $to $detect sẽ được thay thế bằng văn bản cần dịch, ngôn ngữ nguồn, ngôn ngữ đích và ngôn ngữ được phát hiện.",
+                    "add": "Thêm Prompt"
+                },
+                "groq": {
+                    "title": "Groq",
+                    "request_path": "Đường dẫn yêu cầu",
+                    "api_key": "Api Key",
+                    "model": "Mô hình",
+                    "stream": "Chế độ Stream",
+                    "prompt_description": "Bằng cách tùy chỉnh Prompt, bạn có thể tùy chỉnh hành vi của Groq. $text $from $to $detect sẽ được thay thế bằng văn bản cần dịch, ngôn ngữ nguồn, ngôn ngữ đích và ngôn ngữ được phát hiện.",
                     "add": "Thêm Prompt"
                 },
                 "chatglm": {
