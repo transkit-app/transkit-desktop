@@ -152,6 +152,7 @@
                 "input_translate": "Text Translation",
                 "ocr_recognize": "Text Recognition",
                 "ocr_translate": "Screenshot Translation",
+                "audio_monitor": "Audio Monitor",
                 "is_register": "The hotkey is already registered",
                 "success": "Hotkey register success",
                 "set_hotkey": "Press to Set Hotkey"
@@ -163,6 +164,16 @@
                 "tts": "TTS",
                 "recognize": "Recognize",
                 "collection": "Collection",
+                "audio": {
+                    "label": "Audio",
+                    "title": "Soniox - Real-time Audio Translation",
+                    "api_key_label": "Soniox API Key",
+                    "api_key_placeholder": "Enter your Soniox API key...",
+                    "api_key_hint": "Get your free API key at",
+                    "info_label": "About",
+                    "info_desc": "Soniox provides real-time speech-to-text with built-in translation. Supports microphone and system audio (macOS only).",
+                    "saved": "Settings saved"
+                },
                 "least": "Please keep at least one",
                 "add_builtin_service": "Add Builtin Service",
                 "add_external_service": "Add Extension",
@@ -217,6 +228,25 @@
                 "telegram": "Telegram",
                 "discussion": "Github Discussion"
             }
+        },
+        "monitor": {
+            "source_system": "System Audio",
+            "source_system_unavailable": "System Audio (macOS only)",
+            "source_mic": "Microphone",
+            "start": "Start",
+            "stop": "Stop",
+            "pin": "Pin window",
+            "unpin": "Unpin window",
+            "placeholder": "Press Start to begin listening...",
+            "no_api_key": "Please set your Soniox API key in Settings > Service > Audio",
+            "status_connecting": "Connecting...",
+            "status_connected": "Listening",
+            "status_disconnected": "Ready",
+            "status_error": "Error",
+            "font_larger": "Increase font size",
+            "font_smaller": "Decrease font size",
+            "sub_mode": "Subtitle mode",
+            "exit_sub_mode": "Exit subtitle mode"
         },
         "updater": {
             "title": "Check Update",

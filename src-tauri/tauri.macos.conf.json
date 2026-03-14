@@ -5,16 +5,15 @@
             "iconAsTemplate": true
         },
         "bundle": {
-            "resources": [
-                "resources/*"
-            ],
-            "icon": [
-                "icons_mac/32x32.png",
-                "icons_mac/128x128.png",
-                "icons_mac/128x128@2x.png",
-                "icons_mac/icon.icns",
-                "icons_mac/icon.ico"
-            ]
+            "resources": ["resources/*"],
+            "icon": ["icons_mac/32x32.png", "icons_mac/128x128.png", "icons_mac/128x128@2x.png", "icons_mac/icon.icns", "icons_mac/icon.ico"],
+            "macOS": {
+                "entitlements": "Entitlements.plist",
+                "exceptionDomain": "",
+                "frameworks": [],
+                "providerShortName": null,
+                "signingIdentity": null
+            }
         }
     }
 }

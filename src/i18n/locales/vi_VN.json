@@ -152,6 +152,7 @@
                 "input_translate": "Mở hộp thoại dịch",
                 "ocr_recognize": "OCR - Nhận diện văn bản",
                 "ocr_translate": "OCR - Dịch ảnh chụp màn hình",
+                "audio_monitor": "Dịch âm thanh realtime",
                 "is_register": "Phím tắt đã được đăng ký",
                 "success": "Đăng ký phím tắt thành công",
                 "set_hotkey": "Nhấn để đặt phím tắt"
@@ -163,6 +164,16 @@
                 "tts": "Chuyển văn bản thành giọng nói",
                 "recognize": "Nhận diện OCR",
                 "collection": "Bộ sưu tập",
+                "audio": {
+                    "label": "Âm thanh",
+                    "title": "Soniox - Dịch âm thanh thời gian thực",
+                    "api_key_label": "Soniox API Key",
+                    "api_key_placeholder": "Nhập Soniox API key của bạn...",
+                    "api_key_hint": "Lấy API key miễn phí tại",
+                    "info_label": "Giới thiệu",
+                    "info_desc": "Soniox cung cấp nhận dạng giọng nói thời gian thực với tính năng dịch thuật tích hợp. Hỗ trợ microphone và âm thanh hệ thống (chỉ macOS).",
+                    "saved": "Đã lưu cài đặt"
+                },
                 "least": "Vui lòng giữ ít nhất một dịch vụ",
                 "add_builtin_service": "Thêm dịch vụ có sẵn",
                 "add_external_service": "Thêm tiện ích mở rộng",
@@ -217,6 +228,25 @@
                 "telegram": "Telegram",
                 "discussion": "Thảo luận GitHub"
             }
+        },
+        "monitor": {
+            "source_system": "Âm thanh hệ thống",
+            "source_system_unavailable": "Âm thanh hệ thống (chỉ macOS)",
+            "source_mic": "Microphone",
+            "start": "Bắt đầu",
+            "stop": "Dừng",
+            "pin": "Ghim cửa sổ",
+            "unpin": "Bỏ ghim cửa sổ",
+            "placeholder": "Nhấn Bắt đầu để bắt đầu nghe...",
+            "no_api_key": "Vui lòng đặt Soniox API key trong Cài đặt > Dịch vụ > Âm thanh",
+            "status_connecting": "Đang kết nối...",
+            "status_connected": "Đang nghe",
+            "status_disconnected": "Sẵn sàng",
+            "status_error": "Lỗi",
+            "font_larger": "Tăng cỡ chữ",
+            "font_smaller": "Giảm cỡ chữ",
+            "sub_mode": "Chế độ phụ đề",
+            "exit_sub_mode": "Thoát chế độ phụ đề"
         },
         "updater": {
             "title": "Kiểm tra cập nhật",

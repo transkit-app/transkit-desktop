@@ -10,6 +10,7 @@ import Screenshot from './window/Screenshot';
 import Translate from './window/Translate';
 import Recognize from './window/Recognize';
 import Updater from './window/Updater';
+import Monitor from './window/Monitor';
 import { store } from './utils/store';
 import Config from './window/Config';
 import { useConfig } from './hooks';
@@ -22,6 +23,7 @@ const windowMap = {
     recognize: <Recognize />,
     config: <Config />,
     updater: <Updater />,
+    monitor: <Monitor />,
 };
 
 export default function App() {

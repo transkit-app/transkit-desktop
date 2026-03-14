@@ -411,3 +411,47 @@ pub fn updater_window() {
     window.set_size(tauri::LogicalSize::new(600, 400)).unwrap();
     window.center().unwrap();
 }
+
+pub fn monitor_window() {
+    let app_handle = APP.get().unwrap();
+    match app_handle.get_window("monitor") {
+        Some(window) => {
+            window.show().unwrap_or_default();
+            window.set_focus().unwrap_or_default();
+        }
+        None => {
+            let mut builder = tauri::WindowBuilder::new(
+                app_handle,
+                "monitor",
+                tauri::WindowUrl::App("index.html".into()),
+            )
+            .title("Audio Monitor")
+            .additional_browser_args("--disable-web-security")
+            .focused(true)
+            .skip_taskbar(true)
+            .always_on_top(true)
+            .min_inner_size(300.0, 60.0)
+            .inner_size(520.0, 360.0)
+            .visible(false);
+
+            #[cfg(target_os = "macos")]
+            {
+                builder = builder
+                    .title_bar_style(tauri::TitleBarStyle::Overlay)
+                    .hidden_title(true)
+                    .minimizable(false)
+                    .maximizable(false);
+            }
+            #[cfg(not(target_os = "macos"))]
+            {
+                builder = builder.transparent(true).decorations(false);
+            }
+
+            let window = builder.build().unwrap();
+            #[cfg(any(target_os = "macos", target_os = "windows"))]
+            set_shadow(&window, true).unwrap_or_default();
+            window.center().unwrap_or_default();
+            window.show().unwrap_or_default();
+        }
+    }
+}

@@ -225,3 +225,25 @@ pub fn open_devtools(window: tauri::Window) {
         window.close_devtools();
     }
 }
+
+#[tauri::command]
+pub fn set_window_buttons_hidden(window: tauri::Window, hidden: bool) {
+    #[cfg(target_os = "macos")]
+    unsafe {
+        use objc::{msg_send, sel, sel_impl};
+        use objc::runtime::Object;
+        let ns_window = match window.ns_window() {
+            Ok(w) => w as *mut Object,
+            Err(_) => return,
+        };
+        // 0=close, 1=miniaturize, 2=zoom
+        for i in 0i64..3 {
+            let button: *mut Object = msg_send![ns_window, standardWindowButton: i];
+            if !button.is_null() {
+                let _: () = msg_send![button, setHidden: hidden as i8];
+            }
+        }
+    }
+    #[cfg(not(target_os = "macos"))]
+    let _ = (window, hidden);
+}

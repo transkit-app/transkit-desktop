@@ -14,6 +14,8 @@ mod system_ocr;
 mod tray;
 mod updater;
 mod window;
+mod audio;
+mod audio_cmd;
 
 use backup::*;
 use clipboard::*;
@@ -32,6 +34,7 @@ use tauri::Manager;
 use tauri_plugin_log::LogTarget;
 use tray::*;
 use updater::check_update;
+use audio_cmd::*;
 use window::config_window;
 use window::updater_window;
 
@@ -85,6 +88,12 @@ fn main() {
                 config_window();
             }
             app.manage(StringWrapper(Mutex::new("".to_string())));
+            app.manage(AudioState {
+                microphone: Mutex::new(crate::audio::microphone::MicCapture::new()),
+                #[cfg(target_os = "macos")]
+                system_audio: Mutex::new(crate::audio::system_audio::SystemAudioCapture::new()),
+                stop_flag: Mutex::new(None),
+            });
             // Update Tray Menu
             update_tray(app.app_handle(), "".to_string(), "".to_string());
             // Start http server
@@ -138,6 +147,7 @@ fn main() {
             unset_proxy,
             run_binary,
             open_devtools,
+            set_window_buttons_hidden,
             register_shortcut_by_frontend,
             update_tray,
             updater_window,
@@ -147,7 +157,10 @@ fn main() {
             local,
             install_plugin,
             font_list,
-            aliyun
+            aliyun,
+            get_audio_capabilities,
+            start_audio_capture,
+            stop_audio_capture
         ])
         .on_system_tray_event(tray_event_handler)
         .build(tauri::generate_context!())
