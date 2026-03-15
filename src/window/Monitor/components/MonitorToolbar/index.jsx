@@ -1,11 +1,8 @@
 import { Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from '@nextui-org/react';
-import { MdMic, MdSpeaker, MdPlayArrow, MdStop, MdSubtitles, MdDeleteOutline } from 'react-icons/md';
-import { AiFillCloseCircle } from 'react-icons/ai';
+import { MdMic, MdSpeaker, MdPlayArrow, MdStop, MdSubtitles, MdDeleteOutline, MdVolumeUp, MdVolumeOff } from 'react-icons/md';
 import { HiSwitchHorizontal } from 'react-icons/hi';
-import { appWindow } from '@tauri-apps/api/window';
 import { useTranslation } from 'react-i18next';
 import React from 'react';
-import { osType } from '../../../../utils/env';
 
 const SONIOX_LANGUAGES = [
     { code: 'auto', label: 'Auto' },
@@ -37,6 +34,7 @@ export default function MonitorToolbar({
     audioCapabilities,
     fontSize,
     isSubMode,
+    isTTSEnabled,
     onToggleRun,
     onClear,
     onSetSourceAudio,
@@ -44,6 +42,7 @@ export default function MonitorToolbar({
     onSetTargetLang,
     onFontSizeChange,
     onToggleSubMode,
+    onToggleTTS,
 }) {
     const { t } = useTranslation();
 
@@ -168,6 +167,21 @@ export default function MonitorToolbar({
                 title={isSubMode ? t('monitor.exit_sub_mode') : t('monitor.sub_mode')}
             >
                 <MdSubtitles className='text-[14px]' />
+            </Button>
+
+            {/* TTS toggle */}
+            <Button
+                isIconOnly
+                size='sm'
+                variant={isTTSEnabled ? 'solid' : 'light'}
+                color={isTTSEnabled ? 'secondary' : 'default'}
+                className='h-7 w-7 min-w-0'
+                onPress={onToggleTTS}
+                title={isTTSEnabled ? t('monitor.tts_disable') : t('monitor.tts_enable')}
+            >
+                {isTTSEnabled
+                    ? <MdVolumeUp className='text-[14px]' />
+                    : <MdVolumeOff className='text-[14px] text-default-400' />}
             </Button>
 
             {/* Clear */}

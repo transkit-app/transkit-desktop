@@ -160,7 +160,9 @@ fn main() {
             aliyun,
             get_audio_capabilities,
             start_audio_capture,
-            stop_audio_capture
+            stop_audio_capture,
+            play_audio_bytes,
+            stop_audio_playback
         ])
         .on_system_tray_event(tray_event_handler)
         .build(tauri::generate_context!())

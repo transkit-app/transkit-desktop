@@ -12,6 +12,7 @@ import { osType } from '../../utils/env';
 import MonitorToolbar from './components/MonitorToolbar';
 import MonitorLog from './components/MonitorLog';
 import { SonioxClient } from './soniox';
+import { getTTSQueue } from './tts';
 
 const MAX_ENTRIES = 100;
 const SUB_MODE_HEIGHT = 140;
@@ -43,7 +44,22 @@ export default function Monitor() {
     const [sourceAudio, setSourceAudio] = useConfig('audio_source', 'microphone');
     const [fontSize, setFontSize] = useConfig('monitor_font_size', 14);
 
+    // TTS config
+    const [ttsServerUrl] = useConfig('tts_server_url', 'http://localhost:8001');
+    const [ttsApiType] = useConfig('tts_api_type', 'vieneu_stream');
+    const [ttsVoiceId] = useConfig('tts_voice_id', 'NgocHuyen');
+    const [ttsModel] = useConfig('tts_model', 'pnnbao-ump/VieNeu-TTS-0.3B-q4-gguf');
+    const [ttsPlaybackRate] = useConfig('tts_playback_rate', 1);
+    const [ttsGoogleLang] = useConfig('tts_google_lang', 'vi');
+    const [ttsGoogleSpeed] = useConfig('tts_google_speed', 1);
+    const [ttsEdgeServerUrl] = useConfig('tts_edge_server_url', 'http://localhost:3099');
+    const [ttsEdgeVoice] = useConfig('tts_edge_voice', 'vi-VN-HoaiMyNeural');
+    const [ttsEdgeRate] = useConfig('tts_edge_rate', '+0%');
+    const [ttsEdgePitch] = useConfig('tts_edge_pitch', '+0Hz');
+
     const [isPinned, setIsPinned] = useState(false);
+    const [isTTSEnabled, setIsTTSEnabled] = useState(false);
+    const [ttsPlayingText, setTtsPlayingText] = useState(null);
     const [isRunning, setIsRunning] = useState(false);
     const [isSubMode, setIsSubMode] = useState(false);
     const [status, setStatus] = useState('disconnected');
@@ -54,6 +70,23 @@ export default function Monitor() {
 
     const pendingOriginalRef = useRef(null);
     const unlistenAudioRef = useRef(null);
+
+    // Sync TTS config whenever settings change
+    useEffect(() => {
+        getTTSQueue().updateConfig({
+            serverUrl: ttsServerUrl,
+            apiType: ttsApiType,
+            voiceId: ttsVoiceId,
+            model: ttsModel,
+            baseRate: ttsPlaybackRate,
+            googleLang: ttsGoogleLang,
+            googleSpeed: ttsGoogleSpeed,
+            edgeServerUrl: ttsEdgeServerUrl,
+            edgeVoice: ttsEdgeVoice,
+            edgeRate: ttsEdgeRate,
+            edgePitch: ttsEdgePitch,
+        });
+    }, [ttsServerUrl, ttsApiType, ttsVoiceId, ttsModel, ttsPlaybackRate, ttsGoogleLang, ttsGoogleSpeed, ttsEdgeServerUrl, ttsEdgeVoice, ttsEdgeRate, ttsEdgePitch]);
 
     // Load audio capabilities
     useEffect(() => {
@@ -68,6 +101,14 @@ export default function Monitor() {
             setSourceAudio('microphone');
         }
     }, [audioCapabilities]);
+
+    // Wire up TTS callbacks
+    useEffect(() => {
+        const tts = getTTSQueue();
+        tts.onPlayStart = (text) => setTtsPlayingText(text);
+        tts.onPlayEnd = () => setTtsPlayingText(null);
+        return () => { tts.onPlayStart = null; tts.onPlayEnd = null; };
+    }, []);
 
     // Wire up Soniox callbacks once
     useEffect(() => {
@@ -90,6 +131,8 @@ export default function Monitor() {
                 return next.length > MAX_ENTRIES ? next.slice(-MAX_ENTRIES) : next;
             });
             setProvisional('');
+            // Send translation to TTS queue
+            getTTSQueue().enqueue(text);
         };
 
         client.onProvisional = (text) => {
@@ -159,7 +202,23 @@ export default function Monitor() {
             unlistenAudioRef.current = null;
         }
         setProvisional('');
+        getTTSQueue().stop();
     }, []);
+
+    const toggleTTS = useCallback(() => {
+        const next = !isTTSEnabled;
+        setIsTTSEnabled(next);
+        getTTSQueue().setEnabled(next);
+    }, [isTTSEnabled]);
+
+    const handleReplayEntry = useCallback((text) => {
+        if (!isTTSEnabled) {
+            // Auto-enable TTS on first replay
+            setIsTTSEnabled(true);
+            getTTSQueue().setEnabled(true);
+        }
+        getTTSQueue().replay(text);
+    }, [isTTSEnabled]);
 
     const toggleRun = useCallback(() => {
         isRunning ? stop() : start();
@@ -236,13 +295,15 @@ export default function Monitor() {
                     </div>
                 </div>
 
-                {/* Log — fills full height, pointer-events-none for drag pass-through */}
+                {/* Log — fills full height; pointer-events-none keeps drag on root, icons within use pointer-events-auto */}
                 <div className='pointer-events-none w-full h-full flex flex-col'>
                     <MonitorLog
                         entries={entries}
                         provisional={provisional}
                         fontSize={fontSize ?? 14}
                         isSubMode={true}
+                        playingText={ttsPlayingText}
+                        onReplayEntry={handleReplayEntry}
                     />
                 </div>
             </div>
@@ -304,6 +365,7 @@ export default function Monitor() {
                 audioCapabilities={audioCapabilities}
                 fontSize={fontSize ?? 14}
                 isSubMode={isSubMode}
+                isTTSEnabled={isTTSEnabled}
                 onToggleRun={toggleRun}
                 onClear={handleClear}
                 onSetSourceAudio={setSourceAudio}
@@ -311,6 +373,7 @@ export default function Monitor() {
                 onSetTargetLang={setTargetLang}
                 onFontSizeChange={setFontSize}
                 onToggleSubMode={toggleSubMode}
+                onToggleTTS={toggleTTS}
             />
 
             {/* Error message */}
@@ -326,6 +389,8 @@ export default function Monitor() {
                 provisional={provisional}
                 fontSize={fontSize ?? 14}
                 isSubMode={false}
+                playingText={ttsPlayingText}
+                onReplayEntry={handleReplayEntry}
             />
         </div>
     );

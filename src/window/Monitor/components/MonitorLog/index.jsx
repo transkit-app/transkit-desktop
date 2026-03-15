@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MdMicNone } from 'react-icons/md';
+import { MdMicNone, MdVolumeUp } from 'react-icons/md';
 
 // Consistent color palette per speaker index
 const SPEAKER_COLORS = [
@@ -30,7 +30,7 @@ function getSpeakerColor(speaker) {
     return SPEAKER_COLORS[idx % SPEAKER_COLORS.length];
 }
 
-export default function MonitorLog({ entries, provisional, fontSize = 14, isSubMode = false }) {
+export default function MonitorLog({ entries, provisional, fontSize = 14, isSubMode = false, playingText = null, onReplayEntry }) {
     const { t } = useTranslation();
     const bottomRef = useRef(null);
 
@@ -51,6 +51,7 @@ export default function MonitorLog({ entries, provisional, fontSize = 14, isSubM
                         {visibleEntries.map((entry, idx) => {
                             const speakerLabel = formatSpeaker(entry.speaker);
                             const speakerColor = getSpeakerColor(entry.speaker);
+                            const isThisPlaying = entry.translation && entry.translation === playingText;
                             return (
                                 <div key={idx} className='flex flex-col gap-0.5'>
                                     {/* Original (small, muted) */}
@@ -75,12 +76,25 @@ export default function MonitorLog({ entries, provisional, fontSize = 14, isSubM
                                     </div>
                                     {/* Translation */}
                                     {entry.translation && (
-                                        <p
-                                            className='text-white font-medium leading-snug'
-                                            style={{ fontSize }}
-                                        >
-                                            {entry.translation}
-                                        </p>
+                                        <div className='flex items-center gap-1'>
+                                            <p
+                                                className='text-white font-medium leading-snug'
+                                                style={{ fontSize }}
+                                            >
+                                                {entry.translation}
+                                            </p>
+                                            <button
+                                                className={`pointer-events-auto flex-shrink-0 rounded p-0.5 transition-opacity
+                                                    ${isThisPlaying ? 'opacity-100' : 'opacity-0 hover:opacity-70'}`}
+                                                onClick={() => onReplayEntry?.(entry.translation)}
+                                                title='Replay'
+                                            >
+                                                <MdVolumeUp
+                                                    className={isThisPlaying ? 'text-secondary animate-pulse' : 'text-white/60'}
+                                                    style={{ fontSize: Math.max(12, fontSize - 2) }}
+                                                />
+                                            </button>
+                                        </div>
                                     )}
                                 </div>
                             );
@@ -117,6 +131,7 @@ export default function MonitorLog({ entries, provisional, fontSize = 14, isSubM
                     {entries.map((entry, idx) => {
                         const speakerLabel = formatSpeaker(entry.speaker);
                         const speakerColor = getSpeakerColor(entry.speaker);
+                        const isThisPlaying = entry.translation && entry.translation === playingText;
                         return (
                             <div key={idx} className='flex flex-col gap-0.5'>
                                 {/* Original */}
@@ -142,15 +157,28 @@ export default function MonitorLog({ entries, provisional, fontSize = 14, isSubM
                                 </div>
                                 {/* Translation */}
                                 {entry.translation && (
-                                    <p
-                                        className='text-foreground font-medium leading-relaxed pl-2'
-                                        style={{
-                                            fontSize,
-                                            borderLeft: `2px solid ${speakerColor ?? 'rgba(var(--nextui-primary)/0.4)'}`,
-                                        }}
+                                    <div
+                                        className='flex items-center gap-1.5 pl-2 group/entry'
+                                        style={{ borderLeft: `2px solid ${speakerColor ?? 'rgba(var(--nextui-primary)/0.4)'}` }}
                                     >
-                                        {entry.translation}
-                                    </p>
+                                        <p
+                                            className='text-foreground font-medium leading-relaxed flex-1'
+                                            style={{ fontSize }}
+                                        >
+                                            {entry.translation}
+                                        </p>
+                                        <button
+                                            className={`flex-shrink-0 rounded p-0.5 transition-opacity
+                                                ${isThisPlaying ? 'opacity-100' : 'opacity-0 group-hover/entry:opacity-60 hover:!opacity-100'}`}
+                                            onClick={() => onReplayEntry?.(entry.translation)}
+                                            title='Replay'
+                                        >
+                                            <MdVolumeUp
+                                                className={isThisPlaying ? 'text-secondary animate-pulse' : 'text-default-400'}
+                                                style={{ fontSize: Math.max(12, fontSize) }}
+                                            />
+                                        </button>
+                                    </div>
                                 )}
                             </div>
                         );

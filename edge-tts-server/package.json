@@ -1,0 +1,14 @@
+{
+  "name": "edge-tts-server",
+  "version": "1.0.0",
+  "description": "Local Edge TTS HTTP server for Transkit",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "edge-tts-universal": "*"
+  }
+}

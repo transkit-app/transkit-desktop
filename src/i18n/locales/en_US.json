@@ -172,7 +172,26 @@
                     "api_key_hint": "Get your free API key at",
                     "info_label": "About",
                     "info_desc": "Soniox provides real-time speech-to-text with built-in translation. Supports microphone and system audio (macOS only).",
-                    "saved": "Settings saved"
+                    "saved": "Settings saved",
+                    "tts_title": "Voice Playback (TTS)",
+                    "tts_server_url": "TTS Server URL",
+                    "tts_api_type": "API Type",
+                    "tts_model": "Model",
+                    "tts_voice_id": "Voice ID (optional)",
+                    "tts_voice_id_placeholder": "Leave empty for default voice",
+                    "tts_test": "Test Connection",
+                    "tts_test_ok": "Connected",
+                    "tts_test_fail": "Cannot connect to server",
+                    "tts_hint": "Start the TTS server before enabling playback. VieNeu: run `vieneu-stream` (port 8001). OpenAI-compatible: any server supporting POST /v1/audio/speech. Google: no server needed.",
+                    "tts_google_lang": "Language code (e.g. vi, en, ja)",
+                    "tts_google_speed": "Speed (0.5 – 2.0)",
+                    "tts_playback_rate": "Base Playback Speed",
+                    "tts_playback_rate_hint": "When the queue has backlog, speed increases automatically (×1.5 / ×2.0 / ×2.5 of this base value).",
+                    "tts_edge_server_url": "Edge TTS Server URL",
+                    "tts_edge_server_hint": "Run: cd edge-tts-server && node server.js",
+                    "tts_edge_voice": "Voice",
+                    "tts_edge_rate": "Rate (e.g. +0%, +20%, -10%)",
+                    "tts_edge_pitch": "Pitch (e.g. +0Hz, +5Hz, -5Hz)"
                 },
                 "least": "Please keep at least one",
                 "add_builtin_service": "Add Builtin Service",
@@ -246,7 +265,9 @@
             "font_larger": "Increase font size",
             "font_smaller": "Decrease font size",
             "sub_mode": "Subtitle mode",
-            "exit_sub_mode": "Exit subtitle mode"
+            "exit_sub_mode": "Exit subtitle mode",
+            "tts_enable": "Enable voice playback",
+            "tts_disable": "Disable voice playback"
         },
         "updater": {
             "title": "Check Update",
