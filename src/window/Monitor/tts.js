@@ -14,6 +14,45 @@
  *   google         — GET  translate.google.com TTS    → MP3
  */
 import { fetch as tauriFetch, Body, ResponseType } from '@tauri-apps/api/http';
+import { invoke } from '@tauri-apps/api/tauri';
+import { listen } from '@tauri-apps/api/event';
+
+// ── Edge TTS native streaming ──────────────────────────────────────────────
+// One pair of persistent Tauri event listeners shared across all concurrent
+// synthesis calls. Each call gets a unique `id`; chunks are routed by that id.
+
+let _edgeListenersReady = null;           // Promise<void> — init guard
+const _edgePending = new Map();           // id → { chunks: Uint8Array[], resolve, reject }
+
+async function initEdgeListeners() {
+    if (_edgeListenersReady) return _edgeListenersReady;
+    _edgeListenersReady = Promise.all([
+        listen('edge_tts_chunk', ({ payload }) => {
+            const entry = _edgePending.get(payload.id);
+            if (!entry) return;
+            const bin = atob(payload.data);
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            entry.chunks.push(bytes);
+        }),
+        listen('edge_tts_done', ({ payload }) => {
+            const entry = _edgePending.get(payload.id);
+            if (!entry) return;
+            _edgePending.delete(payload.id);
+            if (payload.error) {
+                entry.reject(new Error(payload.error));
+            } else {
+                // Assemble all MP3 chunks into one ArrayBuffer.
+                const total = entry.chunks.reduce((s, c) => s + c.length, 0);
+                const buf = new Uint8Array(total);
+                let off = 0;
+                for (const c of entry.chunks) { buf.set(c, off); off += c.length; }
+                entry.resolve(buf.buffer);
+            }
+        }),
+    ]).then(() => {});
+    return _edgeListenersReady;
+}
 
 const SILENT_WAV_URI =
     'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
@@ -94,12 +133,54 @@ export class TTSQueue {
     enqueue(text) {
         if (!this.enabled || !text?.trim()) return;
         const trimmed = text.trim();
+
+        // Edge TTS: split into chunks so playback starts on the first chunk
+        // while later chunks are still being fetched (~200ms/chunk latency).
+        if (this.apiType === 'edge_tts') {
+            const chunks = this._splitTextChunks(trimmed);
+            for (const chunk of chunks) {
+                const promise = this._fetchAudio(chunk).catch(err => {
+                    console.error('[TTS] prefetch failed:', String(err));
+                    return null;
+                });
+                // All chunks carry the full sentence text so the MonitorLog
+                // highlight stays alive for the entire sentence duration.
+                this.readyQueue.push({ text: trimmed, promise });
+            }
+            if (!this.isPlaying) this._playNext();
+            return;
+        }
+
         const promise = this._fetchAudio(trimmed).catch(err => {
             console.error('[TTS] prefetch failed:', String(err));
             return null;
         });
         this.readyQueue.push({ text: trimmed, promise });
         if (!this.isPlaying) this._playNext();
+    }
+
+    /**
+     * Split text into small chunks for pipelined TTS playback.
+     * Splits at punctuation boundaries; falls back to fixed-length slices.
+     * maxLen ~40 chars ≈ 5-8 words / one short Vietnamese/Chinese phrase.
+     */
+    _splitTextChunks(text, maxLen = 40) {
+        if (text.length <= maxLen) return [text];
+        const chunks = [];
+        // Split at sentence-ending / clause punctuation
+        const segs = text.split(/(?<=[,，;；!！?？.。、])\s*/);
+        let cur = '';
+        for (const seg of segs) {
+            if (!seg) continue;
+            if (cur && cur.length + seg.length > maxLen) {
+                chunks.push(cur.trim());
+                cur = seg;
+            } else {
+                cur += (cur ? ' ' : '') + seg;
+            }
+        }
+        if (cur.trim()) chunks.push(cur.trim());
+        return chunks.length > 0 ? chunks : [text];
     }
 
     replay(text) {
@@ -173,7 +254,7 @@ export class TTSQueue {
     /** Returns { buffer: ArrayBuffer, mime: string } */
     async _fetchAudio(text) {
         if (this.apiType === 'google') return this._fetchGoogle(text);
-        if (this.apiType === 'edge_tts') return this._fetchEdgeTTS(text);
+        if (this.apiType === 'edge_tts') return this._fetchEdgeTTSNative(text);
 
         const base = this._base();
 
@@ -219,24 +300,38 @@ export class TTSQueue {
         return { buffer: raw.buffer, mime: 'audio/pcm-f32' };
     }
 
-    async _fetchEdgeTTS(text) {
-        // Calls the local edge-tts-server (Node.js) — browser WebSocket can't set
-        // the required Sec-WebSocket-Version header for Microsoft's TTS service.
-        const base = this._edgeBase();
-        const res = await tauriFetch(`${base}/synthesize`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: Body.json({
+    /**
+     * Synthesize text via the built-in Rust Edge TTS client.
+     *
+     * Rust opens a native WebSocket to Microsoft's TTS service (no Node.js
+     * server required), streams MP3 chunks back as `edge_tts_chunk` Tauri
+     * events, and signals completion with `edge_tts_done`.
+     *
+     * Multiple concurrent synthesis calls are multiplexed by `id` so that
+     * text-chunk pipelining works correctly (chunk 2 is fetched while chunk 1
+     * is playing).
+     */
+    async _fetchEdgeTTSNative(text) {
+        await initEdgeListeners();
+
+        const id = (crypto.randomUUID?.() ?? Math.random().toString(36).slice(2) + Date.now().toString(36));
+
+        const buffer = await new Promise((resolve, reject) => {
+            _edgePending.set(id, { chunks: [], resolve, reject });
+            invoke('synthesize_edge_tts', {
+                id,
                 text,
                 voice: this.edgeVoice || 'vi-VN-HoaiMyNeural',
                 rate: this.edgeRate || '+0%',
                 pitch: this.edgePitch || '+0Hz',
-            }),
-            responseType: ResponseType.Binary,
-            timeout: 30,
+            }).catch(err => {
+                // invoke itself failed (e.g. command not found) — reject the pending entry.
+                _edgePending.delete(id);
+                reject(new Error(String(err)));
+            });
         });
-        if (res.status >= 400) throw new Error(`Edge TTS HTTP ${res.status}`);
-        return { buffer: new Uint8Array(res.data).buffer, mime: 'audio/mpeg' };
+
+        return { buffer, mime: 'audio/mpeg' };
     }
 
     async _fetchGoogle(text) {

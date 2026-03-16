@@ -31,6 +31,10 @@ log = "0.4"
 tiny_http = "0.12.0"
 screenshots = "=0.7.2"
 base64 = "0.22"
+tokio-tungstenite = { version = "0.23", features = ["native-tls"] }
+uuid = { version = "1.10", features = ["v4"] }
+futures-util = "0.3"
+sha2 = "0.10"
 cpal = "0.15"
 rodio = { version = "0.17", default-features = false, features = ["wav"] }
 arboard = "3.4"

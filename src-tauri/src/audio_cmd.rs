@@ -204,7 +204,7 @@ pub fn start_audio_capture(
 
     std::thread::spawn(move || {
         let mut buffer: Vec<u8> = Vec::with_capacity(32000); // ~1 sec at 16kHz s16le
-        let batch_interval = std::time::Duration::from_millis(200);
+        let batch_interval = std::time::Duration::from_millis(100);
         let mut last_flush = std::time::Instant::now();
 
         loop {

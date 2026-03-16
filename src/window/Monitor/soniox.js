@@ -38,6 +38,7 @@ export class SonioxClient {
         this.onProvisional = null;    // (text, speaker) => {}
         this.onStatusChange = null;   // (status) => {}
         this.onError = null;          // (error) => {}
+        this.onReconnect = null;      // () => {} — fired when reconnect (not initial connect) succeeds
     }
 
     /**
@@ -78,7 +79,8 @@ export class SonioxClient {
         }
 
         newWs.onopen = () => {
-            console.log('[Soniox] WebSocket OPEN');
+            const wasReconnect = this._reconnectAttempts > 0;
+            console.log('[Soniox] WebSocket OPEN' + (wasReconnect ? ' (reconnect)' : ''));
 
             // Build config message
             const configMsg = {
@@ -88,7 +90,7 @@ export class SonioxClient {
                 sample_rate: 16000,
                 num_channels: 1,
                 enable_endpoint_detection: true,
-                max_endpoint_delay_ms: 500,
+                max_endpoint_delay_ms: 250,
                 enable_speaker_diarization: true,
             };
 
@@ -138,6 +140,11 @@ export class SonioxClient {
             this._reconnectAttempts = 0;
             this._setStatus('connected');
             console.log('[Soniox] Connected and config sent');
+
+            // Notify caller if this was a reconnect (not initial connect or seamless reset)
+            if (wasReconnect) {
+                this.onReconnect?.();
+            }
 
             // Start session timer
             this._startSessionTimer();

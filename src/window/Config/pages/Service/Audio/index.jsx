@@ -8,12 +8,14 @@ import toast, { Toaster } from 'react-hot-toast';
 import { useToastStyle } from '../../../../../hooks';
 import { open } from '@tauri-apps/api/shell';
 import { fetch as tauriFetch } from '@tauri-apps/api/http';
+import { invoke } from '@tauri-apps/api/tauri';
+import { listen } from '@tauri-apps/api/event';
 
 const API_TYPES = [
     { key: 'vieneu_stream', label: 'VieNeu (POST /synthesize)' },
     { key: 'openai_compat', label: 'OpenAI Compatible (POST /v1/audio/speech)' },
     { key: 'google', label: 'Google Translate TTS (free)' },
-    { key: 'edge_tts', label: 'Microsoft Edge TTS (free)' },
+    { key: 'edge_tts', label: 'Microsoft Edge TTS (built-in, free)' },
 ];
 
 const EDGE_VI_VOICES = [
@@ -42,7 +44,6 @@ export default function Audio() {
     const [ttsGoogleLang, setTtsGoogleLang] = useConfig('tts_google_lang', 'vi');
     const [ttsGoogleSpeed, setTtsGoogleSpeed] = useConfig('tts_google_speed', 1);
     const [ttsPlaybackRate, setTtsPlaybackRate] = useConfig('tts_playback_rate', 1);
-    const [ttsEdgeServerUrl, setTtsEdgeServerUrl] = useConfig('tts_edge_server_url', 'http://localhost:3099');
     const [ttsEdgeVoice, setTtsEdgeVoice] = useConfig('tts_edge_voice', 'vi-VN-HoaiMyNeural');
     const [ttsEdgeRate, setTtsEdgeRate] = useConfig('tts_edge_rate', '+0%');
     const [ttsEdgePitch, setTtsEdgePitch] = useConfig('tts_edge_pitch', '+0Hz');
@@ -55,30 +56,50 @@ export default function Audio() {
         setPinging(true);
         setPingStatus(null);
         try {
-            let res;
             if (ttsApiType === 'edge_tts') {
-                const base = (ttsEdgeServerUrl || 'http://localhost:3099').replace(/\/+$/, '');
-                res = await tauriFetch(`${base}/health`, { method: 'GET', timeout: 5 });
+                // Test the built-in Rust Edge TTS client with a short synthesis.
+                const testId = 'ping-' + Math.random().toString(36).slice(2);
+                let gotChunk = false;
+                const unlistenChunk = await listen('edge_tts_chunk', ({ payload }) => {
+                    if (payload.id === testId) gotChunk = true;
+                });
+                await new Promise((resolve, reject) => {
+                    listen('edge_tts_done', ({ payload }) => {
+                        if (payload.id !== testId) return;
+                        if (payload.error) reject(new Error(payload.error));
+                        else resolve();
+                    });
+                    invoke('synthesize_edge_tts', {
+                        id: testId,
+                        text: 'test',
+                        voice: ttsEdgeVoice || 'vi-VN-HoaiMyNeural',
+                        rate: ttsEdgeRate || '+0%',
+                        pitch: ttsEdgePitch || '+0Hz',
+                    }).catch(reject);
+                });
+                unlistenChunk();
+                setPingStatus(gotChunk ? 'ok' : 'fail');
             } else if (ttsApiType === 'google') {
-                res = await tauriFetch(
+                const res = await tauriFetch(
                     `https://translate.google.com/translate_tts?ie=UTF-8&q=test&tl=${ttsGoogleLang || 'vi'}&client=tw-ob`,
                     { method: 'GET', timeout: 5 }
                 );
+                setPingStatus(res.status < 500 ? 'ok' : 'fail');
             } else {
                 const base = (ttsServerUrl ?? 'http://localhost:8001').replace(/\/+$/, '');
                 const endpoint = ttsApiType === 'openai_compat'
                     ? `${base}/v1/models`
                     : `${base}/voices`;
-                res = await tauriFetch(endpoint, { method: 'GET', timeout: 5 });
+                const res = await tauriFetch(endpoint, { method: 'GET', timeout: 5 });
+                setPingStatus(res.status < 500 ? 'ok' : 'fail');
             }
-            setPingStatus(res.status < 500 ? 'ok' : 'fail');
         } catch (e) {
             console.error('[TTS ping]', e);
             setPingStatus('fail');
         } finally {
             setPinging(false);
         }
-    }, [ttsServerUrl, ttsApiType, ttsGoogleLang, ttsEdgeServerUrl, ttsEdgeVoice]);
+    }, [ttsServerUrl, ttsApiType, ttsGoogleLang, ttsEdgeVoice, ttsEdgeRate, ttsEdgePitch]);
 
     return (
         <div className='config-page flex flex-col gap-4 p-1'>
@@ -189,18 +210,16 @@ export default function Audio() {
                         </div>
                     )}
 
-                    {/* Edge TTS options */}
+                    {/* Edge TTS options — built-in, no server needed */}
                     {ttsApiType === 'edge_tts' && (
                         <>
-                            <div className='flex flex-col gap-1'>
-                                <p className='text-xs text-default-500'>{t('config.service.audio.tts_edge_server_url')}</p>
-                                <Input
-                                    size='sm'
-                                    value={ttsEdgeServerUrl ?? 'http://localhost:3099'}
-                                    placeholder='http://localhost:3099'
-                                    onValueChange={setTtsEdgeServerUrl}
-                                />
-                                <p className='text-xs text-default-400'>{t('config.service.audio.tts_edge_server_hint')}</p>
+                            <div className='flex items-center gap-2'>
+                                <Chip size='sm' color='success' variant='flat'>
+                                    {t('config.service.audio.tts_edge_builtin')}
+                                </Chip>
+                                <p className='text-xs text-default-400'>
+                                    {t('config.service.audio.tts_edge_builtin_hint')}
+                                </p>
                             </div>
                             <div className='flex flex-col gap-1'>
                                 <p className='text-xs text-default-500'>{t('config.service.audio.tts_edge_voice')}</p>

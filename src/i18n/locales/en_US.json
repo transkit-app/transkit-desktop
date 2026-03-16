@@ -187,8 +187,8 @@
                     "tts_google_speed": "Speed (0.5 – 2.0)",
                     "tts_playback_rate": "Base Playback Speed",
                     "tts_playback_rate_hint": "When the queue has backlog, speed increases automatically (×1.5 / ×2.0 / ×2.5 of this base value).",
-                    "tts_edge_server_url": "Edge TTS Server URL",
-                    "tts_edge_server_hint": "Run: cd edge-tts-server && node server.js",
+                    "tts_edge_builtin": "Built-in",
+                    "tts_edge_builtin_hint": "No server required — runs directly inside Transkit",
                     "tts_edge_voice": "Voice",
                     "tts_edge_rate": "Rate (e.g. +0%, +20%, -10%)",
                     "tts_edge_pitch": "Pitch (e.g. +0Hz, +5Hz, -5Hz)"
@@ -257,6 +257,7 @@
             "pin": "Pin window",
             "unpin": "Unpin window",
             "placeholder": "Press Start to begin listening...",
+            "listening": "Listening...",
             "no_api_key": "Please set your Soniox API key in Settings > Service > Audio",
             "status_connecting": "Connecting...",
             "status_connected": "Listening",
@@ -267,7 +268,16 @@
             "sub_mode": "Subtitle mode",
             "exit_sub_mode": "Exit subtitle mode",
             "tts_enable": "Enable voice playback",
-            "tts_disable": "Disable voice playback"
+            "tts_disable": "Disable voice playback",
+            "context_panel": "Context",
+            "ctx_domain_placeholder": "Topic context (e.g. Web3 conference, medical talk...)",
+            "ctx_terms_placeholder": "Key terms, comma-separated (e.g. TransKit, Soniox, API)",
+            "ctx_preset_meeting": "Meeting",
+            "ctx_preset_movie_cn": "Movie CN",
+            "ctx_preset_movie_en": "Movie EN",
+            "ctx_preset_tech": "Tech",
+            "ctx_preset_medical": "Medical",
+            "ctx_preset_sport": "Sport"
         },
         "updater": {
             "title": "Check Update",

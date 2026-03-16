@@ -30,7 +30,7 @@ function getSpeakerColor(speaker) {
     return SPEAKER_COLORS[idx % SPEAKER_COLORS.length];
 }
 
-export default function MonitorLog({ entries, provisional, fontSize = 14, isSubMode = false, playingText = null, onReplayEntry }) {
+export default function MonitorLog({ entries, provisional, fontSize = 14, isSubMode = false, playingText = null, onReplayEntry, status = 'disconnected' }) {
     const { t } = useTranslation();
     const bottomRef = useRef(null);
 
@@ -122,10 +122,36 @@ export default function MonitorLog({ entries, provisional, fontSize = 14, isSubM
     return (
         <div className='flex-1 overflow-y-auto px-3 py-2 space-y-2 min-h-0'>
             {isEmpty ? (
-                <div className='flex flex-col items-center justify-center h-full text-default-300 gap-2 select-none'>
-                    <MdMicNone className='text-[40px]' />
-                    <p className='text-xs'>{t('monitor.placeholder')}</p>
-                </div>
+                status === 'connected' ? (
+                    <>
+                        <style>{`
+                            @keyframes wave-bar {
+                                0%, 100% { height: 5px; opacity: 0.35; }
+                                50% { height: 20px; opacity: 0.85; }
+                            }
+                        `}</style>
+                        <div className='flex flex-col items-center justify-center h-full gap-3 select-none'>
+                            <div className='flex items-end gap-1' style={{ height: '24px' }}>
+                                {[0, 1, 2, 3, 4].map(i => (
+                                    <div
+                                        key={i}
+                                        className='w-1.5 rounded-full bg-primary'
+                                        style={{
+                                            animation: 'wave-bar 1.2s ease-in-out infinite',
+                                            animationDelay: `${i * 0.15}s`,
+                                        }}
+                                    />
+                                ))}
+                            </div>
+                            <p className='text-xs text-default-400'>{t('monitor.listening')}</p>
+                        </div>
+                    </>
+                ) : (
+                    <div className='flex flex-col items-center justify-center h-full text-default-300 gap-2 select-none'>
+                        <MdMicNone className='text-[40px]' />
+                        <p className='text-xs'>{t('monitor.placeholder')}</p>
+                    </div>
+                )
             ) : (
                 <>
                     {entries.map((entry, idx) => {

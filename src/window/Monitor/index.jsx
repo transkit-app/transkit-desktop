@@ -17,7 +17,17 @@ import { getTTSQueue } from './tts';
 const MAX_ENTRIES = 100;
 const SUB_MODE_HEIGHT = 140;
 const NORMAL_HEIGHT = 360;
+const CONTEXT_PANEL_HEIGHT = 110;
 const WINDOW_WIDTH = 520;
+
+const CONTEXT_PRESETS = [
+    { key: 'meeting',  domain: 'Business meeting, conference call, workplace discussion' },
+    { key: 'movie_cn', domain: 'Chinese drama or movie, casual conversational Mandarin' },
+    { key: 'movie_en', domain: 'English action or drama movie dialogue' },
+    { key: 'tech',     domain: 'Software engineering and technology conference talk' },
+    { key: 'medical',  domain: 'Medical and healthcare discussion' },
+    { key: 'sport',    domain: 'Sports commentary and game analysis' },
+];
 
 function StatusDot({ status }) {
     const colors = {
@@ -56,6 +66,11 @@ export default function Monitor() {
     const [ttsEdgeVoice] = useConfig('tts_edge_voice', 'vi-VN-HoaiMyNeural');
     const [ttsEdgeRate] = useConfig('tts_edge_rate', '+0%');
     const [ttsEdgePitch] = useConfig('tts_edge_pitch', '+0Hz');
+
+    // Context panel config (persisted)
+    const [contextDomain, setContextDomain] = useConfig('monitor_context_domain', '');
+    const [contextTerms, setContextTerms] = useConfig('monitor_context_terms', '');
+    const [showContextPanel, setShowContextPanel] = useState(false);
 
     const [isPinned, setIsPinned] = useState(false);
     const [isTTSEnabled, setIsTTSEnabled] = useState(false);
@@ -147,6 +162,9 @@ export default function Monitor() {
         };
     }, []);
 
+    const sourceAudioRef = useRef(sourceAudio);
+    useEffect(() => { sourceAudioRef.current = sourceAudio; }, [sourceAudio]);
+
     const addAudioChunkListener = useCallback(async () => {
         if (unlistenAudioRef.current) {
             unlistenAudioRef.current();
@@ -162,6 +180,20 @@ export default function Monitor() {
         unlistenAudioRef.current = unlisten;
     }, []);
 
+    // Wire onReconnect — restart audio capture after Soniox auto-reconnects
+    useEffect(() => {
+        const client = getSonioxClient();
+        client.onReconnect = async () => {
+            console.log('[Monitor] Soniox reconnected — restarting audio capture');
+            await addAudioChunkListener();
+            try {
+                await invoke('start_audio_capture', { source: sourceAudioRef.current });
+            } catch (err) {
+                setErrorMsg(String(err));
+            }
+        };
+    }, [addAudioChunkListener]);
+
     const start = useCallback(async () => {
         if (!apiKey) {
             setErrorMsg(t('monitor.no_api_key'));
@@ -171,11 +203,18 @@ export default function Monitor() {
         setIsRunning(true);
         setProvisional('');
 
+        const terms = contextTerms?.trim()
+            ? contextTerms.split(',').map(s => s.trim()).filter(Boolean)
+            : [];
+        const customContext = (contextDomain?.trim() || terms.length > 0)
+            ? { domain: contextDomain?.trim() || '', terms }
+            : null;
+
         client.connect({
             apiKey,
             sourceLanguage: sourceLang === 'auto' ? null : sourceLang,
             targetLanguage: targetLang,
-            customContext: null,
+            customContext,
         });
 
         await addAudioChunkListener();
@@ -191,7 +230,7 @@ export default function Monitor() {
                 unlistenAudioRef.current = null;
             }
         }
-    }, [apiKey, sourceLang, targetLang, sourceAudio, addAudioChunkListener, t]);
+    }, [apiKey, sourceLang, targetLang, sourceAudio, contextDomain, contextTerms, addAudioChunkListener, t]);
 
     const stop = useCallback(async () => {
         setIsRunning(false);
@@ -229,6 +268,15 @@ export default function Monitor() {
         setIsPinned(next);
         appWindow.setAlwaysOnTop(next);
     }, [isPinned]);
+
+    const toggleContextPanel = useCallback(async () => {
+        const next = !showContextPanel;
+        setShowContextPanel(next);
+        if (!isSubMode) {
+            const newH = next ? NORMAL_HEIGHT + CONTEXT_PANEL_HEIGHT : NORMAL_HEIGHT;
+            try { await appWindow.setSize(new LogicalSize(WINDOW_WIDTH, newH)); } catch (_) {}
+        }
+    }, [showContextPanel, isSubMode]);
 
     const handleClear = useCallback(() => {
         setEntries([]);
@@ -366,6 +414,7 @@ export default function Monitor() {
                 fontSize={fontSize ?? 14}
                 isSubMode={isSubMode}
                 isTTSEnabled={isTTSEnabled}
+                showContextPanel={showContextPanel}
                 onToggleRun={toggleRun}
                 onClear={handleClear}
                 onSetSourceAudio={setSourceAudio}
@@ -374,7 +423,44 @@ export default function Monitor() {
                 onFontSizeChange={setFontSize}
                 onToggleSubMode={toggleSubMode}
                 onToggleTTS={toggleTTS}
+                onToggleContextPanel={toggleContextPanel}
             />
+
+            {/* Context panel */}
+            {showContextPanel && (
+                <div className='mx-2 mb-1 p-2 bg-content2 rounded-lg border border-content3/30 flex-shrink-0'>
+                    {/* Preset topic buttons */}
+                    <div className='flex flex-wrap gap-1 mb-1.5'>
+                        {CONTEXT_PRESETS.map(preset => (
+                            <button
+                                key={preset.key}
+                                onClick={() => setContextDomain(preset.domain)}
+                                className={`px-2 py-0.5 text-[11px] rounded-md border transition-colors ${
+                                    contextDomain === preset.domain
+                                        ? 'bg-secondary/20 border-secondary/40 text-secondary'
+                                        : 'bg-content3/50 border-content3/50 text-default-500 hover:text-default-foreground'
+                                }`}
+                            >
+                                {t(`monitor.ctx_preset_${preset.key}`)}
+                            </button>
+                        ))}
+                    </div>
+                    {/* Domain input */}
+                    <input
+                        value={contextDomain ?? ''}
+                        onChange={e => setContextDomain(e.target.value)}
+                        placeholder={t('monitor.ctx_domain_placeholder')}
+                        className='w-full bg-content1 text-xs rounded-md px-2 py-1 border border-content3/50 text-default-foreground placeholder:text-default-400 outline-none focus:border-secondary/50 mb-1'
+                    />
+                    {/* Terms input */}
+                    <input
+                        value={contextTerms ?? ''}
+                        onChange={e => setContextTerms(e.target.value)}
+                        placeholder={t('monitor.ctx_terms_placeholder')}
+                        className='w-full bg-content1 text-xs rounded-md px-2 py-1 border border-content3/50 text-default-foreground placeholder:text-default-400 outline-none focus:border-secondary/50'
+                    />
+                </div>
+            )}
 
             {/* Error message */}
             {errorMsg && (
@@ -391,6 +477,7 @@ export default function Monitor() {
                 isSubMode={false}
                 playingText={ttsPlayingText}
                 onReplayEntry={handleReplayEntry}
+                status={status}
             />
         </div>
     );

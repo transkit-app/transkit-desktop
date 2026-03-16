@@ -1,5 +1,5 @@
 import { Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from '@nextui-org/react';
-import { MdMic, MdSpeaker, MdPlayArrow, MdStop, MdSubtitles, MdDeleteOutline, MdVolumeUp, MdVolumeOff } from 'react-icons/md';
+import { MdMic, MdSpeaker, MdPlayArrow, MdStop, MdSubtitles, MdDeleteOutline, MdVolumeUp, MdVolumeOff, MdTune } from 'react-icons/md';
 import { HiSwitchHorizontal } from 'react-icons/hi';
 import { useTranslation } from 'react-i18next';
 import React from 'react';
@@ -35,6 +35,7 @@ export default function MonitorToolbar({
     fontSize,
     isSubMode,
     isTTSEnabled,
+    showContextPanel,
     onToggleRun,
     onClear,
     onSetSourceAudio,
@@ -43,6 +44,7 @@ export default function MonitorToolbar({
     onFontSizeChange,
     onToggleSubMode,
     onToggleTTS,
+    onToggleContextPanel,
 }) {
     const { t } = useTranslation();
 
@@ -182,6 +184,19 @@ export default function MonitorToolbar({
                 {isTTSEnabled
                     ? <MdVolumeUp className='text-[14px]' />
                     : <MdVolumeOff className='text-[14px] text-default-400' />}
+            </Button>
+
+            {/* Context panel toggle */}
+            <Button
+                isIconOnly
+                size='sm'
+                variant={showContextPanel ? 'solid' : 'light'}
+                color={showContextPanel ? 'secondary' : 'default'}
+                className='h-7 w-7 min-w-0'
+                onPress={onToggleContextPanel}
+                title={t('monitor.context_panel')}
+            >
+                <MdTune className='text-[14px]' />
             </Button>
 
             {/* Clear */}

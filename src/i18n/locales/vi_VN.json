@@ -187,8 +187,8 @@
                     "tts_google_speed": "Tốc độ (0.5 – 2.0)",
                     "tts_playback_rate": "Tốc độ phát mặc định",
                     "tts_playback_rate_hint": "Khi có hàng chờ, tốc độ tự tăng theo (×1.5 / ×2.0 / ×2.5 so với giá trị này).",
-                    "tts_edge_server_url": "URL Server Edge TTS",
-                    "tts_edge_server_hint": "Chạy: cd edge-tts-server && node server.js",
+                    "tts_edge_builtin": "Tích hợp sẵn",
+                    "tts_edge_builtin_hint": "Không cần server riêng — chạy trực tiếp trong Transkit",
                     "tts_edge_voice": "Giọng đọc",
                     "tts_edge_rate": "Tốc độ đọc (vd: +0%, +20%, -10%)",
                     "tts_edge_pitch": "Cao độ giọng (vd: +0Hz, +5Hz, -5Hz)"
@@ -257,6 +257,7 @@
             "pin": "Ghim cửa sổ",
             "unpin": "Bỏ ghim cửa sổ",
             "placeholder": "Nhấn Bắt đầu để bắt đầu nghe...",
+            "listening": "Đang nghe...",
             "no_api_key": "Vui lòng đặt Soniox API key trong Cài đặt > Dịch vụ > Âm thanh",
             "status_connecting": "Đang kết nối...",
             "status_connected": "Đang nghe",
@@ -267,7 +268,16 @@
             "sub_mode": "Chế độ phụ đề",
             "exit_sub_mode": "Thoát chế độ phụ đề",
             "tts_enable": "Bật đọc bản dịch",
-            "tts_disable": "Tắt đọc bản dịch"
+            "tts_disable": "Tắt đọc bản dịch",
+            "context_panel": "Ngữ cảnh",
+            "ctx_domain_placeholder": "Mô tả chủ đề (VD: hội nghị Web3, y khoa...)",
+            "ctx_terms_placeholder": "Thuật ngữ, cách nhau bằng dấu phẩy (VD: TransKit, Soniox, API)",
+            "ctx_preset_meeting": "Họp",
+            "ctx_preset_movie_cn": "Phim CN",
+            "ctx_preset_movie_en": "Phim EN",
+            "ctx_preset_tech": "Công nghệ",
+            "ctx_preset_medical": "Y khoa",
+            "ctx_preset_sport": "Thể thao"
         },
         "updater": {
             "title": "Kiểm tra cập nhật",

@@ -16,6 +16,7 @@ mod updater;
 mod window;
 mod audio;
 mod audio_cmd;
+mod edge_tts;
 
 use backup::*;
 use clipboard::*;
@@ -35,6 +36,7 @@ use tauri_plugin_log::LogTarget;
 use tray::*;
 use updater::check_update;
 use audio_cmd::*;
+use edge_tts::synthesize_edge_tts;
 use window::config_window;
 use window::updater_window;
 
@@ -162,7 +164,8 @@ fn main() {
             start_audio_capture,
             stop_audio_capture,
             play_audio_bytes,
-            stop_audio_playback
+            stop_audio_playback,
+            synthesize_edge_tts
         ])
         .on_system_tray_event(tray_event_handler)
         .build(tauri::generate_context!())
