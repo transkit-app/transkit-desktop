@@ -107,12 +107,31 @@
             "csp": "default-src * data: ; img-src * 'self' asset: https: data: ; style-src * 'unsafe-inline'; worker-src 'self' blob: ; script-src * 'unsafe-eval';",
             "devCsp": "default-src * data: ; img-src * 'self' asset: https: data: ; style-src * 'unsafe-inline'; worker-src 'self' blob: ; script-src * 'unsafe-eval';"
         },
+        "macOSPrivateApi": true,
         "windows": [
             {
                 "title": "Daemon",
                 "label": "daemon",
+                "decorations": false,
+                "transparent": true,
                 "visible": false,
                 "url": "daemon.html",
+                "additionalBrowserArgs": "--disable-web-security"
+            },
+            {
+                "title": "Audio Monitor",
+                "label": "monitor",
+                "url": "index.html",
+                "transparent": true,
+                "decorations": false,
+                "alwaysOnTop": true,
+                "skipTaskbar": true,
+                "width": 720,
+                "height": 400,
+                "minWidth": 400,
+                "minHeight": 60,
+                "visible": false,
+                "focus": false,
                 "additionalBrowserArgs": "--disable-web-security"
             }
         ],

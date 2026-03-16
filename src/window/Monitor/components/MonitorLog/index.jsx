@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MdMicNone, MdVolumeUp } from 'react-icons/md';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Consistent color palette per speaker index
 const SPEAKER_COLORS = [
@@ -15,7 +16,6 @@ const SPEAKER_COLORS = [
 ];
 
 // Convert Soniox speaker codes to "Speaker N"
-// Soniox may return "S1"/"S2" or raw "1"/"2"
 function formatSpeaker(speaker) {
     if (!speaker) return null;
     const m = speaker.match(/^S?(\d+)$/);
@@ -40,68 +40,69 @@ export default function MonitorLog({ entries, provisional, fontSize = 14, isSubM
 
     // ── Sub mode: transparent overlay, shows recent entries from bottom ──
     if (isSubMode) {
-        // Show enough entries to fill window; overflow-hidden clips the rest at top
-        const visibleEntries = entries.slice(-6);
-        const hasContent = visibleEntries.length > 0 || provisional;
+        // Show only the 2 most recent completed translations
+        const visibleEntries = entries.slice(-2);
 
         return (
-            <div className='flex-1 flex flex-col justify-end min-h-0 overflow-hidden'>
-                {hasContent && (
-                    <div className='px-2 py-1.5 flex flex-col gap-1'>
-                        {visibleEntries.map((entry, idx) => {
-                            const speakerLabel = formatSpeaker(entry.speaker);
-                            const speakerColor = getSpeakerColor(entry.speaker);
-                            const isThisPlaying = entry.translation && entry.translation === playingText;
-                            return (
-                                <div key={idx} className='flex flex-col gap-0.5'>
-                                    {/* Original (small, muted) — speaker always hidden in sub mode */}
-                                    {showOriginal && (
-                                        <div className='flex items-center gap-1.5'>
-                                            <p
-                                                className='text-white/50 leading-snug'
-                                                style={{ fontSize: Math.max(10, fontSize - 2) }}
-                                            >
-                                                {entry.original}
-                                            </p>
-                                        </div>
-                                    )}
-                                    {/* Translation */}
-                                    {entry.translation && (
-                                        <div className='flex items-center gap-1'>
-                                            <p
-                                                className='text-white font-medium leading-snug'
-                                                style={{ fontSize }}
-                                            >
-                                                {entry.translation}
-                                            </p>
+            <div className='flex-1 flex flex-col justify-end min-h-0 overflow-hidden pb-1.5'>
+                <AnimatePresence initial={false} mode='popLayout'>
+                    {visibleEntries.map((entry, i) => {
+                        const isLatest = i === visibleEntries.length - 1;
+                        const isThisPlaying = entry.translation && entry.translation === playingText;
+                        return (
+                            <motion.div
+                                key={entry.id}
+                                layout
+                                initial={{ opacity: 0, y: 16, filter: 'blur(6px)' }}
+                                animate={{
+                                    opacity: isLatest ? 1 : 0.45,
+                                    y: 0,
+                                    filter: 'blur(0px)',
+                                    scale: isLatest ? 1 : 0.96,
+                                }}
+                                exit={{ opacity: 0, y: -8, filter: 'blur(4px)', transition: { duration: 0.2 } }}
+                                transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+                                className='flex flex-col items-center gap-0.5 px-4'
+                            >
+                                {/* Original (small, muted, centered) */}
+                                {showOriginal && entry.original && (
+                                    <p
+                                        className='text-white/40 text-center leading-snug w-full'
+                                        style={{ fontSize: Math.max(8, fontSize - 4) }}
+                                    >
+                                        {entry.original}
+                                    </p>
+                                )}
+                                {/* Translation — centered, large */}
+                                {entry.translation && (
+                                    <div className='flex items-center justify-center gap-2 w-full'>
+                                        <p
+                                            className='text-white font-semibold text-center leading-tight'
+                                            style={{
+                                                fontSize,
+                                                textShadow: '0 2px 8px rgba(0,0,0,0.8), 0 1px 2px rgba(0,0,0,0.9)',
+                                            }}
+                                        >
+                                            {entry.translation}
+                                        </p>
+                                        {isThisPlaying && (
                                             <button
-                                                className={`pointer-events-auto flex-shrink-0 rounded p-0.5 transition-opacity
-                                                    ${isThisPlaying ? 'opacity-100' : 'opacity-0 hover:opacity-70'}`}
+                                                className='pointer-events-auto flex-shrink-0'
                                                 onClick={() => onReplayEntry?.(entry.translation)}
-                                                title='Replay'
                                             >
                                                 <MdVolumeUp
-                                                    className={isThisPlaying ? 'text-secondary animate-pulse' : 'text-white/60'}
-                                                    style={{ fontSize: Math.max(12, fontSize - 2) }}
+                                                    className='text-secondary animate-pulse'
+                                                    style={{ fontSize: Math.max(14, fontSize * 0.4) }}
                                                 />
                                             </button>
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
-
-                        {/* Provisional */}
-                        {provisional && (
-                            <p
-                                className='text-white/70 italic leading-snug'
-                                style={{ fontSize }}
-                            >
-                                {provisional}
-                            </p>
-                        )}
-                    </div>
-                )}
+                                        )}
+                                    </div>
+                                )}
+                            </motion.div>
+                        );
+                    })}
+                </AnimatePresence>
+                {/* Provisional hidden in submode — only show final translations */}
                 <div ref={bottomRef} />
             </div>
         );
@@ -145,12 +146,12 @@ export default function MonitorLog({ entries, provisional, fontSize = 14, isSubM
                 )
             ) : (
                 <>
-                    {entries.map((entry, idx) => {
+                    {entries.map((entry) => {
                         const speakerLabel = formatSpeaker(entry.speaker);
                         const speakerColor = getSpeakerColor(entry.speaker);
                         const isThisPlaying = entry.translation && entry.translation === playingText;
                         return (
-                            <div key={idx} className='flex flex-col gap-0.5'>
+                            <div key={entry.id} className='flex flex-col gap-0.5'>
                                 {/* Original */}
                                 {showOriginal && (
                                     <div className='flex items-start gap-1.5'>
@@ -158,7 +159,7 @@ export default function MonitorLog({ entries, provisional, fontSize = 14, isSubM
                                             <span
                                                 className='font-semibold rounded px-1.5 py-0.5 flex-shrink-0 whitespace-nowrap'
                                                 style={{
-                                                    fontSize: Math.max(10, fontSize - 3),
+                                                    fontSize: Math.max(8, fontSize - 3),
                                                     color: speakerColor,
                                                     backgroundColor: speakerColor ? `${speakerColor}22` : undefined,
                                                 }}
@@ -184,7 +185,7 @@ export default function MonitorLog({ entries, provisional, fontSize = 14, isSubM
                                             <span
                                                 className='font-semibold rounded px-1.5 py-0.5 flex-shrink-0 whitespace-nowrap'
                                                 style={{
-                                                    fontSize: Math.max(10, fontSize - 3),
+                                                    fontSize: Math.max(8, fontSize - 3),
                                                     color: speakerColor,
                                                     backgroundColor: speakerColor ? `${speakerColor}22` : undefined,
                                                 }}

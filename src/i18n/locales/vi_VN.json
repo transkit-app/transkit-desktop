@@ -286,7 +286,10 @@
             "ctx_preset_medical": "Y khoa",
             "ctx_preset_sport": "Thể thao",
             "show_original": "Hiện văn bản gốc",
-            "hide_original": "Ẩn văn bản gốc"
+            "hide_original": "Ẩn văn bản gốc",
+            "transparent_on": "Bật nền trong suốt",
+            "transparent_off": "Tắt nền trong suốt",
+            "opacity": "Độ mờ"
         },
         "updater": {
             "title": "Kiểm tra cập nhật",

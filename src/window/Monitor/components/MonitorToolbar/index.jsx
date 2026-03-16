@@ -1,5 +1,5 @@
 import { Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from '@nextui-org/react';
-import { MdMic, MdSpeaker, MdPlayArrow, MdStop, MdSubtitles, MdDeleteOutline, MdVolumeUp, MdVolumeOff, MdTune, MdTextFields } from 'react-icons/md';
+import { MdMic, MdSpeaker, MdPlayArrow, MdStop, MdSubtitles, MdDeleteOutline, MdVolumeUp, MdVolumeOff, MdTune, MdTextFields, MdBlurOn } from 'react-icons/md';
 import { HiSwitchHorizontal } from 'react-icons/hi';
 import { useTranslation } from 'react-i18next';
 import React from 'react';
@@ -23,8 +23,11 @@ const SONIOX_LANGUAGES = [
 
 const TARGET_LANGUAGES = SONIOX_LANGUAGES.filter(l => l.code !== 'auto');
 
-const FONT_MIN = 10;
-const FONT_MAX = 24;
+// Font size step — A-/A+ buttons change by this amount
+const FONT_STEP = 2;
+// Practical limits (no hard cap; just prevents accidental extremes)
+const FONT_MIN = 6;
+const FONT_MAX = 72;
 
 export default function MonitorToolbar({
     isRunning,
@@ -37,8 +40,10 @@ export default function MonitorToolbar({
     isTTSEnabled,
     showContextPanel,
     showOriginal,
+    bgOpacity,
     onToggleRun,
     onToggleOriginal,
+    onSetBgOpacity,
     onClear,
     onSetSourceAudio,
     onSetSourceLang,
@@ -49,6 +54,8 @@ export default function MonitorToolbar({
     onToggleContextPanel,
 }) {
     const { t } = useTranslation();
+    const opacity = bgOpacity ?? 100;
+    const isTransparent = opacity < 100;
 
     return (
         <div className='flex items-center gap-1 px-2 py-1 border-b border-content3/50 flex-wrap'>
@@ -129,7 +136,7 @@ export default function MonitorToolbar({
                     className='h-7 w-7 min-w-0'
                     isDisabled={fontSize <= FONT_MIN}
                     title={t('monitor.font_smaller')}
-                    onPress={() => onFontSizeChange(Math.max(FONT_MIN, fontSize - 2))}
+                    onPress={() => onFontSizeChange(Math.max(FONT_MIN, fontSize - FONT_STEP))}
                 >
                     <span className='text-[11px] font-bold leading-none'>A-</span>
                 </Button>
@@ -141,7 +148,7 @@ export default function MonitorToolbar({
                     className='h-7 w-7 min-w-0'
                     isDisabled={fontSize >= FONT_MAX}
                     title={t('monitor.font_larger')}
-                    onPress={() => onFontSizeChange(Math.min(FONT_MAX, fontSize + 2))}
+                    onPress={() => onFontSizeChange(Math.min(FONT_MAX, fontSize + FONT_STEP))}
                 >
                     <span className='text-[13px] font-bold leading-none'>A+</span>
                 </Button>
@@ -214,6 +221,34 @@ export default function MonitorToolbar({
                 <MdTextFields className={`text-[14px] ${showOriginal ? '' : 'text-default-400'}`} />
             </Button>
 
+            {/* Transparent background: icon toggle + inline opacity slider */}
+            <div className='flex items-center gap-1'>
+                <Button
+                    isIconOnly
+                    size='sm'
+                    variant={isTransparent ? 'solid' : 'light'}
+                    color={isTransparent ? 'secondary' : 'default'}
+                    className='h-7 w-7 min-w-0'
+                    onPress={() => onSetBgOpacity(isTransparent ? 100 : 70)}
+                    title={isTransparent ? t('monitor.transparent_off') : t('monitor.transparent_on')}
+                >
+                    <MdBlurOn className={`text-[14px] ${isTransparent ? '' : 'text-default-400'}`} />
+                </Button>
+                {isTransparent && (
+                    <input
+                        type='range'
+                        min={10}
+                        max={95}
+                        step={5}
+                        value={opacity}
+                        onChange={e => onSetBgOpacity(Number(e.target.value))}
+                        title={`${t('monitor.opacity')}: ${opacity}%`}
+                        className='w-16 h-1 accent-secondary cursor-pointer'
+                        style={{ accentColor: 'hsl(var(--nextui-secondary))' }}
+                    />
+                )}
+            </div>
+
             {/* Clear */}
             <Button
                 isIconOnly
@@ -225,7 +260,6 @@ export default function MonitorToolbar({
             >
                 <MdDeleteOutline className='text-[14px] text-default-400' />
             </Button>
-
         </div>
     );
 }

@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@nextui-org/react';
 import { BsPinFill } from 'react-icons/bs';
 import { AiFillCloseCircle } from 'react-icons/ai';
-import { MdOpenInFull } from 'react-icons/md';
+import { MdOpenInFull, MdBlurOn, MdVolumeUp, MdVolumeOff } from 'react-icons/md';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useConfig } from '../../hooks';
 import { osType } from '../../utils/env';
@@ -15,10 +15,12 @@ import { SonioxClient } from './soniox';
 import { getTTSQueue } from './tts';
 
 const MAX_ENTRIES = 100;
-const SUB_MODE_HEIGHT = 140;
-const NORMAL_HEIGHT = 360;
+const SUB_MODE_HEIGHT = 190;   // fits 2 lines at ~44px + hover bar + padding
+const NORMAL_HEIGHT = 400;
 const CONTEXT_PANEL_HEIGHT = 110;
-const WINDOW_WIDTH = 520;
+const WINDOW_WIDTH = 720;
+const SUB_FONT_MIN = 6;
+const SUB_FONT_MAX = 72;
 
 const CONTEXT_PRESETS = [
     { key: 'meeting',  domain: 'Business meeting, conference call, workplace discussion' },
@@ -79,6 +81,14 @@ export default function Monitor() {
     // Show/hide original source text (separate defaults for each mode)
     const [showOriginal, setShowOriginal] = useConfig('monitor_show_original', true);
     const [showOriginalSub, setShowOriginalSub] = useConfig('monitor_sub_show_original', false);
+
+    // Background opacity: 100 = fully opaque, lower = transparent + blur
+    const [bgOpacity, setBgOpacity] = useConfig('monitor_bg_opacity', 100);
+    // Separate font size for submode (default 44 — large enough to read from distance)
+    const [subFontSize, setSubFontSize] = useConfig('monitor_sub_font_size', 44);
+    // Remember last submode window size so the user's adjustments persist
+    const [subWidth, setSubWidth] = useConfig('monitor_sub_width', WINDOW_WIDTH);
+    const [subHeight, setSubHeight] = useConfig('monitor_sub_height', SUB_MODE_HEIGHT);
     const [showContextPanel, setShowContextPanel] = useState(false);
 
     const [isPinned, setIsPinned] = useState(false);
@@ -147,6 +157,7 @@ export default function Monitor() {
             pendingOriginalRef.current = null;
             setEntries(prev => {
                 const entry = {
+                    id: `${Date.now()}-${Math.random()}`,
                     original: pending?.text ?? '',
                     translation: text,
                     speaker: pending?.speaker ?? null,
@@ -305,6 +316,10 @@ export default function Monitor() {
     const toggleOriginal = useCallback(() => setShowOriginal(!(showOriginal ?? true)), [showOriginal, setShowOriginal]);
     const toggleOriginalSub = useCallback(() => setShowOriginalSub(!(showOriginalSub ?? false)), [showOriginalSub, setShowOriginalSub]);
 
+    // Also persist submode position so it opens where the user last placed it
+    const [subX, setSubX] = useConfig('monitor_sub_x', null);
+    const [subY, setSubY] = useConfig('monitor_sub_y', null);
+
     // ── Sub mode: resize window + hide/show native traffic lights ──
     const toggleSubMode = useCallback(async () => {
         const entering = !isSubMode;
@@ -312,55 +327,122 @@ export default function Monitor() {
         try {
             if (entering) {
                 await invoke('set_window_buttons_hidden', { hidden: true });
-                await appWindow.setSize(new LogicalSize(WINDOW_WIDTH, SUB_MODE_HEIGHT));
+                await appWindow.setSize(new LogicalSize(subWidth ?? WINDOW_WIDTH, subHeight ?? SUB_MODE_HEIGHT));
+                if (subX != null && subY != null) {
+                    const { LogicalPosition } = await import('@tauri-apps/api/window');
+                    await appWindow.setPosition(new LogicalPosition(subX, subY));
+                }
                 await appWindow.setAlwaysOnTop(true);
             } else {
+                // Snapshot submode geometry NOW (before any resize) — this is the
+                // only reliable moment to capture what the user last set.
+                try {
+                    const scale = await appWindow.scaleFactor();
+                    const physical = await appWindow.innerSize();
+                    const pos = await appWindow.outerPosition();
+                    setSubWidth(Math.round(physical.width / scale));
+                    setSubHeight(Math.round(physical.height / scale));
+                    setSubX(Math.round(pos.x / scale));
+                    setSubY(Math.round(pos.y / scale));
+                } catch (_) {}
+                // Then restore main window to its fixed default
                 await appWindow.setSize(new LogicalSize(WINDOW_WIDTH, NORMAL_HEIGHT));
+                await appWindow.center();
                 await appWindow.setAlwaysOnTop(isPinned);
                 await invoke('set_window_buttons_hidden', { hidden: false });
             }
         } catch (e) {
             console.error('Failed to toggle sub mode:', e);
         }
-    }, [isSubMode, isPinned]);
+    }, [isSubMode, isPinned, subWidth, subHeight, subX, subY, setSubWidth, setSubHeight, setSubX, setSubY]);
 
     useEffect(() => {
         return () => { stop(); };
     }, []);
 
     // ── Sub mode layout ──
+    const bgAlpha = (bgOpacity ?? 100) / 100;
+    // Sub mode always shows a darkened semi-transparent background for readability;
+    // bgOpacity scales between 25% (fully transparent setting) and 88% (fully opaque setting).
+    const subBgAlpha = 0.25 + bgAlpha * 0.63;
+
     if (isSubMode) {
         return (
-            <div className='group w-screen h-screen flex flex-col overflow-hidden rounded-[10px]' style={{ background: 'rgba(28,28,30,0.82)' }}>
+            <div
+                className='group w-screen h-screen flex flex-col overflow-hidden rounded-[10px]'
+                style={{ background: `rgba(18,18,20,${subBgAlpha.toFixed(2)})`, backdropFilter: bgAlpha < 1 ? 'blur(16px)' : undefined }}
+                data-tauri-drag-region='true'
+            >
                 {/* Top bar — auto-hide, appears on window hover */}
                 <div
-                    className='absolute top-0 left-0 right-0 h-7 z-10 flex items-center justify-end pr-2
+                    className='absolute top-0 left-0 right-0 h-7 z-10 flex items-center justify-between px-2
                                rounded-t-[10px] border-b border-white/10
                                opacity-0 group-hover:opacity-100 transition-opacity duration-200'
-                    style={{ background: 'rgba(28,28,30,0.95)' }}
+                    style={{ background: 'rgba(18,18,20,0.96)' }}
                     data-tauri-drag-region='true'
                 >
-                    <div className='flex items-center gap-1.5'>
+                    {/* Left: status + font size */}
+                    <div className='flex items-center gap-1'>
                         <div className='pointer-events-none'>
                             <StatusDot status={status} />
                         </div>
+                        {/* Font size controls */}
+                        <button
+                            onClick={() => setSubFontSize(Math.max(SUB_FONT_MIN, (subFontSize ?? 44) - 2))}
+                            className='w-5 h-5 flex items-center justify-center text-white/60 hover:text-white text-[11px] font-bold transition-colors'
+                            title={t('monitor.font_smaller')}
+                        >A-</button>
+                        <span className='text-[10px] text-white/40 w-5 text-center select-none tabular-nums'>{subFontSize ?? 44}</span>
+                        <button
+                            onClick={() => setSubFontSize(Math.min(SUB_FONT_MAX, (subFontSize ?? 44) + 2))}
+                            className='w-5 h-5 flex items-center justify-center text-white/60 hover:text-white text-[11px] font-bold transition-colors'
+                            title={t('monitor.font_larger')}
+                        >A+</button>
+                    </div>
+
+                    {/* Right: original toggle, transparent, play/stop, expand */}
+                    <div className='flex items-center gap-1'>
                         <button
                             onClick={toggleOriginalSub}
                             className={`
                                 w-5 h-5 rounded-full flex items-center justify-center text-white text-[9px] font-bold
                                 ${(showOriginalSub ?? false) ? 'bg-white/30' : 'bg-white/10'}
-                                opacity-70 hover:opacity-100 transition-opacity
+                                hover:bg-white/30 transition-colors
                             `}
                             title={(showOriginalSub ?? false) ? t('monitor.hide_original') : t('monitor.show_original')}
                         >
                             S
                         </button>
                         <button
+                            onClick={() => setBgOpacity((bgOpacity ?? 100) >= 100 ? 70 : 100)}
+                            className={`
+                                w-5 h-5 rounded-full flex items-center justify-center
+                                ${(bgOpacity ?? 100) < 100 ? 'bg-secondary/50 text-white' : 'bg-white/10 text-white/50'}
+                                hover:bg-white/30 transition-colors
+                            `}
+                            title={(bgOpacity ?? 100) < 100 ? t('monitor.transparent_off') : t('monitor.transparent_on')}
+                        >
+                            <MdBlurOn className='text-[11px]' />
+                        </button>
+                        <button
+                            onClick={toggleTTS}
+                            className={`
+                                w-5 h-5 rounded-full flex items-center justify-center
+                                ${isTTSEnabled ? 'bg-secondary/50 text-white' : 'bg-white/10 text-white/50'}
+                                hover:bg-white/30 transition-colors
+                            `}
+                            title={isTTSEnabled ? t('monitor.tts_disable') : t('monitor.tts_enable')}
+                        >
+                            {isTTSEnabled
+                                ? <MdVolumeUp className='text-[11px]' />
+                                : <MdVolumeOff className='text-[11px]' />}
+                        </button>
+                        <button
                             onClick={toggleRun}
                             className={`
                                 w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px]
                                 ${isRunning ? 'bg-red-500/80' : 'bg-primary/80'}
-                                opacity-70 hover:opacity-100 transition-opacity
+                                hover:opacity-100 transition-opacity
                             `}
                             title={isRunning ? t('monitor.stop') : t('monitor.start')}
                         >
@@ -368,7 +450,7 @@ export default function Monitor() {
                         </button>
                         <button
                             onClick={toggleSubMode}
-                            className='w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/30 opacity-70 hover:opacity-100 transition-all'
+                            className='w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/30 transition-all'
                             title={t('monitor.exit_sub_mode')}
                         >
                             <MdOpenInFull className='text-[10px]' />
@@ -381,7 +463,7 @@ export default function Monitor() {
                     <MonitorLog
                         entries={entries}
                         provisional={provisional}
-                        fontSize={fontSize ?? 14}
+                        fontSize={subFontSize ?? 44}
                         isSubMode={true}
                         showOriginal={showOriginalSub ?? false}
                         playingText={ttsPlayingText}
@@ -394,18 +476,22 @@ export default function Monitor() {
 
     // ── Normal mode layout ──
     return (
-        <div className={`
-            bg-background w-screen h-screen flex flex-col overflow-hidden
-            ${osType !== 'Darwin' ? 'rounded-[10px] border border-content3/40' : ''}
-        `}>
-            {/* Header — acts as drag region; non-interactive children get pointer-events-none */}
+        <div
+            className='w-screen h-screen flex flex-col overflow-hidden rounded-[12px] border border-white/[0.08]'
+            style={{
+                background: bgAlpha >= 1
+                    ? 'hsl(var(--nextui-background))'
+                    : `hsl(var(--nextui-background) / ${bgAlpha.toFixed(2)})`,
+                backdropFilter: bgAlpha < 1 ? 'blur(24px) saturate(1.6)' : undefined,
+            }}
+        >
+            {/* Header — acts as drag region */}
             <div
-                className={`h-[32px] flex items-center justify-between z-10 relative select-none
-                    ${osType === 'Darwin' ? 'pl-[70px] pr-1' : 'px-1'}`}
+                className='h-[30px] flex items-center justify-between px-2 z-10 relative select-none'
                 data-tauri-drag-region='true'
             >
-                {/* Status indicator — pointer-events-none so drag works through it */}
-                <div className='flex items-center gap-1.5 pointer-events-none pl-1'>
+                {/* Status indicator — far left, pointer-events-none so drag works through it */}
+                <div className='flex items-center gap-1.5 pointer-events-none'>
                     <StatusDot status={status} />
                     <span className='text-[11px] text-default-500 font-medium'>
                         {t(`monitor.status_${status}`) || status}
@@ -424,17 +510,15 @@ export default function Monitor() {
                     >
                         <BsPinFill className={`text-[16px] ${isPinned ? 'text-primary' : 'text-default-400'}`} />
                     </Button>
-                    {osType !== 'Darwin' && (
-                        <Button
-                            isIconOnly
-                            size='sm'
-                            variant='light'
-                            className='h-[26px] w-[26px] min-w-0 bg-transparent'
-                            onPress={() => appWindow.close()}
-                        >
-                            <AiFillCloseCircle className='text-[16px] text-default-400' />
-                        </Button>
-                    )}
+                    <Button
+                        isIconOnly
+                        size='sm'
+                        variant='light'
+                        className='h-[26px] w-[26px] min-w-0 bg-transparent'
+                        onPress={() => appWindow.close()}
+                    >
+                        <AiFillCloseCircle className='text-[16px] text-default-400' />
+                    </Button>
                 </div>
             </div>
 
@@ -450,8 +534,10 @@ export default function Monitor() {
                 isTTSEnabled={isTTSEnabled}
                 showContextPanel={showContextPanel}
                 showOriginal={showOriginal ?? true}
+                bgOpacity={bgOpacity ?? 100}
                 onToggleRun={toggleRun}
                 onToggleOriginal={toggleOriginal}
+                onSetBgOpacity={setBgOpacity}
                 onClear={handleClear}
                 onSetSourceAudio={setSourceAudio}
                 onSetSourceLang={setSourceLang}
