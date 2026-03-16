@@ -12,6 +12,7 @@
         "updater:fixRuntime": "node updater/updater-for-fix-runtime.mjs"
     },
     "dependencies": {
+        "@hello-pangea/dnd": "^18.0.1",
         "@nextui-org/react": "^2.4.8",
         "@nextui-org/theme": "^2.2.11",
         "@react-spring/web": "^9.7.5",
@@ -29,7 +30,6 @@
         "next-themes": "^0.3.0",
         "ollama": "^0.5.9",
         "react": "^18.3.1",
-        "react-beautiful-dnd": "^13.1.1",
         "react-dom": "^18.3.1",
         "react-hot-toast": "^2.4.1",
         "react-i18next": "^15.1.0",

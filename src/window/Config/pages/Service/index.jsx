@@ -4,7 +4,37 @@ import { useTranslation } from 'react-i18next';
 import { Tabs, Tab } from '@nextui-org/react';
 import { appConfigDir, join } from '@tauri-apps/api/path';
 import { convertFileSrc } from '@tauri-apps/api/tauri';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Component } from 'react';
+
+class TabErrorBoundary extends Component {
+    constructor(props) {
+        super(props);
+        this.state = { error: null };
+    }
+    static getDerivedStateFromError(error) {
+        return { error };
+    }
+    componentDidCatch(error, info) {
+        console.error('[Service tab error]', error, info);
+    }
+    render() {
+        if (this.state.error) {
+            return (
+                <div className='flex flex-col items-center justify-center h-full gap-2 text-danger'>
+                    <p className='text-sm font-medium'>Failed to load tab</p>
+                    <p className='text-xs text-default-400'>{this.state.error.message}</p>
+                    <button
+                        className='text-xs text-primary underline'
+                        onClick={() => this.setState({ error: null })}
+                    >
+                        Retry
+                    </button>
+                </div>
+            );
+        }
+        return this.props.children;
+    }
+}
 import Translate from './Translate';
 import Recognize from './Recognize';
 import Collection from './Collection';
@@ -64,35 +94,30 @@ export default function Service() {
     return (
         pluginList !== null && (
             <Tabs className='flex justify-center max-h-[calc(100%-40px)] overflow-y-auto'>
-                <Tab
-                    key='translate'
-                    title={t(`config.service.translate`)}
-                >
-                    <Translate pluginList={pluginList[ServiceType.TRANSLATE]} />
+                <Tab key='translate' title={t(`config.service.translate`)}>
+                    <TabErrorBoundary key='translate'>
+                        <Translate pluginList={pluginList[ServiceType.TRANSLATE]} />
+                    </TabErrorBoundary>
                 </Tab>
-                <Tab
-                    key='recognize'
-                    title={t(`config.service.recognize`)}
-                >
-                    <Recognize pluginList={pluginList[ServiceType.RECOGNIZE]} />
+                <Tab key='recognize' title={t(`config.service.recognize`)}>
+                    <TabErrorBoundary key='recognize'>
+                        <Recognize pluginList={pluginList[ServiceType.RECOGNIZE]} />
+                    </TabErrorBoundary>
                 </Tab>
-                <Tab
-                    key='tts'
-                    title={t(`config.service.tts`)}
-                >
-                    <Tts pluginList={pluginList[ServiceType.TTS]} />
+                <Tab key='tts' title={t(`config.service.tts`)}>
+                    <TabErrorBoundary key='tts'>
+                        <Tts pluginList={pluginList[ServiceType.TTS]} />
+                    </TabErrorBoundary>
                 </Tab>
-                <Tab
-                    key='collection'
-                    title={t(`config.service.collection`)}
-                >
-                    <Collection pluginList={pluginList[ServiceType.COLLECTION]} />
+                <Tab key='collection' title={t(`config.service.collection`)}>
+                    <TabErrorBoundary key='collection'>
+                        <Collection pluginList={pluginList[ServiceType.COLLECTION]} />
+                    </TabErrorBoundary>
                 </Tab>
-                <Tab
-                    key='audio'
-                    title={t(`config.service.audio.label`)}
-                >
-                    <Audio />
+                <Tab key='audio' title={t(`config.service.audio.label`)}>
+                    <TabErrorBoundary key='audio'>
+                        <Audio />
+                    </TabErrorBoundary>
                 </Tab>
             </Tabs>
         )

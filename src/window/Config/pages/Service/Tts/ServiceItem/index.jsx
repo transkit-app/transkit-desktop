@@ -23,11 +23,18 @@ export default function ServiceItem(props) {
     const serviceSourceType = getServiceSouceType(serviceInstanceKey);
     const serviceName = getServiceName(serviceInstanceKey);
 
+    if (serviceInstanceConfig === null) {
+        return (
+            <div className='invisible bg-content2 rounded-md px-[10px] py-[20px] flex h-[64px]'>
+                <div {...drag} className='text-2xl my-auto'><RxDragHandleHorizontal /></div>
+            </div>
+        );
+    }
+
     return serviceSourceType === ServiceSourceType.PLUGIN && !(serviceName in pluginList) ? (
         <></>
     ) : (
-        serviceInstanceConfig !== null && (
-            <div className='bg-content2 rounded-md px-[10px] py-[20px] flex justify-between'>
+        <div className='bg-content2 rounded-md px-[10px] py-[20px] flex justify-between'>
                 <div className='flex'>
                     <div
                         {...drag}
@@ -89,6 +96,5 @@ export default function ServiceItem(props) {
                     </Button>
                 </div>
             </div>
-        )
     );
 }

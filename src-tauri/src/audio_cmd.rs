@@ -177,6 +177,7 @@ pub fn start_audio_capture(
     source: String,
     window: Window,
     state: State<'_, AudioState>,
+    batch_interval_ms: Option<u64>,
 ) -> Result<(), String> {
     // Stop any existing capture first
     stop_capture_inner(&state);
@@ -202,9 +203,10 @@ pub fn start_audio_capture(
     let stop_flag = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
     let stop_flag_clone = stop_flag.clone();
 
+    let batch_ms = batch_interval_ms.unwrap_or(100).clamp(20, 1000);
     std::thread::spawn(move || {
         let mut buffer: Vec<u8> = Vec::with_capacity(32000); // ~1 sec at 16kHz s16le
-        let batch_interval = std::time::Duration::from_millis(100);
+        let batch_interval = std::time::Duration::from_millis(batch_ms);
         let mut last_flush = std::time::Instant::now();
 
         loop {

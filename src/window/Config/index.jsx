@@ -142,11 +142,11 @@ export default function Config() {
                 {/* Page Content with Animation */}
                 <div
                     className={`
-                        flex-1 overflow-y-auto p-4
+                        relative overflow-hidden flex-1 p-4
                         ${osType === 'Linux' ? 'h-[calc(100vh-54px)]' : 'h-[calc(100vh-52px)]'}
                     `}
                 >
-                    <AnimatePresence mode="wait">
+                    <AnimatePresence mode="popLayout">
                         <motion.div
                             key={location.pathname}
                             variants={pageVariants}

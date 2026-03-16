@@ -191,7 +191,14 @@
                     "tts_edge_builtin_hint": "No server required — runs directly inside Transkit",
                     "tts_edge_voice": "Voice",
                     "tts_edge_rate": "Rate (e.g. +0%, +20%, -10%)",
-                    "tts_edge_pitch": "Pitch (e.g. +0Hz, +5Hz, -5Hz)"
+                    "tts_edge_pitch": "Pitch (e.g. +0Hz, +5Hz, -5Hz)",
+                    "soniox_advanced_title": "Soniox Advanced",
+                    "soniox_endpoint_delay": "Endpoint delay (ms)",
+                    "soniox_endpoint_delay_hint": "How long Soniox waits for more audio before finalizing a segment. Lower = faster response, higher = more accurate sentences.",
+                    "soniox_batch_interval": "Audio batch interval (ms)",
+                    "soniox_batch_interval_hint": "How often audio chunks are sent to Soniox. Lower = lower latency, higher = fewer network calls.",
+                    "soniox_speaker_diarization": "Speaker diarization",
+                    "soniox_speaker_diarization_hint": "Identify and label different speakers. Disable to reduce latency."
                 },
                 "least": "Please keep at least one",
                 "add_builtin_service": "Add Builtin Service",
@@ -277,7 +284,9 @@
             "ctx_preset_movie_en": "Movie EN",
             "ctx_preset_tech": "Tech",
             "ctx_preset_medical": "Medical",
-            "ctx_preset_sport": "Sport"
+            "ctx_preset_sport": "Sport",
+            "show_original": "Show original text",
+            "hide_original": "Hide original text"
         },
         "updater": {
             "title": "Check Update",

@@ -191,7 +191,14 @@
                     "tts_edge_builtin_hint": "Không cần server riêng — chạy trực tiếp trong Transkit",
                     "tts_edge_voice": "Giọng đọc",
                     "tts_edge_rate": "Tốc độ đọc (vd: +0%, +20%, -10%)",
-                    "tts_edge_pitch": "Cao độ giọng (vd: +0Hz, +5Hz, -5Hz)"
+                    "tts_edge_pitch": "Cao độ giọng (vd: +0Hz, +5Hz, -5Hz)",
+                    "soniox_advanced_title": "Cài đặt nâng cao Soniox",
+                    "soniox_endpoint_delay": "Endpoint delay (ms)",
+                    "soniox_endpoint_delay_hint": "Thời gian Soniox chờ thêm âm thanh trước khi xác nhận câu. Thấp hơn = phản hồi nhanh hơn, cao hơn = câu chính xác hơn.",
+                    "soniox_batch_interval": "Chu kỳ gửi audio (ms)",
+                    "soniox_batch_interval_hint": "Tần suất gửi dữ liệu âm thanh lên Soniox. Thấp hơn = độ trễ thấp hơn, cao hơn = ít cuộc gọi mạng hơn.",
+                    "soniox_speaker_diarization": "Phân biệt giọng nói",
+                    "soniox_speaker_diarization_hint": "Nhận dạng và gán nhãn từng người nói. Tắt để giảm độ trễ."
                 },
                 "least": "Vui lòng giữ ít nhất một dịch vụ",
                 "add_builtin_service": "Thêm dịch vụ có sẵn",
@@ -277,7 +284,9 @@
             "ctx_preset_movie_en": "Phim EN",
             "ctx_preset_tech": "Công nghệ",
             "ctx_preset_medical": "Y khoa",
-            "ctx_preset_sport": "Thể thao"
+            "ctx_preset_sport": "Thể thao",
+            "show_original": "Hiện văn bản gốc",
+            "hide_original": "Ẩn văn bản gốc"
         },
         "updater": {
             "title": "Kiểm tra cập nhật",

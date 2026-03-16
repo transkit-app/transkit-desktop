@@ -1,7 +1,7 @@
-import { Input, Button, Divider, Card, CardBody, CardHeader, Select, SelectItem, Chip } from '@nextui-org/react';
+import { Input, Button, Divider, Card, CardBody, CardHeader, Select, SelectItem, Chip, Switch } from '@nextui-org/react';
 import { useTranslation } from 'react-i18next';
 import { AiFillEye, AiFillEyeInvisible } from 'react-icons/ai';
-import { MdMicNone, MdVolumeUp } from 'react-icons/md';
+import { MdMicNone, MdVolumeUp, MdTune } from 'react-icons/md';
 import React, { useState, useCallback } from 'react';
 import { useConfig } from '../../../../../hooks';
 import toast, { Toaster } from 'react-hot-toast';
@@ -37,6 +37,9 @@ export default function Audio() {
     const toastStyle = useToastStyle();
 
     const [apiKey, setApiKey] = useConfig('soniox_api_key', '');
+    const [sonioxEndpointDelay, setSonioxEndpointDelay] = useConfig('soniox_endpoint_delay_ms', 250);
+    const [sonioxBatchInterval, setSonioxBatchInterval] = useConfig('soniox_batch_interval_ms', 100);
+    const [sonioxSpeakerDiarization, setSonioxSpeakerDiarization] = useConfig('soniox_speaker_diarization', true);
     const [ttsServerUrl, setTtsServerUrl] = useConfig('tts_server_url', 'http://localhost:8001');
     const [ttsApiType, setTtsApiType] = useConfig('tts_api_type', 'vieneu_stream');
     const [ttsVoiceId, setTtsVoiceId] = useConfig('tts_voice_id', 'NgocHuyen');
@@ -146,6 +149,65 @@ export default function Audio() {
                     <div className='flex flex-col gap-1'>
                         <p className='text-xs text-default-500'>{t('config.service.audio.info_label')}</p>
                         <p className='text-xs text-default-400'>{t('config.service.audio.info_desc')}</p>
+                    </div>
+                </CardBody>
+            </Card>
+
+            {/* ── Soniox Advanced ── */}
+            <Card>
+                <CardHeader className='flex gap-2 items-center pb-0'>
+                    <MdTune className='text-[20px] text-warning' />
+                    <p className='text-sm font-semibold'>{t('config.service.audio.soniox_advanced_title')}</p>
+                </CardHeader>
+                <CardBody className='flex flex-col gap-4'>
+                    {/* Endpoint delay */}
+                    <div className='flex flex-col gap-1'>
+                        <p className='text-xs text-default-500'>{t('config.service.audio.soniox_endpoint_delay')}</p>
+                        <div className='flex items-center gap-3'>
+                            <input
+                                type='range'
+                                min={50} max={2000} step={50}
+                                value={sonioxEndpointDelay ?? 250}
+                                onChange={e => setSonioxEndpointDelay(parseInt(e.target.value))}
+                                className='flex-1 accent-warning'
+                            />
+                            <span className='text-xs text-default-500 w-16 text-right font-mono'>
+                                {sonioxEndpointDelay ?? 250} ms
+                            </span>
+                        </div>
+                        <p className='text-xs text-default-400'>{t('config.service.audio.soniox_endpoint_delay_hint')}</p>
+                    </div>
+
+                    {/* Audio batch interval */}
+                    <div className='flex flex-col gap-1'>
+                        <p className='text-xs text-default-500'>{t('config.service.audio.soniox_batch_interval')}</p>
+                        <div className='flex items-center gap-3'>
+                            <input
+                                type='range'
+                                min={20} max={500} step={10}
+                                value={sonioxBatchInterval ?? 100}
+                                onChange={e => setSonioxBatchInterval(parseInt(e.target.value))}
+                                className='flex-1 accent-warning'
+                            />
+                            <span className='text-xs text-default-500 w-16 text-right font-mono'>
+                                {sonioxBatchInterval ?? 100} ms
+                            </span>
+                        </div>
+                        <p className='text-xs text-default-400'>{t('config.service.audio.soniox_batch_interval_hint')}</p>
+                    </div>
+
+                    {/* Speaker diarization */}
+                    <div className='flex flex-col gap-1'>
+                        <div className='flex items-center justify-between'>
+                            <p className='text-xs text-default-500'>{t('config.service.audio.soniox_speaker_diarization')}</p>
+                            <Switch
+                                size='sm'
+                                isSelected={sonioxSpeakerDiarization !== false}
+                                onValueChange={setSonioxSpeakerDiarization}
+                                color='warning'
+                            />
+                        </div>
+                        <p className='text-xs text-default-400'>{t('config.service.audio.soniox_speaker_diarization_hint')}</p>
                     </div>
                 </CardBody>
             </Card>

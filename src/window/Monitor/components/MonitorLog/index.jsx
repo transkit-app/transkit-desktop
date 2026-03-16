@@ -30,7 +30,7 @@ function getSpeakerColor(speaker) {
     return SPEAKER_COLORS[idx % SPEAKER_COLORS.length];
 }
 
-export default function MonitorLog({ entries, provisional, fontSize = 14, isSubMode = false, playingText = null, onReplayEntry, status = 'disconnected' }) {
+export default function MonitorLog({ entries, provisional, fontSize = 14, isSubMode = false, showOriginal = true, playingText = null, onReplayEntry, status = 'disconnected' }) {
     const { t } = useTranslation();
     const bottomRef = useRef(null);
 
@@ -54,26 +54,17 @@ export default function MonitorLog({ entries, provisional, fontSize = 14, isSubM
                             const isThisPlaying = entry.translation && entry.translation === playingText;
                             return (
                                 <div key={idx} className='flex flex-col gap-0.5'>
-                                    {/* Original (small, muted) */}
-                                    <div className='flex items-center gap-1.5'>
-                                        {speakerLabel && (
-                                            <span
-                                                className='font-semibold flex-shrink-0'
-                                                style={{
-                                                    fontSize: Math.max(10, fontSize - 3),
-                                                    color: speakerColor ?? 'rgba(255,255,255,0.5)',
-                                                }}
+                                    {/* Original (small, muted) — speaker always hidden in sub mode */}
+                                    {showOriginal && (
+                                        <div className='flex items-center gap-1.5'>
+                                            <p
+                                                className='text-white/50 leading-snug'
+                                                style={{ fontSize: Math.max(10, fontSize - 2) }}
                                             >
-                                                {speakerLabel}
-                                            </span>
-                                        )}
-                                        <p
-                                            className='text-white/50 leading-snug'
-                                            style={{ fontSize: Math.max(10, fontSize - 2) }}
-                                        >
-                                            {entry.original}
-                                        </p>
-                                    </div>
+                                                {entry.original}
+                                            </p>
+                                        </div>
+                                    )}
                                     {/* Translation */}
                                     {entry.translation && (
                                         <div className='flex items-center gap-1'>
@@ -161,32 +152,46 @@ export default function MonitorLog({ entries, provisional, fontSize = 14, isSubM
                         return (
                             <div key={idx} className='flex flex-col gap-0.5'>
                                 {/* Original */}
-                                <div className='flex items-start gap-1.5'>
-                                    {speakerLabel && (
-                                        <span
-                                            className='font-semibold rounded px-1.5 py-0.5 flex-shrink-0 whitespace-nowrap'
-                                            style={{
-                                                fontSize: Math.max(10, fontSize - 3),
-                                                color: speakerColor,
-                                                backgroundColor: speakerColor ? `${speakerColor}22` : undefined,
-                                            }}
+                                {showOriginal && (
+                                    <div className='flex items-start gap-1.5'>
+                                        {speakerLabel && (
+                                            <span
+                                                className='font-semibold rounded px-1.5 py-0.5 flex-shrink-0 whitespace-nowrap'
+                                                style={{
+                                                    fontSize: Math.max(10, fontSize - 3),
+                                                    color: speakerColor,
+                                                    backgroundColor: speakerColor ? `${speakerColor}22` : undefined,
+                                                }}
+                                            >
+                                                {speakerLabel}
+                                            </span>
+                                        )}
+                                        <p
+                                            className='text-default-500 leading-relaxed'
+                                            style={{ fontSize: fontSize - 1 }}
                                         >
-                                            {speakerLabel}
-                                        </span>
-                                    )}
-                                    <p
-                                        className='text-default-500 leading-relaxed'
-                                        style={{ fontSize: fontSize - 1 }}
-                                    >
-                                        {entry.original}
-                                    </p>
-                                </div>
+                                            {entry.original}
+                                        </p>
+                                    </div>
+                                )}
                                 {/* Translation */}
                                 {entry.translation && (
                                     <div
                                         className='flex items-center gap-1.5 pl-2 group/entry'
                                         style={{ borderLeft: `2px solid ${speakerColor ?? 'rgba(var(--nextui-primary)/0.4)'}` }}
                                     >
+                                        {!showOriginal && speakerLabel && (
+                                            <span
+                                                className='font-semibold rounded px-1.5 py-0.5 flex-shrink-0 whitespace-nowrap'
+                                                style={{
+                                                    fontSize: Math.max(10, fontSize - 3),
+                                                    color: speakerColor,
+                                                    backgroundColor: speakerColor ? `${speakerColor}22` : undefined,
+                                                }}
+                                            >
+                                                {speakerLabel}
+                                            </span>
+                                        )}
                                         <p
                                             className='text-foreground font-medium leading-relaxed flex-1'
                                             style={{ fontSize }}

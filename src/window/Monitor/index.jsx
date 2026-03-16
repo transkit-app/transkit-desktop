@@ -67,9 +67,18 @@ export default function Monitor() {
     const [ttsEdgeRate] = useConfig('tts_edge_rate', '+0%');
     const [ttsEdgePitch] = useConfig('tts_edge_pitch', '+0Hz');
 
+    // Soniox advanced config
+    const [sonioxEndpointDelay] = useConfig('soniox_endpoint_delay_ms', 250);
+    const [sonioxSpeakerDiarization] = useConfig('soniox_speaker_diarization', true);
+    const [sonioxBatchInterval] = useConfig('soniox_batch_interval_ms', 100);
+
     // Context panel config (persisted)
     const [contextDomain, setContextDomain] = useConfig('monitor_context_domain', '');
     const [contextTerms, setContextTerms] = useConfig('monitor_context_terms', '');
+
+    // Show/hide original source text (separate defaults for each mode)
+    const [showOriginal, setShowOriginal] = useConfig('monitor_show_original', true);
+    const [showOriginalSub, setShowOriginalSub] = useConfig('monitor_sub_show_original', false);
     const [showContextPanel, setShowContextPanel] = useState(false);
 
     const [isPinned, setIsPinned] = useState(false);
@@ -164,6 +173,8 @@ export default function Monitor() {
 
     const sourceAudioRef = useRef(sourceAudio);
     useEffect(() => { sourceAudioRef.current = sourceAudio; }, [sourceAudio]);
+    const batchIntervalRef = useRef(sonioxBatchInterval);
+    useEffect(() => { batchIntervalRef.current = sonioxBatchInterval; }, [sonioxBatchInterval]);
 
     const addAudioChunkListener = useCallback(async () => {
         if (unlistenAudioRef.current) {
@@ -187,7 +198,10 @@ export default function Monitor() {
             console.log('[Monitor] Soniox reconnected — restarting audio capture');
             await addAudioChunkListener();
             try {
-                await invoke('start_audio_capture', { source: sourceAudioRef.current });
+                await invoke('start_audio_capture', {
+                    source: sourceAudioRef.current,
+                    batchIntervalMs: batchIntervalRef.current ?? 100,
+                });
             } catch (err) {
                 setErrorMsg(String(err));
             }
@@ -215,12 +229,17 @@ export default function Monitor() {
             sourceLanguage: sourceLang === 'auto' ? null : sourceLang,
             targetLanguage: targetLang,
             customContext,
+            endpointDelayMs: sonioxEndpointDelay ?? 250,
+            speakerDiarization: sonioxSpeakerDiarization !== false,
         });
 
         await addAudioChunkListener();
 
         try {
-            await invoke('start_audio_capture', { source: sourceAudio });
+            await invoke('start_audio_capture', {
+                source: sourceAudio,
+                batchIntervalMs: sonioxBatchInterval ?? 100,
+            });
         } catch (err) {
             setErrorMsg(String(err));
             setIsRunning(false);
@@ -230,7 +249,7 @@ export default function Monitor() {
                 unlistenAudioRef.current = null;
             }
         }
-    }, [apiKey, sourceLang, targetLang, sourceAudio, contextDomain, contextTerms, addAudioChunkListener, t]);
+    }, [apiKey, sourceLang, targetLang, sourceAudio, contextDomain, contextTerms, sonioxEndpointDelay, sonioxSpeakerDiarization, sonioxBatchInterval, addAudioChunkListener, t]);
 
     const stop = useCallback(async () => {
         setIsRunning(false);
@@ -283,6 +302,9 @@ export default function Monitor() {
         setProvisional('');
     }, []);
 
+    const toggleOriginal = useCallback(() => setShowOriginal(!(showOriginal ?? true)), [showOriginal, setShowOriginal]);
+    const toggleOriginalSub = useCallback(() => setShowOriginalSub(!(showOriginalSub ?? false)), [showOriginalSub, setShowOriginalSub]);
+
     // ── Sub mode: resize window + hide/show native traffic lights ──
     const toggleSubMode = useCallback(async () => {
         const entering = !isSubMode;
@@ -323,6 +345,17 @@ export default function Monitor() {
                             <StatusDot status={status} />
                         </div>
                         <button
+                            onClick={toggleOriginalSub}
+                            className={`
+                                w-5 h-5 rounded-full flex items-center justify-center text-white text-[9px] font-bold
+                                ${(showOriginalSub ?? false) ? 'bg-white/30' : 'bg-white/10'}
+                                opacity-70 hover:opacity-100 transition-opacity
+                            `}
+                            title={(showOriginalSub ?? false) ? t('monitor.hide_original') : t('monitor.show_original')}
+                        >
+                            S
+                        </button>
+                        <button
                             onClick={toggleRun}
                             className={`
                                 w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px]
@@ -350,6 +383,7 @@ export default function Monitor() {
                         provisional={provisional}
                         fontSize={fontSize ?? 14}
                         isSubMode={true}
+                        showOriginal={showOriginalSub ?? false}
                         playingText={ttsPlayingText}
                         onReplayEntry={handleReplayEntry}
                     />
@@ -415,7 +449,9 @@ export default function Monitor() {
                 isSubMode={isSubMode}
                 isTTSEnabled={isTTSEnabled}
                 showContextPanel={showContextPanel}
+                showOriginal={showOriginal ?? true}
                 onToggleRun={toggleRun}
+                onToggleOriginal={toggleOriginal}
                 onClear={handleClear}
                 onSetSourceAudio={setSourceAudio}
                 onSetSourceLang={setSourceLang}
@@ -475,6 +511,7 @@ export default function Monitor() {
                 provisional={provisional}
                 fontSize={fontSize ?? 14}
                 isSubMode={false}
+                showOriginal={showOriginal ?? true}
                 playingText={ttsPlayingText}
                 onReplayEntry={handleReplayEntry}
                 status={status}

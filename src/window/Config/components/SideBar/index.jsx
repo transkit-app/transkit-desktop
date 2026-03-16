@@ -43,7 +43,7 @@ const navigationConfig = [
 const itemVariants = {
     inactive: {
         x: 0,
-        backgroundColor: 'transparent',
+        backgroundColor: 'rgba(0, 0, 0, 0)',
     },
     active: {
         x: 0,
