@@ -71,6 +71,7 @@ export default function Monitor() {
     const [ttsElevenLabsApiKey] = useConfig('tts_elevenlabs_api_key', '');
     const [ttsElevenLabsVoiceId] = useConfig('tts_elevenlabs_voice_id', 'FTYCiQT21H9XQvhRu0ch');
     const [ttsElevenLabsModelId] = useConfig('tts_elevenlabs_model_id', 'eleven_flash_v2_5');
+    const [ttsElevenLabsMode]    = useConfig('tts_elevenlabs_mode', 'wss');
     const [ttsVolume, setTtsVolume] = useConfig('tts_volume', 1.0);
 
     // Soniox advanced config
@@ -127,8 +128,9 @@ export default function Monitor() {
             elevenLabsApiKey: ttsElevenLabsApiKey,
             elevenLabsVoiceId: ttsElevenLabsVoiceId,
             elevenLabsModelId: ttsElevenLabsModelId,
+            elevenLabsMode:    ttsElevenLabsMode,
         });
-    }, [ttsServerUrl, ttsApiType, ttsVoiceId, ttsModel, ttsPlaybackRate, ttsVolume, ttsGoogleLang, ttsGoogleSpeed, ttsEdgeServerUrl, ttsEdgeVoice, ttsEdgeRate, ttsEdgePitch, ttsElevenLabsApiKey, ttsElevenLabsVoiceId, ttsElevenLabsModelId]);
+    }, [ttsServerUrl, ttsApiType, ttsVoiceId, ttsModel, ttsPlaybackRate, ttsVolume, ttsGoogleLang, ttsGoogleSpeed, ttsEdgeServerUrl, ttsEdgeVoice, ttsEdgeRate, ttsEdgePitch, ttsElevenLabsApiKey, ttsElevenLabsVoiceId, ttsElevenLabsModelId, ttsElevenLabsMode]);
 
     // Load audio capabilities
     useEffect(() => {

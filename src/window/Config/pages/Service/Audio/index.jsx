@@ -54,6 +54,7 @@ export default function Audio() {
     const [ttsElevenLabsApiKey, setTtsElevenLabsApiKey] = useConfig('tts_elevenlabs_api_key', '');
     const [ttsElevenLabsVoiceId, setTtsElevenLabsVoiceId] = useConfig('tts_elevenlabs_voice_id', 'FTYCiQT21H9XQvhRu0ch');
     const [ttsElevenLabsModelId, setTtsElevenLabsModelId] = useConfig('tts_elevenlabs_model_id', 'eleven_flash_v2_5');
+    const [ttsElevenLabsMode, setTtsElevenLabsMode] = useConfig('tts_elevenlabs_mode', 'wss');
 
     const [isVisible, setIsVisible] = useState(false);
     const [isEl11Visible, setIsEl11Visible] = useState(false);
@@ -94,12 +95,40 @@ export default function Audio() {
                 );
                 setPingStatus(res.status < 500 ? 'ok' : 'fail');
             } else if (ttsApiType === 'elevenlabs') {
-                const res = await tauriFetch('https://api.elevenlabs.io/v1/user', {
-                    method: 'GET',
-                    headers: { 'xi-api-key': ttsElevenLabsApiKey || '' },
-                    timeout: 8,
-                });
-                setPingStatus(res.status < 400 ? 'ok' : 'fail');
+                if (!ttsElevenLabsApiKey) {
+                    setPingStatus('fail');
+                } else if ((ttsElevenLabsMode ?? 'wss') === 'wss') {
+                    // Test WebSocket directly — same path the real TTS uses.
+                    await new Promise((resolve, reject) => {
+                        const url = `wss://api.elevenlabs.io/v1/text-to-speech/${ttsElevenLabsVoiceId || 'FTYCiQT21H9XQvhRu0ch'}/stream-input`
+                            + `?model_id=${ttsElevenLabsModelId || 'eleven_flash_v2_5'}&output_format=mp3_44100_128`;
+                        const ws = new WebSocket(url);
+                        const timer = setTimeout(() => { ws.close(); reject(new Error('timeout')); }, 6000);
+                        ws.onopen = () => {
+                            ws.send(JSON.stringify({
+                                text: ' ',
+                                voice_settings: { stability: 0.8, similarity_boost: 0.8 },
+                                xi_api_key: ttsElevenLabsApiKey,
+                            }));
+                        };
+                        ws.onmessage = () => {
+                            clearTimeout(timer);
+                            ws.close();
+                            resolve();
+                        };
+                        ws.onerror = () => { clearTimeout(timer); reject(new Error('ws error')); };
+                        ws.onclose = (e) => { if (e.code !== 1000 && e.code !== 1005) reject(new Error(`closed ${e.code}`)); };
+                    });
+                    setPingStatus('ok');
+                } else {
+                    // HTTP mode — use tauriFetch.
+                    const res = await tauriFetch('https://api.elevenlabs.io/v1/user', {
+                        method: 'GET',
+                        headers: { 'xi-api-key': ttsElevenLabsApiKey },
+                        timeout: 8,
+                    });
+                    setPingStatus(res.status < 400 ? 'ok' : 'fail');
+                }
             } else {
                 const base = (ttsServerUrl ?? 'http://localhost:8001')
                     .replace(/\/+$/, '')
@@ -117,7 +146,7 @@ export default function Audio() {
         } finally {
             setPinging(false);
         }
-    }, [ttsServerUrl, ttsApiType, ttsGoogleLang, ttsEdgeVoice, ttsEdgeRate, ttsEdgePitch, ttsElevenLabsApiKey]);
+    }, [ttsServerUrl, ttsApiType, ttsGoogleLang, ttsEdgeVoice, ttsEdgeRate, ttsEdgePitch, ttsElevenLabsApiKey, ttsElevenLabsVoiceId, ttsElevenLabsModelId, ttsElevenLabsMode]);
 
     return (
         <div className='config-page flex flex-col gap-4 p-1'>
@@ -402,6 +431,29 @@ export default function Audio() {
                                 <p className='text-xs text-default-400'>
                                     eleven_flash_v2_5 (fastest) · eleven_multilingual_v2 (quality)
                                 </p>
+                            </div>
+                            <div className='flex flex-col gap-1'>
+                                <p className='text-xs text-default-500'>Connection Mode</p>
+                                <div className='flex gap-2'>
+                                    {[
+                                        { key: 'wss',  label: 'WebSocket', hint: 'Low latency — v2 models' },
+                                        { key: 'http', label: 'HTTP',      hint: 'Compatible — v3 models' },
+                                    ].map(opt => (
+                                        <button
+                                            key={opt.key}
+                                            type='button'
+                                            onClick={() => setTtsElevenLabsMode(opt.key)}
+                                            className={`flex-1 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
+                                                (ttsElevenLabsMode ?? 'wss') === opt.key
+                                                    ? 'bg-secondary/20 border-secondary/50 text-secondary'
+                                                    : 'bg-content2 border-content3 text-default-500 hover:text-default-foreground'
+                                            }`}
+                                        >
+                                            <div>{opt.label}</div>
+                                            <div className='text-[10px] font-normal opacity-70 mt-0.5'>{opt.hint}</div>
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                         </>
                     )}

@@ -136,6 +136,7 @@ export class TTSQueue {
         this.elevenLabsApiKey  = '';
         this.elevenLabsVoiceId = 'FTYCiQT21H9XQvhRu0ch';
         this.elevenLabsModelId = 'eleven_flash_v2_5';
+        this.elevenLabsMode    = 'wss'; // 'wss' | 'http'
 
         // ── ElevenLabs provider ────────────────────────────────────────────
         /** @type {ElevenLabsTTS|null} */
@@ -180,7 +181,7 @@ export class TTSQueue {
         serverUrl, apiType, voiceId, model, sampleRate,
         googleLang, googleSpeed, baseRate, volume,
         edgeServerUrl, edgeVoice, edgeRate, edgePitch,
-        elevenLabsApiKey, elevenLabsVoiceId, elevenLabsModelId,
+        elevenLabsApiKey, elevenLabsVoiceId, elevenLabsModelId, elevenLabsMode,
     } = {}) {
         if (serverUrl     !== undefined) this.serverUrl     = serverUrl;
         if (apiType       !== undefined) this.apiType       = apiType;
@@ -203,12 +204,14 @@ export class TTSQueue {
         if (elevenLabsApiKey  !== undefined) this.elevenLabsApiKey  = elevenLabsApiKey;
         if (elevenLabsVoiceId !== undefined) this.elevenLabsVoiceId = elevenLabsVoiceId || 'FTYCiQT21H9XQvhRu0ch';
         if (elevenLabsModelId !== undefined) this.elevenLabsModelId = elevenLabsModelId || 'eleven_flash_v2_5';
+        if (elevenLabsMode    !== undefined) this.elevenLabsMode    = elevenLabsMode    || 'wss';
         // Re-configure ElevenLabs client if it exists.
         if (this._elevenlabs) {
             this._elevenlabs.updateConfig({
                 apiKey:  this.elevenLabsApiKey,
                 voiceId: this.elevenLabsVoiceId,
                 modelId: this.elevenLabsModelId,
+                mode:    this.elevenLabsMode,
             });
         }
     }
@@ -216,8 +219,11 @@ export class TTSQueue {
     setEnabled(enabled) {
         console.debug('[TTS] setEnabled:', enabled, '| apiType:', this.apiType);
         this.enabled = enabled;
-        if (enabled) this._unlockAudio();
-        else this.stop();
+        if (enabled) {
+            this._unlockAudio();
+        } else {
+            this.stop();
+        }
     }
 
     // ── enqueue ────────────────────────────────────────────────────────────
@@ -292,9 +298,9 @@ export class TTSQueue {
     // ── private: ElevenLabs streaming path ────────────────────────────────
 
     /**
-     * Route text to the ElevenLabs HTTP provider.
-     * Uses POST /v1/text-to-speech/{voice_id}/stream via Tauri's Rust HTTP
-     * client (bypasses WKWebView WebSocket limitations on macOS).
+     * Route text to the ElevenLabs WebSocket provider.
+     * Uses a persistent WSS stream-input connection — BOS is sent once on
+     * connect, subsequent speak() calls have near-zero overhead.
      * The resulting MP3 buffer feeds into the shared _playQueue via the same
      * _orderChain + _advancePlayQueue machinery so playback is always serial.
      */
@@ -309,6 +315,7 @@ export class TTSQueue {
                 apiKey:  this.elevenLabsApiKey,
                 voiceId: this.elevenLabsVoiceId,
                 modelId: this.elevenLabsModelId,
+                mode:    this.elevenLabsMode,
             });
         }
 
