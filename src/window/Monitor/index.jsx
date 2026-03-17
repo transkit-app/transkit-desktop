@@ -324,14 +324,9 @@ export default function Monitor() {
         appWindow.setAlwaysOnTop(next);
     }, [isPinned]);
 
-    const toggleContextPanel = useCallback(async () => {
-        const next = !showContextPanel;
-        setShowContextPanel(next);
-        if (!isSubMode) {
-            const newH = next ? NORMAL_HEIGHT + CONTEXT_PANEL_HEIGHT : NORMAL_HEIGHT;
-            try { await appWindow.setSize(new LogicalSize(WINDOW_WIDTH, newH)); } catch (_) {}
-        }
-    }, [showContextPanel, isSubMode]);
+    const toggleContextPanel = useCallback(() => {
+        setShowContextPanel(prev => !prev);
+    }, []);
 
     const handleClear = useCallback(() => {
         setEntries([]);
