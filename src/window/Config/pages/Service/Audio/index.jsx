@@ -101,7 +101,10 @@ export default function Audio() {
                 });
                 setPingStatus(res.status < 400 ? 'ok' : 'fail');
             } else {
-                const base = (ttsServerUrl ?? 'http://localhost:8001').replace(/\/+$/, '');
+                const base = (ttsServerUrl ?? 'http://localhost:8001')
+                    .replace(/\/+$/, '')
+                    .replace(/^wss:\/\//, 'https://')
+                    .replace(/^ws:\/\//, 'http://');
                 const endpoint = ttsApiType === 'openai_compat'
                     ? `${base}/v1/models`
                     : `${base}/voices`;

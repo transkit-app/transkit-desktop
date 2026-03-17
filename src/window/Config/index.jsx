@@ -153,7 +153,7 @@ export default function Config() {
                             initial="initial"
                             animate="animate"
                             exit="exit"
-                            className="h-full"
+                            className="h-full overflow-y-auto config-scroll"
                         >
                             {page}
                         </motion.div>
