@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@nextui-org/react';
 import { BsPinFill } from 'react-icons/bs';
 import { AiFillCloseCircle } from 'react-icons/ai';
-import { MdOpenInFull, MdBlurOn, MdVolumeUp, MdVolumeOff } from 'react-icons/md';
+import { MdOpenInFull, MdBlurOn, MdVolumeUp, MdVolumeOff, MdSettings } from 'react-icons/md';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useConfig } from '../../hooks';
 import { osType } from '../../utils/env';
@@ -330,6 +330,10 @@ export default function Monitor() {
         setShowContextPanel(prev => !prev);
     }, []);
 
+    const openAudioConfig = useCallback(() => {
+        invoke('open_config_window');
+    }, []);
+
     const handleClear = useCallback(() => {
         setEntries([]);
         setProvisional('');
@@ -520,8 +524,18 @@ export default function Monitor() {
                     </span>
                 </div>
 
-                {/* Right: Pin + Close (close only on non-macOS since macOS has traffic lights) */}
+                {/* Right: Config + Pin + Close (close only on non-macOS since macOS has traffic lights) */}
                 <div className='flex items-center gap-0.5'>
+                    <Button
+                        isIconOnly
+                        size='sm'
+                        variant='light'
+                        className='h-[26px] w-[26px] min-w-0 bg-transparent'
+                        onPress={openAudioConfig}
+                        title={t('monitor.open_audio_config')}
+                    >
+                        <MdSettings className='text-[16px] text-default-400' />
+                    </Button>
                     <Button
                         isIconOnly
                         size='sm'
@@ -537,7 +551,7 @@ export default function Monitor() {
                         size='sm'
                         variant='light'
                         className='h-[26px] w-[26px] min-w-0 bg-transparent'
-                        onPress={() => appWindow.close()}
+                        onPress={() => appWindow.hide()}
                     >
                         <AiFillCloseCircle className='text-[16px] text-default-400' />
                     </Button>

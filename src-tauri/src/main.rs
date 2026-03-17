@@ -38,6 +38,7 @@ use updater::check_update;
 use audio_cmd::*;
 use edge_tts::synthesize_edge_tts;
 use window::config_window;
+use window::open_config_window;
 use window::updater_window;
 
 // Global AppHandle
@@ -165,7 +166,8 @@ fn main() {
             stop_audio_capture,
             play_audio_bytes,
             stop_audio_playback,
-            synthesize_edge_tts
+            synthesize_edge_tts,
+            open_config_window
         ])
         .on_system_tray_event(tray_event_handler)
         .build(tauri::generate_context!())

@@ -412,12 +412,26 @@ pub fn updater_window() {
     window.center().unwrap();
 }
 
+#[tauri::command]
+pub fn open_config_window() {
+    config_window();
+}
+
 pub fn monitor_window() {
     let app_handle = APP.get().unwrap();
     // The monitor window is pre-declared in tauri.conf.json (transparent: true, visible: false).
     // macOSPrivateApi: true ensures Tauri sets up WKWebView transparency properly at creation time,
     // avoiding manual ObjC calls and the GCD-dispatch panic that those can trigger.
     if let Some(window) = app_handle.get_window("monitor") {
+        // Intercept the native close button so the window hides instead of being destroyed.
+        // This allows the window to be re-shown on subsequent tray/shortcut activations.
+        let win_clone = window.clone();
+        window.on_window_event(move |event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                api.prevent_close();
+                win_clone.hide().unwrap_or_default();
+            }
+        });
         window.center().unwrap_or_default();
         window.show().unwrap_or_default();
         window.set_focus().unwrap_or_default();

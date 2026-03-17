@@ -261,6 +261,7 @@
             "source_mic": "Microphone",
             "start": "Start",
             "stop": "Stop",
+            "open_audio_config": "Audio settings",
             "pin": "Pin window",
             "unpin": "Unpin window",
             "placeholder": "Press Start to begin listening...",
