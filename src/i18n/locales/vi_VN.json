@@ -276,6 +276,7 @@
             "exit_sub_mode": "Thoát chế độ phụ đề",
             "tts_enable": "Bật đọc bản dịch",
             "tts_disable": "Tắt đọc bản dịch",
+            "tts_volume": "Âm lượng",
             "context_panel": "Ngữ cảnh",
             "ctx_domain_placeholder": "Mô tả chủ đề (VD: hội nghị Web3, y khoa...)",
             "ctx_terms_placeholder": "Thuật ngữ, cách nhau bằng dấu phẩy (VD: TransKit, Soniox, API)",

@@ -16,6 +16,7 @@ const API_TYPES = [
     { key: 'openai_compat', label: 'OpenAI Compatible (POST /v1/audio/speech)' },
     { key: 'google', label: 'Google Translate TTS (free)' },
     { key: 'edge_tts', label: 'Microsoft Edge TTS (built-in, free)' },
+    { key: 'elevenlabs', label: 'ElevenLabs (streaming, ultra-low latency)' },
 ];
 
 const EDGE_VI_VOICES = [
@@ -50,8 +51,12 @@ export default function Audio() {
     const [ttsEdgeVoice, setTtsEdgeVoice] = useConfig('tts_edge_voice', 'vi-VN-HoaiMyNeural');
     const [ttsEdgeRate, setTtsEdgeRate] = useConfig('tts_edge_rate', '+0%');
     const [ttsEdgePitch, setTtsEdgePitch] = useConfig('tts_edge_pitch', '+0Hz');
+    const [ttsElevenLabsApiKey, setTtsElevenLabsApiKey] = useConfig('tts_elevenlabs_api_key', '');
+    const [ttsElevenLabsVoiceId, setTtsElevenLabsVoiceId] = useConfig('tts_elevenlabs_voice_id', 'FTYCiQT21H9XQvhRu0ch');
+    const [ttsElevenLabsModelId, setTtsElevenLabsModelId] = useConfig('tts_elevenlabs_model_id', 'eleven_flash_v2_5');
 
     const [isVisible, setIsVisible] = useState(false);
+    const [isEl11Visible, setIsEl11Visible] = useState(false);
     const [pingStatus, setPingStatus] = useState(null); // null | 'ok' | 'fail'
     const [pinging, setPinging] = useState(false);
 
@@ -88,6 +93,13 @@ export default function Audio() {
                     { method: 'GET', timeout: 5 }
                 );
                 setPingStatus(res.status < 500 ? 'ok' : 'fail');
+            } else if (ttsApiType === 'elevenlabs') {
+                const res = await tauriFetch('https://api.elevenlabs.io/v1/user', {
+                    method: 'GET',
+                    headers: { 'xi-api-key': ttsElevenLabsApiKey || '' },
+                    timeout: 8,
+                });
+                setPingStatus(res.status < 400 ? 'ok' : 'fail');
             } else {
                 const base = (ttsServerUrl ?? 'http://localhost:8001').replace(/\/+$/, '');
                 const endpoint = ttsApiType === 'openai_compat'
@@ -102,7 +114,7 @@ export default function Audio() {
         } finally {
             setPinging(false);
         }
-    }, [ttsServerUrl, ttsApiType, ttsGoogleLang, ttsEdgeVoice, ttsEdgeRate, ttsEdgePitch]);
+    }, [ttsServerUrl, ttsApiType, ttsGoogleLang, ttsEdgeVoice, ttsEdgeRate, ttsEdgePitch, ttsElevenLabsApiKey]);
 
     return (
         <div className='config-page flex flex-col gap-4 p-1'>
@@ -233,8 +245,8 @@ export default function Audio() {
                         </Select>
                     </div>
 
-                    {/* Server URL — hidden for Google / Edge TTS */}
-                    {ttsApiType !== 'google' && ttsApiType !== 'edge_tts' && (
+                    {/* Server URL — hidden for Google / Edge TTS / ElevenLabs */}
+                    {ttsApiType !== 'google' && ttsApiType !== 'edge_tts' && ttsApiType !== 'elevenlabs' && (
                         <div className='flex flex-col gap-1'>
                             <p className='text-xs text-default-500'>{t('config.service.audio.tts_server_url')}</p>
                             <Input
@@ -247,7 +259,7 @@ export default function Audio() {
                     )}
 
                     {/* Model — VieNeu / OpenAI only */}
-                    {ttsApiType !== 'google' && ttsApiType !== 'edge_tts' && (
+                    {ttsApiType !== 'google' && ttsApiType !== 'edge_tts' && ttsApiType !== 'elevenlabs' && (
                         <div className='flex flex-col gap-1'>
                             <p className='text-xs text-default-500'>{t('config.service.audio.tts_model')}</p>
                             <Input
@@ -260,7 +272,7 @@ export default function Audio() {
                     )}
 
                     {/* Voice ID — VieNeu / OpenAI only */}
-                    {ttsApiType !== 'google' && ttsApiType !== 'edge_tts' && (
+                    {ttsApiType !== 'google' && ttsApiType !== 'edge_tts' && ttsApiType !== 'elevenlabs' && (
                         <div className='flex flex-col gap-1'>
                             <p className='text-xs text-default-500'>{t('config.service.audio.tts_voice_id')}</p>
                             <Input
@@ -340,6 +352,53 @@ export default function Audio() {
                                     placeholder='1'
                                     onValueChange={v => setTtsGoogleSpeed(parseFloat(v) || 1)}
                                 />
+                            </div>
+                        </>
+                    )}
+
+                    {/* ElevenLabs options */}
+                    {ttsApiType === 'elevenlabs' && (
+                        <>
+                            <div className='flex flex-col gap-1'>
+                                <p className='text-xs text-default-500'>API Key</p>
+                                <Input
+                                    size='sm'
+                                    type={isEl11Visible ? 'text' : 'password'}
+                                    value={ttsElevenLabsApiKey ?? ''}
+                                    placeholder='sk_...'
+                                    onValueChange={setTtsElevenLabsApiKey}
+                                    endContent={
+                                        <button type='button' onClick={() => setIsEl11Visible(v => !v)}>
+                                            {isEl11Visible
+                                                ? <AiFillEyeInvisible className='text-default-400' />
+                                                : <AiFillEye className='text-default-400' />}
+                                        </button>
+                                    }
+                                />
+                            </div>
+                            <div className='flex flex-col gap-1'>
+                                <p className='text-xs text-default-500'>Voice ID</p>
+                                <Input
+                                    size='sm'
+                                    value={ttsElevenLabsVoiceId ?? 'FTYCiQT21H9XQvhRu0ch'}
+                                    placeholder='FTYCiQT21H9XQvhRu0ch'
+                                    onValueChange={setTtsElevenLabsVoiceId}
+                                />
+                                <p className='text-xs text-default-400'>
+                                    Voice ID from elevenlabs.io/app/voice-lab
+                                </p>
+                            </div>
+                            <div className='flex flex-col gap-1'>
+                                <p className='text-xs text-default-500'>Model</p>
+                                <Input
+                                    size='sm'
+                                    value={ttsElevenLabsModelId ?? 'eleven_flash_v2_5'}
+                                    placeholder='eleven_flash_v2_5'
+                                    onValueChange={setTtsElevenLabsModelId}
+                                />
+                                <p className='text-xs text-default-400'>
+                                    eleven_flash_v2_5 (fastest) · eleven_multilingual_v2 (quality)
+                                </p>
                             </div>
                         </>
                     )}

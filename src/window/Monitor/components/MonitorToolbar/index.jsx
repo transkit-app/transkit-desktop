@@ -38,6 +38,7 @@ export default function MonitorToolbar({
     fontSize,
     isSubMode,
     isTTSEnabled,
+    ttsVolume,
     showContextPanel,
     showOriginal,
     bgOpacity,
@@ -51,6 +52,7 @@ export default function MonitorToolbar({
     onFontSizeChange,
     onToggleSubMode,
     onToggleTTS,
+    onSetTtsVolume,
     onToggleContextPanel,
 }) {
     const { t } = useTranslation();
@@ -180,20 +182,35 @@ export default function MonitorToolbar({
                 <MdSubtitles className='text-[14px]' />
             </Button>
 
-            {/* TTS toggle */}
-            <Button
-                isIconOnly
-                size='sm'
-                variant={isTTSEnabled ? 'solid' : 'light'}
-                color={isTTSEnabled ? 'secondary' : 'default'}
-                className='h-7 w-7 min-w-0'
-                onPress={onToggleTTS}
-                title={isTTSEnabled ? t('monitor.tts_disable') : t('monitor.tts_enable')}
-            >
-                {isTTSEnabled
-                    ? <MdVolumeUp className='text-[14px]' />
-                    : <MdVolumeOff className='text-[14px] text-default-400' />}
-            </Button>
+            {/* TTS toggle + inline volume slider (only visible when TTS enabled) */}
+            <div className='flex items-center gap-1'>
+                <Button
+                    isIconOnly
+                    size='sm'
+                    variant={isTTSEnabled ? 'solid' : 'light'}
+                    color={isTTSEnabled ? 'secondary' : 'default'}
+                    className='h-7 w-7 min-w-0'
+                    onPress={onToggleTTS}
+                    title={isTTSEnabled ? t('monitor.tts_disable') : t('monitor.tts_enable')}
+                >
+                    {isTTSEnabled
+                        ? <MdVolumeUp className='text-[14px]' />
+                        : <MdVolumeOff className='text-[14px] text-default-400' />}
+                </Button>
+                {isTTSEnabled && (
+                    <input
+                        type='range'
+                        min={0}
+                        max={100}
+                        step={5}
+                        value={Math.round((ttsVolume ?? 1.0) * 100)}
+                        onChange={e => onSetTtsVolume(Number(e.target.value) / 100)}
+                        title={`${t('monitor.tts_volume')}: ${Math.round((ttsVolume ?? 1.0) * 100)}%`}
+                        className='w-16 h-1 cursor-pointer'
+                        style={{ accentColor: 'hsl(var(--nextui-secondary))' }}
+                    />
+                )}
+            </div>
 
             {/* Context panel toggle */}
             <Button

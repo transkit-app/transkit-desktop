@@ -276,6 +276,7 @@
             "exit_sub_mode": "Exit subtitle mode",
             "tts_enable": "Enable voice playback",
             "tts_disable": "Disable voice playback",
+            "tts_volume": "Volume",
             "context_panel": "Context",
             "ctx_domain_placeholder": "Topic context (e.g. Web3 conference, medical talk...)",
             "ctx_terms_placeholder": "Key terms, comma-separated (e.g. TransKit, Soniox, API)",

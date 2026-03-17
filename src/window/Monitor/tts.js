@@ -1,28 +1,50 @@
 /**
  * TTSQueue — low-latency pipelined TTS playback
  *
- * Pipeline: fetch starts immediately on enqueue → overlaps with current playback.
- * Generation counter: stop()/replay() increments it so stale async ops bail out.
+ * ┌──────────────────────────────────────────────────────────────────────┐
+ * │  PIPELINE                                                            │
+ * │                                                                      │
+ * │  enqueue(text)                                                       │
+ * │    │                                                                 │
+ * │    ├─ splitChunks()                                                  │
+ * │    │                                                                 │
+ * │    ├─ fetch chunk 0 ──────────────────────────────────┐ (parallel)  │
+ * │    ├─ fetch chunk 1 ────────────────────────┐         │             │
+ * │    └─ fetch chunk N ──────────┐             │         │             │
+ * │                               │             │         │             │
+ * │    _orderChain (serial) ──────▼─────────────▼─────────▼──           │
+ * │    waits for each item in call order, decodes, then pushes to:      │
+ * │                                                                      │
+ * │    _playQueue [ {buffer, mime, text, rate}, ... ]                    │
+ * │                                                                      │
+ * │    _advancePlayQueue() — processes ONE item at a time:               │
+ * │      source.start(nextTime) → onended → _advancePlayQueue()         │
+ * │                                                                      │
+ * └──────────────────────────────────────────────────────────────────────┘
  *
- * Playback strategy:
- *   - VieNeu / OpenAI compat → AudioContext (independent of cpal input stream)
- *   - Google TTS (MP3)       → HTMLAudioElement (simpler, always works for MP3)
+ * This design guarantees:
+ *   - No overlapping audio — only one BufferSource plays at a time
+ *   - Correct order — items play in enqueue() order regardless of fetch speed
+ *   - Near-zero gap — _audioNextTime tracks the exact end of the last item
+ *   - Catch-up speed — items scheduled when the queue is long play faster
  *
  * Supported API types:
+ *   edge_tts       — Rust built-in Edge TTS (Tauri events, streamed MP3)
  *   vieneu_stream  — POST {serverUrl}/synthesize → raw 32-bit float PCM
- *   openai_compat  — POST {serverUrl}/v1/audio/speech → WAV/PCM bytes
- *   google         — GET  translate.google.com TTS    → MP3
+ *   openai_compat  — POST {serverUrl}/v1/audio/speech → WAV/PCM
+ *   google         — GET translate.google.com TTS → MP3 (sequential)
  */
 import { fetch as tauriFetch, Body, ResponseType } from '@tauri-apps/api/http';
 import { invoke } from '@tauri-apps/api/tauri';
 import { listen } from '@tauri-apps/api/event';
+import { ElevenLabsTTS } from './elevenlabs-tts';
 
 // ── Edge TTS native streaming ──────────────────────────────────────────────
-// One pair of persistent Tauri event listeners shared across all concurrent
-// synthesis calls. Each call gets a unique `id`; chunks are routed by that id.
+// Persistent Tauri event listeners shared across all concurrent synthesis calls.
+// Each call gets a unique `id`; chunks and completion are routed by that id.
 
-let _edgeListenersReady = null;           // Promise<void> — init guard
-const _edgePending = new Map();           // id → { chunks: Uint8Array[], resolve, reject }
+let _edgeListenersReady = null;
+const _edgePending = new Map(); // id → { chunks, resolve, reject } | { onChunk, onDone, onError }
 
 async function initEdgeListeners() {
     if (_edgeListenersReady) return _edgeListenersReady;
@@ -33,16 +55,25 @@ async function initEdgeListeners() {
             const bin = atob(payload.data);
             const bytes = new Uint8Array(bin.length);
             for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            // Streaming path (Phase 2 / non-WKWebView)
+            if (entry.onChunk) { entry.onChunk(bytes); return; }
+            // Buffer-collect path (Phase 1 / macOS)
             entry.chunks.push(bytes);
         }),
         listen('edge_tts_done', ({ payload }) => {
             const entry = _edgePending.get(payload.id);
             if (!entry) return;
             _edgePending.delete(payload.id);
+            // Streaming path
+            if (entry.onDone || entry.onError) {
+                if (payload.error) entry.onError?.(payload.error);
+                else entry.onDone?.();
+                return;
+            }
+            // Buffer-collect path
             if (payload.error) {
                 entry.reject(new Error(payload.error));
             } else {
-                // Assemble all MP3 chunks into one ArrayBuffer.
                 const total = entry.chunks.reduce((s, c) => s + c.length, 0);
                 const buf = new Uint8Array(total);
                 let off = 0;
@@ -57,7 +88,6 @@ async function initEdgeListeners() {
 const SILENT_WAV_URI =
     'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
 
-/** Wrap raw PCM bytes in a WAV header. audioFormat: 1=PCM int, 3=IEEE float */
 function wrapPcmInWav(pcmBytes, sampleRate = 24000, channels = 1, bitsPerSample = 16, audioFormat = 1) {
     const byteRate = sampleRate * channels * (bitsPerSample / 8);
     const blockAlign = channels * (bitsPerSample / 8);
@@ -75,99 +105,377 @@ function wrapPcmInWav(pcmBytes, sampleRate = 24000, channels = 1, bitsPerSample 
     return buf;
 }
 
+// ── TTSQueue ───────────────────────────────────────────────────────────────
+
 export class TTSQueue {
     constructor() {
-        this.readyQueue = [];
-        this.isPlaying = false;
-        this.enabled = false;
+        // ── playback state ─────────────────────────────────────────────────
+        this.isPlaying   = false;
+        this.enabled     = false;
         this.playingText = null;
-        this.sampleRate = 24000;
+
+        // ── callbacks ──────────────────────────────────────────────────────
+        this.onPlayStart = null;  // (text: string) => void
+        this.onPlayEnd   = null;  // () => void
+
+        // ── config ─────────────────────────────────────────────────────────
+        this.sampleRate    = 24000;
+        this.apiType       = 'vieneu_stream';
+        this.serverUrl     = 'http://localhost:8001';
+        this.voiceId       = 'NgocHuyen';
+        this.model         = 'pnnbao-ump/VieNeu-TTS-0.3B-q4-gguf';
+        this.googleLang    = 'vi';
+        this.googleSpeed   = 1;
+        this.baseRate      = 1.0;
+        this.volume        = 1.0;   // 0.0–1.0 output volume via GainNode
+        this.edgeServerUrl = 'http://localhost:3099';
+        this.edgeVoice     = 'vi-VN-HoaiMyNeural';
+        this.edgeRate      = '+0%';
+        this.edgePitch     = '+0Hz';
+        // ElevenLabs
+        this.elevenLabsApiKey  = '';
+        this.elevenLabsVoiceId = 'FTYCiQT21H9XQvhRu0ch';
+        this.elevenLabsModelId = 'eleven_flash_v2_5';
+
+        // ── ElevenLabs provider ────────────────────────────────────────────
+        /** @type {ElevenLabsTTS|null} */
+        this._elevenlabs = null;
+
+        // ── AudioContext (non-Google types) ────────────────────────────────
+        this._audioCtx      = null;
+        /** GainNode for output volume control. Recreated with each new AudioContext. */
+        this._gainNode      = null;
+        /** Absolute AudioContext time when the next item should start. */
+        this._audioNextTime = 0;
+
+        // ── play queue ─────────────────────────────────────────────────────
+        // Decoded AudioBuffers waiting to be played, in enqueue order.
+        /** @type {{ buffer: ArrayBuffer, mime: string, text: string, rate: number }[]} */
+        this._playQueue       = [];
+        this._playQueueActive = false; // true while _advancePlayQueue is running
+
+        // ── order chain ────────────────────────────────────────────────────
+        // Serial Promise chain that adds decoded items to _playQueue in the
+        // exact order they were enqueued, even when fetches finish out of order.
+        this._orderChain = Promise.resolve();
+
+        // ── pending count (catch-up speed) ─────────────────────────────────
+        // Number of items fetched but not yet added to _playQueue.
+        // Used by _calcRate() to increase playback speed when backlogged.
+        this._pendingCount = 0;
+
+        // ── cancel generation ──────────────────────────────────────────────
         this._generation = 0;
 
-        // HTMLAudioElement — used only for Google MP3
-        this._audio = null;
-        this._blobUrl = null;
-
-        // AudioContext — used for VieNeu / OpenAI PCM
-        this._audioCtx = null;
-        this._currentSource = null;
-
-        this.onPlayStart = null;
-        this.onPlayEnd = null;
-
-        this.serverUrl = 'http://localhost:8001';
-        this.apiType = 'vieneu_stream';
-        this.voiceId = 'NgocHuyen';
-        this.model = 'pnnbao-ump/VieNeu-TTS-0.3B-q4-gguf';
-        this.googleLang = 'vi';
-        this.googleSpeed = 1;
-        this.baseRate = 1.0; // user-configured base playback speed
-        // Edge TTS params
-        this.edgeServerUrl = 'http://localhost:3099';
-        this.edgeVoice = 'vi-VN-HoaiMyNeural';
-        this.edgeRate = '+0%';
-        this.edgePitch = '+0Hz';
+        // ── Google TTS (sequential, HTMLAudioElement) ──────────────────────
+        this._googleQueue   = [];
+        this._googlePlaying = false;
+        this._audio         = null;
+        this._blobUrl       = null;
     }
 
-    updateConfig({ serverUrl, apiType, voiceId, model, sampleRate, googleLang, googleSpeed, baseRate, edgeServerUrl, edgeVoice, edgeRate, edgePitch } = {}) {
-        if (serverUrl   !== undefined) this.serverUrl  = serverUrl;
-        if (apiType     !== undefined) this.apiType    = apiType;
-        if (voiceId     !== undefined) this.voiceId    = voiceId    || 'NgocHuyen';
-        if (model       !== undefined) this.model      = model      || 'pnnbao-ump/VieNeu-TTS-0.3B-q4-gguf';
-        if (sampleRate  !== undefined) this.sampleRate = sampleRate || 24000;
-        if (googleLang  !== undefined) this.googleLang = googleLang || 'vi';
-        if (googleSpeed !== undefined) this.googleSpeed = googleSpeed || 1;
-        if (baseRate    !== undefined) this.baseRate    = baseRate   || 1.0;
+    // ── public config ──────────────────────────────────────────────────────
+
+    updateConfig({
+        serverUrl, apiType, voiceId, model, sampleRate,
+        googleLang, googleSpeed, baseRate, volume,
+        edgeServerUrl, edgeVoice, edgeRate, edgePitch,
+        elevenLabsApiKey, elevenLabsVoiceId, elevenLabsModelId,
+    } = {}) {
+        if (serverUrl     !== undefined) this.serverUrl     = serverUrl;
+        if (apiType       !== undefined) this.apiType       = apiType;
+        if (voiceId       !== undefined) this.voiceId       = voiceId       || 'NgocHuyen';
+        if (model         !== undefined) this.model         = model         || 'pnnbao-ump/VieNeu-TTS-0.3B-q4-gguf';
+        if (sampleRate    !== undefined) this.sampleRate    = sampleRate    || 24000;
+        if (googleLang    !== undefined) this.googleLang    = googleLang    || 'vi';
+        if (googleSpeed   !== undefined) this.googleSpeed   = googleSpeed   || 1;
+        if (baseRate      !== undefined) this.baseRate      = baseRate      || 1.0;
+        if (volume        !== undefined) {
+            this.volume = Math.min(Math.max(volume, 0.0), 1.0);
+            // Apply immediately to the live audio element and GainNode.
+            if (this._audio) this._audio.volume = this.volume;
+            if (this._gainNode) this._gainNode.gain.value = this.volume;
+        }
         if (edgeServerUrl !== undefined) this.edgeServerUrl = edgeServerUrl || 'http://localhost:3099';
-        if (edgeVoice   !== undefined) this.edgeVoice  = edgeVoice  || 'vi-VN-HoaiMyNeural';
-        if (edgeRate    !== undefined) this.edgeRate   = edgeRate   || '+0%';
-        if (edgePitch   !== undefined) this.edgePitch  = edgePitch  || '+0Hz';
+        if (edgeVoice     !== undefined) this.edgeVoice     = edgeVoice     || 'vi-VN-HoaiMyNeural';
+        if (edgeRate      !== undefined) this.edgeRate      = edgeRate      || '+0%';
+        if (edgePitch     !== undefined) this.edgePitch     = edgePitch     || '+0Hz';
+        if (elevenLabsApiKey  !== undefined) this.elevenLabsApiKey  = elevenLabsApiKey;
+        if (elevenLabsVoiceId !== undefined) this.elevenLabsVoiceId = elevenLabsVoiceId || 'FTYCiQT21H9XQvhRu0ch';
+        if (elevenLabsModelId !== undefined) this.elevenLabsModelId = elevenLabsModelId || 'eleven_flash_v2_5';
+        // Re-configure ElevenLabs client if it exists.
+        if (this._elevenlabs) {
+            this._elevenlabs.updateConfig({
+                apiKey:  this.elevenLabsApiKey,
+                voiceId: this.elevenLabsVoiceId,
+                modelId: this.elevenLabsModelId,
+            });
+        }
     }
 
     setEnabled(enabled) {
+        console.debug('[TTS] setEnabled:', enabled, '| apiType:', this.apiType);
         this.enabled = enabled;
         if (enabled) this._unlockAudio();
         else this.stop();
     }
 
-    enqueue(text) {
-        if (!this.enabled || !text?.trim()) return;
-        const trimmed = text.trim();
+    // ── enqueue ────────────────────────────────────────────────────────────
 
-        // Edge TTS: split into chunks so playback starts on the first chunk
-        // while later chunks are still being fetched (~200ms/chunk latency).
-        if (this.apiType === 'edge_tts') {
-            const chunks = this._splitTextChunks(trimmed);
-            for (const chunk of chunks) {
-                const promise = this._fetchAudio(chunk).catch(err => {
-                    console.error('[TTS] prefetch failed:', String(err));
-                    return null;
-                });
-                // All chunks carry the full sentence text so the MonitorLog
-                // highlight stays alive for the entire sentence duration.
-                this.readyQueue.push({ text: trimmed, promise });
-            }
-            if (!this.isPlaying) this._playNext();
+    enqueue(text) {
+        if (!this.enabled || !text?.trim()) {
+            console.debug('[TTS] enqueue skipped — enabled:', this.enabled, 'text:', !!text?.trim());
+            return;
+        }
+        const trimmed = text.trim();
+        console.debug('[TTS] enqueue →', this.apiType, JSON.stringify(trimmed.slice(0, 30)));
+
+        if (this.apiType === 'google') {
+            this._enqueueGoogle(trimmed);
             return;
         }
 
-        const promise = this._fetchAudio(trimmed).catch(err => {
-            console.error('[TTS] prefetch failed:', String(err));
-            return null;
-        });
-        this.readyQueue.push({ text: trimmed, promise });
-        if (!this.isPlaying) this._playNext();
+        if (this.apiType === 'elevenlabs') {
+            this._enqueueElevenLabs(trimmed);
+            return;
+        }
+
+        this._enqueueScheduled(trimmed);
+    }
+
+    // ── replay ─────────────────────────────────────────────────────────────
+
+    replay(text) {
+        if (!text?.trim()) return;
+        this.enabled = true; // replay is an explicit user action — force-enable regardless of state
+        this.stop();
+        this._unlockAudio(); // must be AFTER stop() so the new AudioContext is unlocked in the user-gesture context
+
+        const trimmed = text.trim();
+        if (this.apiType === 'google') { this._enqueueGoogle(trimmed); return; }
+        if (this.apiType === 'elevenlabs') { this._enqueueElevenLabs(trimmed); return; }
+        this._enqueueScheduled(trimmed);
+    }
+
+    // ── stop ───────────────────────────────────────────────────────────────
+
+    stop() {
+        this._generation++;
+
+        // Drop all pending queue work.
+        this._orderChain    = Promise.resolve();
+        this._pendingCount  = 0;
+        this._playQueue     = [];
+        this._playQueueActive = false;
+        this._audioNextTime = 0;
+
+        // Stop AudioContext (fastest way to silence all scheduled audio).
+        if (this._audioCtx && this._audioCtx.state !== 'closed') {
+            this._audioCtx.close().catch(() => {});
+        }
+        this._audioCtx = null;
+        this._gainNode = null;
+
+        // Stop ElevenLabs (disconnect WebSocket).
+        this._elevenlabs?.stop();
+
+        // Stop Google HTMLAudioElement.
+        this._stopGoogle();
+        this._googleQueue   = [];
+        this._googlePlaying = false;
+
+        this.isPlaying   = false;
+        this.playingText = null;
+        this.onPlayEnd?.();
+    }
+
+    // ── private: ElevenLabs streaming path ────────────────────────────────
+
+    /**
+     * Route text to the ElevenLabs HTTP provider.
+     * Uses POST /v1/text-to-speech/{voice_id}/stream via Tauri's Rust HTTP
+     * client (bypasses WKWebView WebSocket limitations on macOS).
+     * The resulting MP3 buffer feeds into the shared _playQueue via the same
+     * _orderChain + _advancePlayQueue machinery so playback is always serial.
+     */
+    _enqueueElevenLabs(text) {
+        if (!this.elevenLabsApiKey) {
+            console.warn('[TTS] ElevenLabs: no API key configured');
+            return;
+        }
+
+        if (!this._elevenlabs) {
+            this._elevenlabs = new ElevenLabsTTS({
+                apiKey:  this.elevenLabsApiKey,
+                voiceId: this.elevenLabsVoiceId,
+                modelId: this.elevenLabsModelId,
+            });
+        }
+
+        if (!this.isPlaying) this.isPlaying = true;
+
+        const queueGen = this._generation;
+        this._pendingCount++;
+
+        // ElevenLabs delivers a single ArrayBuffer per text item.
+        // We wrap it in the same _orderChain so it queues behind any items
+        // already in-flight.
+        const fetchPromise = this._elevenlabs.synthesize(text);
+
+        this._orderChain = this._orderChain
+            .then(async () => {
+                this._pendingCount = Math.max(0, this._pendingCount - 1);
+
+                let buffer;
+                try { buffer = await fetchPromise; } catch (e) {
+                    console.error('[TTS] ElevenLabs synthesize failed:', e);
+                    return;
+                }
+
+                if (!buffer || !this.enabled || this._generation !== queueGen) return;
+
+                this._playQueue.push({ buffer, mime: 'audio/mpeg', text, rate: this._calcRate() });
+                if (!this._playQueueActive) this._advancePlayQueue();
+            })
+            .catch(err => {
+                this._pendingCount = Math.max(0, this._pendingCount - 1);
+                console.error('[TTS] ElevenLabs chain error:', String(err));
+            });
+    }
+
+    // ── private: main scheduled path (edge_tts / vieneu / openai_compat) ──
+
+    /**
+     * Parallel fetch + serial queue:
+     *
+     *  1. Split text into short chunks (edge_tts only).
+     *  2. Start ALL fetches immediately in parallel.
+     *  3. For each chunk, append a step to `_orderChain`:
+     *       a. Wait for this chunk's fetch to complete.
+     *       b. Decode the audio data.
+     *       c. Push decoded AudioBuffer onto `_playQueue` (in order).
+     *       d. Kick _advancePlayQueue() if it's idle.
+     *
+     * Because all steps go through the single serial `_orderChain`, items
+     * always reach _playQueue in enqueue order even when fetch N+1 is faster
+     * than fetch N.
+     */
+    _enqueueScheduled(text) {
+        const chunks = this.apiType === 'edge_tts'
+            ? this._splitTextChunks(text)
+            : [text];
+
+        const queueGen = this._generation;
+        if (!this.isPlaying) this.isPlaying = true;
+
+        // ── Parallel fetch ──────────────────────────────────────────────────
+        const fetchPromises = chunks.map(chunk =>
+            this._fetchAudio(chunk).catch(err => {
+                console.error('[TTS] prefetch failed:', String(err));
+                return null;
+            }),
+        );
+
+        this._pendingCount += chunks.length;
+
+        // ── Serial enqueue ──────────────────────────────────────────────────
+        // Each iteration appends to _orderChain, ensuring strict ordering.
+        for (const fetchPromise of fetchPromises) {
+            this._orderChain = this._orderChain
+                .then(async () => {
+                    const result = await fetchPromise;
+
+                    // Always decrement so _calcRate() stays accurate.
+                    this._pendingCount = Math.max(0, this._pendingCount - 1);
+
+                    console.debug('[TTS] fetch result:', result ? result.mime : 'null', '| enabled:', this.enabled, '| gen ok:', this._generation === queueGen);
+                    if (!result || !this.enabled || this._generation !== queueGen) return;
+
+                    // Wrap raw PCM-F32 in a WAV header so HTMLAudioElement can play it.
+                    let { buffer, mime } = result;
+                    if (mime === 'audio/pcm-f32') {
+                        buffer = wrapPcmInWav(buffer, this.sampleRate);
+                        mime   = 'audio/wav';
+                    }
+
+                    console.debug('[TTS] push to playQueue — mime:', mime, '| queueActive:', this._playQueueActive, '| queueLen:', this._playQueue.length);
+                    this._playQueue.push({ buffer, mime, text, rate: this._calcRate() });
+
+                    // Start the player if it's idle.
+                    if (!this._playQueueActive) this._advancePlayQueue();
+                })
+                .catch(err => {
+                    this._pendingCount = Math.max(0, this._pendingCount - 1);
+                    console.error('[TTS] order-chain error:', String(err));
+                });
+        }
     }
 
     /**
-     * Split text into small chunks for pipelined TTS playback.
-     * Splits at punctuation boundaries; falls back to fixed-length slices.
-     * maxLen ~40 chars ≈ 5-8 words / one short Vietnamese/Chinese phrase.
+     * Play the next item from _playQueue via HTMLAudioElement.
+     * Called: (a) when a new item is pushed and the player is idle,
+     *         (b) after the previous item finishes playing.
+     *
+     * HTMLAudioElement is used instead of AudioContext because on macOS
+     * WKWebView the AudioContext destination does not reliably route to the
+     * system audio output (especially when a virtual audio device is active
+     * for system-audio capture).  HTMLAudioElement uses AVAudioPlayer which
+     * always targets the correct output.
      */
-    _splitTextChunks(text, maxLen = 40) {
+    _advancePlayQueue() {
+        if (this._playQueue.length === 0) {
+            this._playQueueActive = false;
+            this._audioNextTime   = 0;
+            this.isPlaying        = false;
+            this.playingText      = null;
+            return;
+        }
+
+        this._playQueueActive = true;
+
+        const { buffer, mime, text, rate } = this._playQueue.shift();
+        const gen = this._generation;
+
+        console.debug('[TTS] _advancePlayQueue — mime:', mime, '| rate:', rate?.toFixed(2), '| queueLen:', this._playQueue.length);
+
+        this.playingText = text;
+        this.onPlayStart?.(text);
+
+        this._playViaElement(buffer, mime, rate)
+            .finally(() => {
+                if (this._generation !== gen) return;
+                this.playingText = null;
+                this.onPlayEnd?.();
+                this._advancePlayQueue();
+            });
+    }
+
+    /**
+     * Catch-up playback speed.
+     * When many items are waiting in the decode/queue pipeline, earlier items
+     * play faster so the queue drains before falling too far behind speech.
+     *
+     *   0 pending → ×1.0 (normal)
+     *   1 pending → ×1.5
+     *   2 pending → ×2.0
+     *   ≥3 pending → ×2.5  (capped at 4.0)
+     */
+    _calcRate() {
+        const base = this.baseRate || 1.0;
+        const n    = this._pendingCount;
+        const mul  = n >= 3 ? 2.5 : n === 2 ? 2.0 : n === 1 ? 1.5 : 1.0;
+        return Math.min(base * mul, 4.0);
+    }
+
+    /**
+     * Split text into short chunks for pipelined TTS synthesis.
+     * Splits at punctuation boundaries; falls back to the full text.
+     * ~60 chars ≈ 8-12 words — short enough for low TTFB, long enough
+     * to keep WebSocket round-trips down.
+     */
+    _splitTextChunks(text, maxLen = 60) {
         if (text.length <= maxLen) return [text];
         const chunks = [];
-        // Split at sentence-ending / clause punctuation
         const segs = text.split(/(?<=[,，;；!！?？.。、])\s*/);
         let cur = '';
         for (const seg of segs) {
@@ -183,77 +491,68 @@ export class TTSQueue {
         return chunks.length > 0 ? chunks : [text];
     }
 
-    replay(text) {
-        if (!text?.trim()) return;
-        this._unlockAudio();
-        this._cancel();
-        const trimmed = text.trim();
-        const promise = this._fetchAudio(trimmed).catch(err => {
-            console.error('[TTS] replay fetch failed:', String(err));
+    // ── private: Google TTS path (HTMLAudioElement, sequential) ───────────
+
+    _enqueueGoogle(text) {
+        const promise = this._fetchGoogle(text).catch(err => {
+            console.error('[TTS] Google prefetch failed:', String(err));
             return null;
         });
-        this.readyQueue = [{ text: trimmed, promise }];
-        this._playNext();
+        this._googleQueue.push({ text, promise });
+        if (!this._googlePlaying) this._playNextGoogle();
     }
 
-    stop() {
-        this._cancel();
-        this.readyQueue = [];
-    }
-
-    // ─── private ────────────────────────────────────────────────────────────
-
-    _base() { return this.serverUrl.replace(/\/+$/, ''); }
-    _edgeBase() { return (this.edgeServerUrl || 'http://localhost:3099').replace(/\/+$/, ''); }
-
-    _cancel() {
-        this._generation++;
-        this._stopCurrent();
-        this.isPlaying = false;
-        this.playingText = null;
-        this.onPlayEnd?.();
-    }
-
-    /** Called during user gesture to unlock both audio backends */
-    _unlockAudio() {
-        // Unlock HTMLAudioElement (for Google TTS MP3)
-        if (!this._audio) this._audio = new Audio();
-        this._audio.src = SILENT_WAV_URI;
-        this._audio.play().catch(() => {});
-
-        // Create AudioContext during user gesture so it's allowed to play later
-        const ctx = this._getAudioContext();
-        if (ctx.state === 'suspended') ctx.resume().catch(() => {});
-    }
-
-    _getAudioContext() {
-        if (!this._audioCtx || this._audioCtx.state === 'closed') {
-            this._audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    async _playNextGoogle() {
+        if (this._googleQueue.length === 0) {
+            this._googlePlaying = false;
+            this.isPlaying      = false;
+            this.playingText    = null;
+            this.onPlayEnd?.();
+            return;
         }
-        return this._audioCtx;
-    }
+        this._googlePlaying = true;
+        this.isPlaying      = true;
 
-    _stopCurrent() {
-        // Stop AudioContext source
-        if (this._currentSource) {
-            try { this._currentSource.stop(); } catch (_) {}
-            this._currentSource = null;
-        }
-        // Stop HTMLAudioElement
-        if (this._audio) {
-            this._audio.onended = null;
-            this._audio.onerror = null;
-            try { this._audio.pause(); } catch (_) {}
-        }
-        if (this._blobUrl) {
-            URL.revokeObjectURL(this._blobUrl);
-            this._blobUrl = null;
+        const gen = this._generation;
+        const { text, promise } = this._googleQueue.shift();
+
+        try {
+            const result = await promise;
+            if (this._generation !== gen) return;
+            if (!result || !this.enabled) {
+                if (this._googleQueue.length > 0) this._playNextGoogle();
+                else { this._googlePlaying = false; this.isPlaying = false; }
+                return;
+            }
+
+            this.playingText = text;
+            this.onPlayStart?.(text);
+            await this._playViaElement(result.buffer, result.mime);
+
+            if (this._generation !== gen) return;
+            this.playingText = null;
+            this.onPlayEnd?.();
+            if (this.enabled && this._googleQueue.length > 0) this._playNextGoogle();
+            else { this._googlePlaying = false; this.isPlaying = false; }
+        } catch (err) {
+            if (this._generation !== gen) return;
+            console.error('[TTS] Google play error:', String(err));
+            this.playingText = null;
+            this.onPlayEnd?.();
+            if (this.enabled && this._googleQueue.length > 0) {
+                setTimeout(() => this._playNextGoogle(), 200);
+            } else {
+                this._googlePlaying = false;
+                this.isPlaying      = false;
+            }
         }
     }
+
+    // ── private: fetch ─────────────────────────────────────────────────────
 
     /** Returns { buffer: ArrayBuffer, mime: string } */
     async _fetchAudio(text) {
-        if (this.apiType === 'google') return this._fetchGoogle(text);
+        if (this.apiType === 'google')   return this._fetchGoogle(text);
         if (this.apiType === 'edge_tts') return this._fetchEdgeTTSNative(text);
 
         const base = this._base();
@@ -262,24 +561,24 @@ export class TTSQueue {
             const res = await tauriFetch(`${base}/v1/audio/speech`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: Body.json({ model: 'tts-1', input: text, voice: this.voiceId || 'alloy', response_format: 'wav' }),
+                body: Body.json({
+                    model: 'tts-1', input: text,
+                    voice: this.voiceId || 'alloy', response_format: 'wav',
+                }),
                 responseType: ResponseType.Binary,
                 timeout: 30,
             });
             if (res.status >= 400) throw new Error(`TTS HTTP ${res.status}`);
             const raw = new Uint8Array(res.data);
             const isRiff = raw[0] === 0x52 && raw[1] === 0x49 && raw[2] === 0x46 && raw[3] === 0x46;
-            // Ensure it's a WAV file with a header so decodeAudioData can handle it
-            return { buffer: isRiff ? raw.buffer : wrapPcmInWav(raw.buffer, this.sampleRate, 1, 16, 1), mime: 'audio/wav' };
+            return {
+                buffer: isRiff ? raw.buffer : wrapPcmInWav(raw.buffer, this.sampleRate, 1, 16, 1),
+                mime: 'audio/wav',
+            };
         }
 
-        // vieneu_stream → POST /synthesize
-        const reqBody = {
-            text,
-            voice_id: this.voiceId || 'NgocHuyen',
-            chunk_size: 100,
-        };
-        // Include model only if explicitly configured
+        // vieneu_stream
+        const reqBody = { text, voice_id: this.voiceId || 'NgocHuyen', chunk_size: 100 };
         if (this.model) reqBody.model = this.model;
 
         const res = await tauriFetch(`${base}/synthesize`, {
@@ -292,29 +591,15 @@ export class TTSQueue {
         if (res.status >= 400) throw new Error(`TTS HTTP ${res.status}`);
         const raw = new Uint8Array(res.data);
         const isRiff = raw[0] === 0x52 && raw[1] === 0x49 && raw[2] === 0x46 && raw[3] === 0x46;
-        if (isRiff) {
-            // Proper WAV file — HTMLAudioElement handles it best
-            return { buffer: raw.buffer, mime: 'audio/wav' };
-        }
-        // Raw 32-bit float PCM (no header) — AudioContext direct copy path
+        if (isRiff) return { buffer: raw.buffer, mime: 'audio/wav' };
         return { buffer: raw.buffer, mime: 'audio/pcm-f32' };
     }
 
-    /**
-     * Synthesize text via the built-in Rust Edge TTS client.
-     *
-     * Rust opens a native WebSocket to Microsoft's TTS service (no Node.js
-     * server required), streams MP3 chunks back as `edge_tts_chunk` Tauri
-     * events, and signals completion with `edge_tts_done`.
-     *
-     * Multiple concurrent synthesis calls are multiplexed by `id` so that
-     * text-chunk pipelining works correctly (chunk 2 is fetched while chunk 1
-     * is playing).
-     */
     async _fetchEdgeTTSNative(text) {
         await initEdgeListeners();
 
-        const id = (crypto.randomUUID?.() ?? Math.random().toString(36).slice(2) + Date.now().toString(36));
+        const id = crypto.randomUUID?.()
+            ?? Math.random().toString(36).slice(2) + Date.now().toString(36);
 
         const buffer = await new Promise((resolve, reject) => {
             _edgePending.set(id, { chunks: [], resolve, reject });
@@ -322,10 +607,9 @@ export class TTSQueue {
                 id,
                 text,
                 voice: this.edgeVoice || 'vi-VN-HoaiMyNeural',
-                rate: this.edgeRate || '+0%',
+                rate:  this.edgeRate  || '+0%',
                 pitch: this.edgePitch || '+0Hz',
             }).catch(err => {
-                // invoke itself failed (e.g. command not found) — reject the pending entry.
                 _edgePending.delete(id);
                 reject(new Error(String(err)));
             });
@@ -340,74 +624,41 @@ export class TTSQueue {
             total: '1', idx: '0', textlen: String(text.length),
             client: 'tw-ob', prev: 'input', ttsspeed: String(this.googleSpeed ?? 1),
         });
-        const res = await tauriFetch(`https://translate.google.com/translate_tts?${params}`, {
-            method: 'GET',
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Referer': 'https://translate.google.com/',
+        const res = await tauriFetch(
+            `https://translate.google.com/translate_tts?${params}`,
+            {
+                method: 'GET',
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'Referer': 'https://translate.google.com/',
+                },
+                responseType: ResponseType.Binary,
+                timeout: 15,
             },
-            responseType: ResponseType.Binary,
-            timeout: 15,
-        });
+        );
         if (res.status >= 400) throw new Error(`Google TTS HTTP ${res.status}`);
         return { buffer: new Uint8Array(res.data).buffer, mime: 'audio/mpeg' };
     }
 
-    /**
-     * Play via Web Audio API (AudioContext).
-     * Works independently of cpal input streams — no conflict with audio capture.
-     *
-     * mime 'audio/pcm-f32': raw 32-bit float PCM → copied directly into AudioBuffer
-     * mime 'audio/wav':     decoded via decodeAudioData (supports 16-bit PCM WAV)
-     */
-    async _playViaAudioCtx(buffer, mime, playbackRate = 1.0, gen) {
-        const ctx = this._getAudioContext();
-        if (ctx.state === 'suspended') await ctx.resume();
+    // ── private: Google HTMLAudioElement playback ──────────────────────────
 
-        let audioBuffer;
-        if (mime === 'audio/pcm-f32') {
-            const float32 = new Float32Array(buffer);
-            audioBuffer = ctx.createBuffer(1, float32.length, this.sampleRate);
-            audioBuffer.getChannelData(0).set(float32);
-        } else {
-            audioBuffer = await ctx.decodeAudioData(buffer.slice(0));
-        }
-
-        await new Promise((resolve, reject) => {
-            const source = ctx.createBufferSource();
-            source.buffer = audioBuffer;
-            source.playbackRate.value = playbackRate;
-            source.connect(ctx.destination);
-            source.onended = () => { this._currentSource = null; resolve(); };
-            this._currentSource = source;
-            const stopWatcher = this._startRateWatcher(() => this._currentSource, gen ?? this._generation);
-            source.onended = () => { stopWatcher(); this._currentSource = null; resolve(); };
-            try {
-                source.start(0);
-            } catch (err) {
-                stopWatcher();
-                this._currentSource = null;
-                reject(err);
-            }
-        });
-    }
-
-    /** Play via HTMLAudioElement — used for MP3 and standard WAV */
-    async _playViaElement(buffer, mime = 'audio/mpeg', playbackRate = 1.0, gen) {
+    async _playViaElement(buffer, mime = 'audio/mpeg', rate = 1.0) {
         const blob = new Blob([buffer], { type: mime });
-        const url = URL.createObjectURL(blob);
+        const url  = URL.createObjectURL(blob);
         if (this._blobUrl) URL.revokeObjectURL(this._blobUrl);
         this._blobUrl = url;
+
         const audio = this._audio || new Audio();
-        this._audio = audio;
-        audio.src = url;
-        audio.playbackRate = playbackRate;
+        this._audio        = audio;
+        audio.src          = url;
+        audio.playbackRate = Math.min(Math.max(rate || 1.0, 0.1), 4.0);
+        audio.volume       = Math.min(Math.max(this.volume ?? 1.0, 0.0), 1.0);
+
         try {
             await new Promise((resolve, reject) => {
-                const stopWatcher = this._startRateWatcher(() => this._audio, gen ?? this._generation);
-                audio.onended = () => { stopWatcher(); resolve(); };
-                audio.onerror = () => { stopWatcher(); reject(new Error(audio.error?.message ?? 'audio error')); };
-                audio.play().catch(err => { stopWatcher(); reject(err); });
+                audio.onended = () => resolve();
+                audio.onerror = () => reject(new Error(audio.error?.message ?? 'audio error'));
+                audio.play().catch(reject);
             });
             return true;
         } catch (err) {
@@ -416,98 +667,84 @@ export class TTSQueue {
         }
     }
 
-    /**
-     * Compute playback rate: baseRate scaled up when items are waiting.
-     * Multipliers: ×1.0 / ×1.5 / ×2.0 / ×2.5 relative to baseRate.
-     * Capped at 4.0× to stay comprehensible.
-     */
-    _playbackRate() {
-        const base = this.baseRate || 1.0;
-        const n = this.readyQueue.length;
-        const mul = n >= 3 ? 2.5 : n === 2 ? 2.0 : n === 1 ? 1.5 : 1.0;
-        return Math.min(base * mul, 4.0);
-    }
-
-    /**
-     * Dynamically update playback rate while an item is playing.
-     * Queue may grow during playback (prefetch completes), so we
-     * re-check every 300ms and bump rate if needed.
-     * Returns a cancel function.
-     */
-    _startRateWatcher(getAudioNode, gen) {
-        const id = setInterval(() => {
-            if (this._generation !== gen) { clearInterval(id); return; }
-            const rate = this._playbackRate();
-            const node = getAudioNode();
-            if (!node) return;
-            // HTMLAudioElement
-            if (node instanceof HTMLMediaElement && node.playbackRate !== rate) {
-                node.playbackRate = rate;
-                if (rate > 1.0) console.debug(`[TTS] rate → ${rate}x (queue: ${this.readyQueue.length})`);
-            }
-            // AudioBufferSourceNode
-            if (node.playbackRate && typeof node.playbackRate.value === 'number' && node.playbackRate.value !== rate) {
-                node.playbackRate.value = rate;
-                if (rate > 1.0) console.debug(`[TTS] rate → ${rate}x (queue: ${this.readyQueue.length})`);
-            }
-        }, 300);
-        return () => clearInterval(id);
-    }
-
-    async _playNext() {
-        if (this.readyQueue.length === 0) {
-            this.isPlaying = false;
-            this.playingText = null;
-            this.onPlayEnd?.();
-            return;
+    _stopGoogle() {
+        if (this._audio) {
+            this._audio.onended = null;
+            this._audio.onerror = null;
+            try { this._audio.pause(); } catch (_) {}
         }
-        this.isPlaying = true;
-        const gen = this._generation;
-        const { text, promise } = this.readyQueue.shift();
-
-        try {
-            const result = await promise;
-            if (this._generation !== gen) return;
-            if (!result || !this.enabled) {
-                if (this.readyQueue.length > 0) this._playNext();
-                else this.isPlaying = false;
-                return;
-            }
-
-            const { buffer, mime } = result;
-            const rate = this._playbackRate();
-            this.playingText = text;
-            this.onPlayStart?.(text);
-
-            if (mime === 'audio/pcm-f32') {
-                // Raw 32-bit float PCM — AudioContext direct copy
-                await this._playViaAudioCtx(buffer, mime, rate, gen);
-            } else {
-                // Proper WAV or MP3 — HTMLAudioElement first (reliable for standard files)
-                const played = await this._playViaElement(buffer, mime, rate, gen);
-                if (this._generation !== gen) return;
-                if (!played) {
-                    // Fallback: AudioContext decodeAudioData
-                    console.warn('[TTS] HTMLAudio failed, trying AudioContext');
-                    await this._playViaAudioCtx(buffer, mime, rate, gen);
-                }
-            }
-
-            if (this._generation !== gen) return;
-            this.playingText = null;
-            this.onPlayEnd?.();
-            if (this.enabled && this.readyQueue.length > 0) this._playNext();
-            else this.isPlaying = false;
-        } catch (err) {
-            if (this._generation !== gen) return;
-            console.error('[TTS] Error:', String(err));
-            this.playingText = null;
-            this.onPlayEnd?.();
-            if (this.enabled && this.readyQueue.length > 0) setTimeout(() => this._playNext(), 200);
-            else this.isPlaying = false;
+        if (this._blobUrl) {
+            URL.revokeObjectURL(this._blobUrl);
+            this._blobUrl = null;
         }
     }
+
+    // ── private: AudioContext ──────────────────────────────────────────────
+
+    _getAudioCtx() {
+        if (!this._audioCtx || this._audioCtx.state === 'closed') {
+            this._audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            this._gainNode = null; // Invalidate gain node — must be recreated for new context.
+        }
+        return this._audioCtx;
+    }
+
+    /**
+     * Return (or create) the GainNode for the given AudioContext.
+     * Recreated whenever the AudioContext changes (e.g. after stop()).
+     */
+    _getGainNode(ctx) {
+        if (!this._gainNode || this._gainNode.context !== ctx) {
+            this._gainNode = ctx.createGain();
+            this._gainNode.gain.value = Math.min(Math.max(this.volume ?? 1.0, 0.0), 1.0);
+            this._gainNode.connect(ctx.destination);
+        }
+        return this._gainNode;
+    }
+
+    _unlockAudio() {
+        // Unlock HTMLAudioElement (Google TTS).
+        if (!this._audio) this._audio = new Audio();
+        this._audio.src = SILENT_WAV_URI;
+        this._audio.play().catch(e => console.debug('[TTS] silent audio.play() error:', e?.name));
+
+        // Unlock AudioContext (non-Google TTS).
+        const ctx = this._getAudioCtx();
+        console.debug('[TTS] _unlockAudio — ctx.state:', ctx.state);
+
+        const doWarmUp = () => {
+            // Play a 1-frame silent buffer through the Web Audio pipeline.
+            // On macOS WKWebView this is required to "warm up" the audio output
+            // path — without it, the first real BufferSourceNode may produce no
+            // sound even though ctx.state === 'running'.
+            try {
+                const silentBuf = ctx.createBuffer(1, 1, 22050);
+                const warmSrc   = ctx.createBufferSource();
+                warmSrc.buffer  = silentBuf;
+                warmSrc.connect(this._getGainNode(ctx));
+                warmSrc.start(0);
+            } catch (_) {}
+        };
+
+        if (ctx.state === 'suspended') {
+            ctx.resume()
+                .then(() => {
+                    console.debug('[TTS] AudioContext resumed — state now:', ctx.state);
+                    doWarmUp();
+                })
+                .catch(e => console.warn('[TTS] AudioContext.resume() failed:', e?.message));
+        } else {
+            doWarmUp();
+        }
+    }
+
+    // ── private: helpers ───────────────────────────────────────────────────
+
+    _base()     { return this.serverUrl.replace(/\/+$/, ''); }
+    _edgeBase() { return (this.edgeServerUrl || 'http://localhost:3099').replace(/\/+$/, ''); }
 }
+
+// ── singleton ──────────────────────────────────────────────────────────────
 
 let instance = null;
 export function getTTSQueue() {

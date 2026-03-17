@@ -68,6 +68,10 @@ export default function Monitor() {
     const [ttsEdgeVoice] = useConfig('tts_edge_voice', 'vi-VN-HoaiMyNeural');
     const [ttsEdgeRate] = useConfig('tts_edge_rate', '+0%');
     const [ttsEdgePitch] = useConfig('tts_edge_pitch', '+0Hz');
+    const [ttsElevenLabsApiKey] = useConfig('tts_elevenlabs_api_key', '');
+    const [ttsElevenLabsVoiceId] = useConfig('tts_elevenlabs_voice_id', 'FTYCiQT21H9XQvhRu0ch');
+    const [ttsElevenLabsModelId] = useConfig('tts_elevenlabs_model_id', 'eleven_flash_v2_5');
+    const [ttsVolume, setTtsVolume] = useConfig('tts_volume', 1.0);
 
     // Soniox advanced config
     const [sonioxEndpointDelay] = useConfig('soniox_endpoint_delay_ms', 250);
@@ -113,14 +117,18 @@ export default function Monitor() {
             voiceId: ttsVoiceId,
             model: ttsModel,
             baseRate: ttsPlaybackRate,
+            volume: ttsVolume ?? 1.0,
             googleLang: ttsGoogleLang,
             googleSpeed: ttsGoogleSpeed,
             edgeServerUrl: ttsEdgeServerUrl,
             edgeVoice: ttsEdgeVoice,
             edgeRate: ttsEdgeRate,
             edgePitch: ttsEdgePitch,
+            elevenLabsApiKey: ttsElevenLabsApiKey,
+            elevenLabsVoiceId: ttsElevenLabsVoiceId,
+            elevenLabsModelId: ttsElevenLabsModelId,
         });
-    }, [ttsServerUrl, ttsApiType, ttsVoiceId, ttsModel, ttsPlaybackRate, ttsGoogleLang, ttsGoogleSpeed, ttsEdgeServerUrl, ttsEdgeVoice, ttsEdgeRate, ttsEdgePitch]);
+    }, [ttsServerUrl, ttsApiType, ttsVoiceId, ttsModel, ttsPlaybackRate, ttsVolume, ttsGoogleLang, ttsGoogleSpeed, ttsEdgeServerUrl, ttsEdgeVoice, ttsEdgeRate, ttsEdgePitch, ttsElevenLabsApiKey, ttsElevenLabsVoiceId, ttsElevenLabsModelId]);
 
     // Load audio capabilities
     useEffect(() => {
@@ -136,13 +144,32 @@ export default function Monitor() {
         }
     }, [audioCapabilities]);
 
-    // Wire up TTS callbacks
+    // Wire up TTS callbacks + sync enabled state on mount.
+    // The enabled sync handles HMR: when tts.js hot-reloads the singleton resets
+    // (enabled=false) but React's isTTSEnabled state survives. Without this sync,
+    // enqueue() drops all items until the user toggles TTS off+on again.
     useEffect(() => {
         const tts = getTTSQueue();
         tts.onPlayStart = (text) => setTtsPlayingText(text);
         tts.onPlayEnd = () => setTtsPlayingText(null);
+        // Sync flag directly — no AudioContext unlock here (outside user gesture).
+        // The unlock will happen on next toggle or replay click.
+        tts.enabled = isTTSEnabled;
         return () => { tts.onPlayStart = null; tts.onPlayEnd = null; };
-    }, []);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Keep tts.enabled in sync whenever the React toggle state changes.
+    useEffect(() => {
+        const tts = getTTSQueue();
+        if (tts.enabled !== isTTSEnabled) {
+            if (isTTSEnabled) {
+                tts.enabled = true; // toggleTTS already called setEnabled(true) with unlock
+            } else {
+                tts.stop();         // silence any in-flight audio
+                tts.enabled = false;
+            }
+        }
+    }, [isTTSEnabled]);
 
     // Wire up Soniox callbacks once
     useEffect(() => {
@@ -281,11 +308,9 @@ export default function Monitor() {
     }, [isTTSEnabled]);
 
     const handleReplayEntry = useCallback((text) => {
-        if (!isTTSEnabled) {
-            // Auto-enable TTS on first replay
-            setIsTTSEnabled(true);
-            getTTSQueue().setEnabled(true);
-        }
+        if (!isTTSEnabled) setIsTTSEnabled(true);
+        // Always sync — handles HMR desync where React state is true but singleton is false.
+        getTTSQueue().setEnabled(true);
         getTTSQueue().replay(text);
     }, [isTTSEnabled]);
 
@@ -532,6 +557,7 @@ export default function Monitor() {
                 fontSize={fontSize ?? 14}
                 isSubMode={isSubMode}
                 isTTSEnabled={isTTSEnabled}
+                ttsVolume={ttsVolume ?? 1.0}
                 showContextPanel={showContextPanel}
                 showOriginal={showOriginal ?? true}
                 bgOpacity={bgOpacity ?? 100}
@@ -545,6 +571,7 @@ export default function Monitor() {
                 onFontSizeChange={setFontSize}
                 onToggleSubMode={toggleSubMode}
                 onToggleTTS={toggleTTS}
+                onSetTtsVolume={setTtsVolume}
                 onToggleContextPanel={toggleContextPanel}
             />
 
