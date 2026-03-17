@@ -3,11 +3,10 @@ import { useTranslation } from 'react-i18next';
 import { AiFillEye, AiFillEyeInvisible } from 'react-icons/ai';
 import { MdMicNone, MdVolumeUp, MdTune } from 'react-icons/md';
 import React, { useState } from 'react';
-import { useConfig } from '../../../../../hooks';
-import toast, { Toaster } from 'react-hot-toast';
-import { useToastStyle } from '../../../../../hooks';
+import { useConfig } from '../../../../hooks';
+import { Toaster } from 'react-hot-toast';
 import { open } from '@tauri-apps/api/shell';
-import { getServiceName } from '../../../../../utils/service_instance';
+import { getServiceName } from '../../../../utils/service_instance';
 
 function getTtsServiceLabel(instanceKey, t) {
     const serviceName = getServiceName(instanceKey);
@@ -18,9 +17,8 @@ function getTtsServiceLabel(instanceKey, t) {
     return title;
 }
 
-export default function Audio() {
+export default function AudioTranslate() {
     const { t } = useTranslation();
-    const toastStyle = useToastStyle();
 
     // ── Soniox STT ──────────────────────────────────────────────────────────────
     const [apiKey, setApiKey] = useConfig('soniox_api_key', '');

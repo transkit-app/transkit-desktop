@@ -145,6 +145,10 @@
                 "close_on_blur": "Đóng cửa sổ dịch khi click bên ngoài",
                 "hide_window": "Ẩn cửa sổ nhận diện"
             },
+            "audio_translate": {
+                "label": "Dịch Audio Realtime",
+                "title": "Dịch Audio Thời Gian Thực"
+            },
             "hotkey": {
                 "label": "Phím tắt",
                 "title": "Cài đặt phím tắt",
@@ -161,7 +165,11 @@
                 "label": "Dịch vụ",
                 "title": "Cài đặt dịch vụ",
                 "translate": "Dịch",
-                "tts": "Chuyển văn bản thành giọng nói",
+                "tts": "TTS",
+                "ai": {
+                    "label": "AI",
+                    "empty": "Chưa có dịch vụ AI. Nhấn thêm để bắt đầu."
+                },
                 "recognize": "Nhận diện OCR",
                 "collection": "Bộ sưu tập",
                 "audio": {
@@ -185,6 +193,8 @@
                     "tts_hint": "Khởi động máy chủ TTS trước khi bật. VieNeu: chạy `vieneu-stream` (port 8001). OpenAI-compatible: bất kỳ server hỗ trợ POST /v1/audio/speech. Google: không cần server.",
                     "tts_google_lang": "Mã ngôn ngữ (ví dụ: vi, en, ja)",
                     "tts_google_speed": "Tốc độ (0.5 – 2.0)",
+                    "tts_active_service": "Dịch vụ TTS đang dùng",
+                    "tts_active_service_hint": "Cấu hình chi tiết từng dịch vụ trong tab TTS.",
                     "tts_playback_rate": "Tốc độ phát mặc định",
                     "tts_playback_rate_hint": "Khi có hàng chờ, tốc độ tự tăng theo (×1.5 / ×2.0 / ×2.5 so với giá trị này).",
                     "tts_edge_builtin": "Tích hợp sẵn",
@@ -532,6 +542,63 @@
                 "lingva_tts": {
                     "title": "Lingva",
                     "request_path": "Đường dẫn yêu cầu"
+                },
+                "google_tts": {
+                    "title": "Google TTS",
+                    "lang": "Mã ngôn ngữ (vd: vi, en, ja)",
+                    "speed": "Tốc độ (0.5 – 2.0)"
+                },
+                "edge_tts": {
+                    "title": "Microsoft Edge TTS",
+                    "builtin": "Tích hợp sẵn",
+                    "builtin_hint": "Không cần server riêng — chạy trực tiếp trong Transkit",
+                    "voice": "Giọng đọc",
+                    "rate": "Tốc độ đọc (vd: +0%, +20%, -10%)",
+                    "pitch": "Cao độ giọng (vd: +0Hz, +5Hz, -5Hz)"
+                },
+                "elevenlabs_tts": {
+                    "title": "ElevenLabs",
+                    "api_key": "API Key",
+                    "voice_id": "Voice ID",
+                    "model": "Model",
+                    "mode": "Chế độ kết nối",
+                    "mode_wss_hint": "Độ trễ thấp — model v2",
+                    "mode_http_hint": "Tương thích — model v3"
+                },
+                "vieneu_tts": {
+                    "title": "VieNeu TTS",
+                    "server_url": "URL máy chủ",
+                    "voice_id": "Voice ID",
+                    "model": "Model"
+                },
+                "openai_tts": {
+                    "title": "OpenAI Compatible TTS",
+                    "server_url": "URL máy chủ",
+                    "api_key": "API Key (tùy chọn)",
+                    "voice": "Giọng đọc",
+                    "model": "Model"
+                }
+            },
+            "ai": {
+                "openai_compat_ai": {
+                    "title": "OpenAI Compatible AI",
+                    "request_path": "API Endpoint",
+                    "api_key": "API Key",
+                    "model": "Model",
+                    "system_prompt": "System Prompt",
+                    "system_prompt_hint": "Điều hướng hành vi AI. Dùng cho tổng hợp bản dịch, thêm context, v.v."
+                },
+                "openai_ai": {
+                    "title": "OpenAI"
+                },
+                "groq_ai": {
+                    "title": "Groq"
+                },
+                "ollama_ai": {
+                    "title": "Ollama (LLaMA cục bộ)"
+                },
+                "gemini_ai": {
+                    "title": "Google Gemini"
                 }
             },
             "collection": {

@@ -145,6 +145,10 @@
                 "close_on_blur": "Close window when focus lost",
                 "hide_window": "Hide Recognition Window"
             },
+            "audio_translate": {
+                "label": "Realtime Audio",
+                "title": "Realtime Audio Translation"
+            },
             "hotkey": {
                 "label": "Hotkey",
                 "title": "Hotkey Settings",
@@ -162,6 +166,10 @@
                 "title": "Service Settings",
                 "translate": "Translate",
                 "tts": "TTS",
+                "ai": {
+                    "label": "AI",
+                    "empty": "No AI service configured. Add one to get started."
+                },
                 "recognize": "Recognize",
                 "collection": "Collection",
                 "audio": {
@@ -185,6 +193,8 @@
                     "tts_hint": "Start the TTS server before enabling playback. VieNeu: run `vieneu-stream` (port 8001). OpenAI-compatible: any server supporting POST /v1/audio/speech. Google: no server needed.",
                     "tts_google_lang": "Language code (e.g. vi, en, ja)",
                     "tts_google_speed": "Speed (0.5 – 2.0)",
+                    "tts_active_service": "Active TTS service",
+                    "tts_active_service_hint": "Configure each TTS service in the TTS tab.",
                     "tts_playback_rate": "Base Playback Speed",
                     "tts_playback_rate_hint": "When the queue has backlog, speed increases automatically (×1.5 / ×2.0 / ×2.5 of this base value).",
                     "tts_edge_builtin": "Built-in",
@@ -533,6 +543,63 @@
                 "lingva_tts": {
                     "title": "Lingva",
                     "request_path": "Request Path"
+                },
+                "google_tts": {
+                    "title": "Google TTS",
+                    "lang": "Language code (e.g. vi, en, ja)",
+                    "speed": "Speed (0.5 – 2.0)"
+                },
+                "edge_tts": {
+                    "title": "Microsoft Edge TTS",
+                    "builtin": "Built-in",
+                    "builtin_hint": "No server required — runs directly inside Transkit",
+                    "voice": "Voice",
+                    "rate": "Rate (e.g. +0%, +20%, -10%)",
+                    "pitch": "Pitch (e.g. +0Hz, +5Hz, -5Hz)"
+                },
+                "elevenlabs_tts": {
+                    "title": "ElevenLabs",
+                    "api_key": "API Key",
+                    "voice_id": "Voice ID",
+                    "model": "Model",
+                    "mode": "Connection Mode",
+                    "mode_wss_hint": "Low latency — v2 models",
+                    "mode_http_hint": "Compatible — v3 models"
+                },
+                "vieneu_tts": {
+                    "title": "VieNeu TTS",
+                    "server_url": "Server URL",
+                    "voice_id": "Voice ID",
+                    "model": "Model"
+                },
+                "openai_tts": {
+                    "title": "OpenAI Compatible TTS",
+                    "server_url": "Server URL",
+                    "api_key": "API Key (optional)",
+                    "voice": "Voice",
+                    "model": "Model"
+                }
+            },
+            "ai": {
+                "openai_compat_ai": {
+                    "title": "OpenAI Compatible AI",
+                    "request_path": "API Endpoint",
+                    "api_key": "API Key",
+                    "model": "Model",
+                    "system_prompt": "System Prompt",
+                    "system_prompt_hint": "Guides the AI behavior. Use for summarization, translation context, etc."
+                },
+                "openai_ai": {
+                    "title": "OpenAI"
+                },
+                "groq_ai": {
+                    "title": "Groq"
+                },
+                "ollama_ai": {
+                    "title": "Ollama (Local LLaMA)"
+                },
+                "gemini_ai": {
+                    "title": "Google Gemini"
                 }
             },
             "collection": {

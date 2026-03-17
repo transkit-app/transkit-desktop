@@ -12,7 +12,7 @@ import ServiceItem from './ServiceItem';
 import SelectModal from './SelectModal';
 import ConfigModal from './ConfigModal';
 
-export default function Tts(props) {
+export default function Ai(props) {
     const { pluginList } = props;
     const {
         isOpen: isSelectPluginOpen,
@@ -21,9 +21,9 @@ export default function Tts(props) {
     } = useDisclosure();
     const { isOpen: isSelectOpen, onOpen: onSelectOpen, onOpenChange: onSelectOpenChange } = useDisclosure();
     const { isOpen: isConfigOpen, onOpen: onConfigOpen, onOpenChange: onConfigOpenChange } = useDisclosure();
-    const [currentConfigKey, setCurrentConfigKey] = useState('lingva_tts');
-    // now it's service instance list
-    const [ttsServiceInstanceList, setTtsServiceInstanceList] = useConfig('tts_service_list', ['google_tts', 'edge_tts']);
+    const [currentConfigKey, setCurrentConfigKey] = useState('openai_compat_ai');
+
+    const [aiServiceInstanceList, setAiServiceInstanceList] = useConfig('ai_service_list', []);
 
     const { t } = useTranslation();
     const toastStyle = useToastStyle();
@@ -34,28 +34,21 @@ export default function Tts(props) {
         result.splice(endIndex, 0, removed);
         return result;
     };
+
     const onDragEnd = async (result) => {
         if (!result.destination) return;
-        const items = reorder(ttsServiceInstanceList, result.source.index, result.destination.index);
-        setTtsServiceInstanceList(items);
+        const items = reorder(aiServiceInstanceList, result.source.index, result.destination.index);
+        setAiServiceInstanceList(items);
     };
 
     const deleteServiceInstance = (instanceKey) => {
-        if (ttsServiceInstanceList.length === 1) {
-            toast.error(t('config.service.least'), { style: toastStyle });
-            return;
-        } else {
-            setTtsServiceInstanceList(ttsServiceInstanceList.filter((x) => x !== instanceKey));
-            deleteKey(instanceKey);
-        }
+        setAiServiceInstanceList(aiServiceInstanceList.filter((x) => x !== instanceKey));
+        deleteKey(instanceKey);
     };
+
     const updateServiceInstanceList = (instanceKey) => {
-        if (ttsServiceInstanceList.includes(instanceKey)) {
-            return;
-        } else {
-            const newList = [...ttsServiceInstanceList, instanceKey];
-            setTtsServiceInstanceList(newList);
-        }
+        if (aiServiceInstanceList.includes(instanceKey)) return;
+        setAiServiceInstanceList([...aiServiceInstanceList, instanceKey]);
     };
 
     return (
@@ -67,63 +60,48 @@ export default function Tts(props) {
                 } overflow-y-auto p-5 flex justify-between`}
             >
                 <DragDropContext onDragEnd={onDragEnd}>
-                    <Droppable
-                        droppableId='droppable'
-                        direction='vertical'
-                    >
+                    <Droppable droppableId='droppable' direction='vertical'>
                         {(provided) => (
                             <div
                                 className='overflow-y-auto h-full'
                                 ref={provided.innerRef}
                                 {...provided.droppableProps}
                             >
-                                {ttsServiceInstanceList !== null &&
-                                    ttsServiceInstanceList.map((x, i) => {
-                                        return (
-                                            <Draggable
-                                                key={x}
-                                                draggableId={x}
-                                                index={i}
-                                            >
-                                                {(provided) => {
-                                                    return (
-                                                        <div
-                                                            ref={provided.innerRef}
-                                                            {...provided.draggableProps}
-                                                        >
-                                                            <ServiceItem
-                                                                {...provided.dragHandleProps}
-                                                                serviceInstanceKey={x}
-                                                                key={x}
-                                                                pluginList={pluginList}
-                                                                deleteServiceInstance={deleteServiceInstance}
-                                                                setCurrentConfigKey={setCurrentConfigKey}
-                                                                onConfigOpen={onConfigOpen}
-                                                            />
-                                                            <Spacer y={2} />
-                                                        </div>
-                                                    );
-                                                }}
-                                            </Draggable>
-                                        );
-                                    })}
+                                {aiServiceInstanceList !== null && aiServiceInstanceList.length === 0 && (
+                                    <div className='flex flex-col items-center justify-center h-full gap-2 text-default-400'>
+                                        <p className='text-sm'>{t('config.service.ai.empty')}</p>
+                                    </div>
+                                )}
+                                {aiServiceInstanceList !== null &&
+                                    aiServiceInstanceList.map((x, i) => (
+                                        <Draggable key={x} draggableId={x} index={i}>
+                                            {(provided) => (
+                                                <div ref={provided.innerRef} {...provided.draggableProps}>
+                                                    <ServiceItem
+                                                        {...provided.dragHandleProps}
+                                                        serviceInstanceKey={x}
+                                                        key={x}
+                                                        pluginList={pluginList}
+                                                        deleteServiceInstance={deleteServiceInstance}
+                                                        setCurrentConfigKey={setCurrentConfigKey}
+                                                        onConfigOpen={onConfigOpen}
+                                                    />
+                                                    <Spacer y={2} />
+                                                </div>
+                                            )}
+                                        </Draggable>
+                                    ))}
                             </div>
                         )}
                     </Droppable>
                 </DragDropContext>
                 <Spacer y={2} />
                 <div className='flex'>
-                    <Button
-                        fullWidth
-                        onPress={onSelectOpen}
-                    >
+                    <Button fullWidth onPress={onSelectOpen}>
                         {t('config.service.add_builtin_service')}
                     </Button>
                     <Spacer x={2} />
-                    <Button
-                        fullWidth
-                        onPress={onSelectPluginOpen}
-                    >
+                    <Button fullWidth onPress={onSelectPluginOpen}>
                         {t('config.service.add_external_service')}
                     </Button>
                 </div>
@@ -133,7 +111,7 @@ export default function Tts(props) {
                 onOpenChange={onSelectPluginOpenChange}
                 setCurrentConfigKey={setCurrentConfigKey}
                 onConfigOpen={onConfigOpen}
-                pluginType='tts'
+                pluginType='ai'
                 pluginList={pluginList}
                 deleteService={deleteServiceInstance}
             />

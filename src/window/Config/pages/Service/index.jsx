@@ -39,7 +39,7 @@ import Translate from './Translate';
 import Recognize from './Recognize';
 import Collection from './Collection';
 import Tts from './Tts';
-import Audio from './Audio';
+import Ai from './Ai';
 import { ServiceType } from '../../../../utils/service_instance';
 
 let unlisten = null;
@@ -49,7 +49,7 @@ export default function Service() {
     const { t } = useTranslation();
 
     const loadPluginList = async () => {
-        const serviceTypeList = ['translate', 'tts', 'recognize', 'collection'];
+        const serviceTypeList = ['translate', 'tts', 'recognize', 'collection', 'ai'];
         let temp = {};
         for (const serviceType of serviceTypeList) {
             temp[serviceType] = {};
@@ -114,9 +114,9 @@ export default function Service() {
                         <Collection pluginList={pluginList[ServiceType.COLLECTION]} />
                     </TabErrorBoundary>
                 </Tab>
-                <Tab key='audio' title={t(`config.service.audio.label`)}>
-                    <TabErrorBoundary key='audio'>
-                        <Audio />
+                <Tab key='ai' title={t(`config.service.ai.label`)}>
+                    <TabErrorBoundary key='ai'>
+                        <Ai pluginList={pluginList[ServiceType.AI] ?? {}} />
                     </TabErrorBoundary>
                 </Tab>
             </Tabs>

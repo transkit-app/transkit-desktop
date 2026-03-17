@@ -3,6 +3,7 @@ export enum ServiceType {
     RECOGNIZE = 'recognize',
     TTS = 'tts',
     COLLECTION = 'collection',
+    AI = 'ai',
 }
 
 export enum ServiceSourceType {

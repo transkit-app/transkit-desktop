@@ -1,7 +1,7 @@
 import { useLocation, useRoutes } from 'react-router-dom';
 import React, { useEffect } from 'react';
 import { appWindow } from '@tauri-apps/api/window';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 
 import WindowControl from '../../components/WindowControl';
@@ -10,29 +10,6 @@ import { osType } from '../../utils/env';
 import { useConfig } from '../../hooks';
 import routes from './routes';
 import './style.css';
-
-// Page transition variants
-const pageVariants = {
-    initial: {
-        opacity: 0,
-        y: 8,
-    },
-    animate: {
-        opacity: 1,
-        y: 0,
-        transition: {
-            duration: 0.3,
-            ease: [0.19, 1, 0.22, 1],
-        },
-    },
-    exit: {
-        opacity: 0,
-        y: -8,
-        transition: {
-            duration: 0.2,
-        },
-    },
-};
 
 // Logo Component
 function Logo() {
@@ -127,7 +104,7 @@ export default function Config() {
                     {/* Page Title */}
                     <div className="flex items-center gap-3">
                         <h1 className="text-[16px] font-heading font-semibold text-foreground">
-                            {t(`config.${location.pathname.slice(1)}.title`)}
+                            {t(`config.${location.pathname.slice(1).replaceAll('-', '_')}.title`)}
                         </h1>
                     </div>
 
@@ -139,25 +116,16 @@ export default function Config() {
                     )}
                 </header>
 
-                {/* Page Content with Animation */}
-                <div
-                    className={`
-                        relative overflow-hidden flex-1 p-4
-                        ${osType === 'Linux' ? 'h-[calc(100vh-54px)]' : 'h-[calc(100vh-52px)]'}
-                    `}
-                >
-                    <AnimatePresence mode="popLayout">
-                        <motion.div
-                            key={location.pathname}
-                            variants={pageVariants}
-                            initial="initial"
-                            animate="animate"
-                            exit="exit"
-                            className="h-full overflow-y-auto config-scroll"
-                        >
-                            {page}
-                        </motion.div>
-                    </AnimatePresence>
+                {/* Page Content */}
+                <div className="relative flex-1 min-h-0 overflow-hidden">
+                    <motion.div
+                        key={location.pathname}
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0, transition: { duration: 0.2, ease: 'easeOut' } }}
+                        className="absolute inset-0 overflow-y-auto config-scroll p-4"
+                    >
+                        {page}
+                    </motion.div>
                 </div>
             </main>
         </div>

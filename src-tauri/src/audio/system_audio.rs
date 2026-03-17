@@ -111,6 +111,7 @@ impl SystemAudioCapture {
             .with_width(2)      // minimal video (required by API)
             .with_height(2)
             .with_captures_audio(true)
+            .with_excludes_current_process_audio(true)
             .with_sample_rate(48000)
             .with_channel_count(2);
 

@@ -9,6 +9,8 @@ import { MdOpenInFull, MdBlurOn, MdVolumeUp, MdVolumeOff, MdSettings } from 'rea
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useConfig } from '../../hooks';
 import { osType } from '../../utils/env';
+import { store } from '../../utils/store';
+import { getServiceName } from '../../utils/service_instance';
 import MonitorToolbar from './components/MonitorToolbar';
 import MonitorLog from './components/MonitorLog';
 import { SonioxClient } from './soniox';
@@ -41,6 +43,49 @@ function StatusDot({ status }) {
     return <div className={`w-2 h-2 rounded-full flex-shrink-0 ${colors[status] ?? colors.disconnected}`} />;
 }
 
+function mapServiceConfigToTTSParams(serviceName, config) {
+    const c = config ?? {};
+    switch (serviceName) {
+        case 'edge_tts':
+            return {
+                apiType: 'edge_tts',
+                edgeVoice: c.voice ?? 'vi-VN-HoaiMyNeural',
+                edgeRate: c.rate ?? '+0%',
+                edgePitch: c.pitch ?? '+0Hz',
+            };
+        case 'google_tts':
+            return {
+                apiType: 'google',
+                googleLang: c.lang ?? 'vi',
+                googleSpeed: c.speed ?? 1,
+            };
+        case 'elevenlabs_tts':
+            return {
+                apiType: 'elevenlabs',
+                elevenLabsApiKey: c.apiKey ?? '',
+                elevenLabsVoiceId: c.voiceId ?? 'FTYCiQT21H9XQvhRu0ch',
+                elevenLabsModelId: c.modelId ?? 'eleven_flash_v2_5',
+                elevenLabsMode: c.mode ?? 'wss',
+            };
+        case 'vieneu_tts':
+            return {
+                apiType: 'vieneu_stream',
+                serverUrl: c.serverUrl ?? 'http://localhost:8001',
+                voiceId: c.voiceId ?? 'NgocHuyen',
+                model: c.model ?? 'pnnbao-ump/VieNeu-TTS-0.3B-q4-gguf',
+            };
+        case 'openai_tts':
+            return {
+                apiType: 'openai_compat',
+                serverUrl: c.serverUrl ?? 'http://localhost:8080',
+                voiceId: c.voice ?? '',
+                model: c.model ?? 'tts-1',
+            };
+        default:
+            return { apiType: 'google', googleLang: 'vi', googleSpeed: 1 };
+    }
+}
+
 let sonioxClientInstance = null;
 function getSonioxClient() {
     if (!sonioxClientInstance) sonioxClientInstance = new SonioxClient();
@@ -56,22 +101,9 @@ export default function Monitor() {
     const [sourceAudio, setSourceAudio] = useConfig('audio_source', 'microphone');
     const [fontSize, setFontSize] = useConfig('monitor_font_size', 14);
 
-    // TTS config
-    const [ttsServerUrl] = useConfig('tts_server_url', 'http://localhost:8001');
-    const [ttsApiType] = useConfig('tts_api_type', 'vieneu_stream');
-    const [ttsVoiceId] = useConfig('tts_voice_id', 'NgocHuyen');
-    const [ttsModel] = useConfig('tts_model', 'pnnbao-ump/VieNeu-TTS-0.3B-q4-gguf');
+    // TTS config — active service + global playback settings
+    const [activeTtsService] = useConfig('tts_active_service', 'edge_tts');
     const [ttsPlaybackRate] = useConfig('tts_playback_rate', 1);
-    const [ttsGoogleLang] = useConfig('tts_google_lang', 'vi');
-    const [ttsGoogleSpeed] = useConfig('tts_google_speed', 1);
-    const [ttsEdgeServerUrl] = useConfig('tts_edge_server_url', 'http://localhost:3099');
-    const [ttsEdgeVoice] = useConfig('tts_edge_voice', 'vi-VN-HoaiMyNeural');
-    const [ttsEdgeRate] = useConfig('tts_edge_rate', '+0%');
-    const [ttsEdgePitch] = useConfig('tts_edge_pitch', '+0Hz');
-    const [ttsElevenLabsApiKey] = useConfig('tts_elevenlabs_api_key', '');
-    const [ttsElevenLabsVoiceId] = useConfig('tts_elevenlabs_voice_id', 'FTYCiQT21H9XQvhRu0ch');
-    const [ttsElevenLabsModelId] = useConfig('tts_elevenlabs_model_id', 'eleven_flash_v2_5');
-    const [ttsElevenLabsMode]    = useConfig('tts_elevenlabs_mode', 'wss');
     const [ttsVolume, setTtsVolume] = useConfig('tts_volume', 1.0);
 
     // Soniox advanced config
@@ -110,27 +142,27 @@ export default function Monitor() {
     const pendingOriginalRef = useRef(null);
     const unlistenAudioRef = useRef(null);
 
-    // Sync TTS config whenever settings change
+    // Sync TTS config whenever active service or global settings change
     useEffect(() => {
-        getTTSQueue().updateConfig({
-            serverUrl: ttsServerUrl,
-            apiType: ttsApiType,
-            voiceId: ttsVoiceId,
-            model: ttsModel,
-            baseRate: ttsPlaybackRate,
-            volume: ttsVolume ?? 1.0,
-            googleLang: ttsGoogleLang,
-            googleSpeed: ttsGoogleSpeed,
-            edgeServerUrl: ttsEdgeServerUrl,
-            edgeVoice: ttsEdgeVoice,
-            edgeRate: ttsEdgeRate,
-            edgePitch: ttsEdgePitch,
-            elevenLabsApiKey: ttsElevenLabsApiKey,
-            elevenLabsVoiceId: ttsElevenLabsVoiceId,
-            elevenLabsModelId: ttsElevenLabsModelId,
-            elevenLabsMode:    ttsElevenLabsMode,
-        });
-    }, [ttsServerUrl, ttsApiType, ttsVoiceId, ttsModel, ttsPlaybackRate, ttsVolume, ttsGoogleLang, ttsGoogleSpeed, ttsEdgeServerUrl, ttsEdgeVoice, ttsEdgeRate, ttsEdgePitch, ttsElevenLabsApiKey, ttsElevenLabsVoiceId, ttsElevenLabsModelId, ttsElevenLabsMode]);
+        const serviceKey = activeTtsService ?? 'edge_tts';
+        const serviceName = getServiceName(serviceKey);
+
+        const applyConfig = (cfg) => {
+            getTTSQueue().updateConfig({
+                ...mapServiceConfigToTTSParams(serviceName, cfg),
+                baseRate: ttsPlaybackRate,
+                volume: ttsVolume ?? 1.0,
+            });
+        };
+
+        // Load current config from store
+        store.get(serviceKey).then(applyConfig);
+
+        // Listen for real-time config changes when user saves settings
+        const eventKey = serviceKey.replaceAll('.', '_').replaceAll('@', ':');
+        const unlistenPromise = listen(`${eventKey}_changed`, (e) => applyConfig(e.payload));
+        return () => { unlistenPromise.then(f => f()); };
+    }, [activeTtsService, ttsPlaybackRate, ttsVolume]);
 
     // Load audio capabilities
     useEffect(() => {
