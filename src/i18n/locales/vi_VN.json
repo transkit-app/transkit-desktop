@@ -1,708 +1,752 @@
 {
-    "translation": {
-        "common": {
-            "ok": "Đồng ý",
-            "cancel": "Hủy",
-            "save": "Lưu",
-            "write_clipboard": "Sao chép vào Clipboard",
-            "plugin": "Plugin",
-            "coming": "Sắp ra mắt…",
-            "clear": "Xóa"
+  "translation": {
+    "common": {
+      "ok": "Đồng ý",
+      "cancel": "Hủy",
+      "save": "Lưu",
+      "write_clipboard": "Sao chép vào Clipboard",
+      "plugin": "Plugin",
+      "coming": "Sắp ra mắt…",
+      "clear": "Xóa"
+    },
+    "languages": {
+      "auto": "Tự động phát hiện",
+      "zh_cn": "Tiếng Trung (Giản thể)",
+      "zh_tw": "Tiếng Trung (Phồn thể)",
+      "ja": "Tiếng Nhật",
+      "en": "Tiếng Anh",
+      "ko": "Tiếng Hàn",
+      "fr": "Tiếng Pháp",
+      "es": "Tiếng Tây Ban Nha",
+      "ru": "Tiếng Nga",
+      "de": "Tiếng Đức",
+      "it": "Tiếng Ý",
+      "tr": "Tiếng Thổ Nhĩ Kỳ",
+      "pt_pt": "Tiếng Bồ Đào Nha",
+      "pt_br": "Tiếng Bồ Đào Nha (Brazil)",
+      "vi": "Tiếng Việt",
+      "id": "Tiếng Indonesia",
+      "th": "Tiếng Thái",
+      "ms": "Tiếng Mã Lai",
+      "ar": "Tiếng Ả Rập",
+      "hi": "Tiếng Hindi",
+      "mn_mo": "Tiếng Mông Cổ",
+      "mn_cy": "Tiếng Mông Cổ (Cyrillic)",
+      "km": "Tiếng Khmer",
+      "nb_no": "Tiếng Na Uy (Bokmål)",
+      "nn_no": "Tiếng Na Uy (Nynorsk)",
+      "fa": "Tiếng Ba Tư",
+      "sv": "Tiếng Thụy Điển",
+      "pl": "Tiếng Ba Lan",
+      "nl": "Tiếng Hà Lan",
+      "uk": "Tiếng Ukraina",
+      "he": "Tiếng Hebrew"
+    },
+    "config": {
+      "general": {
+        "label": "Chung",
+        "title": "Cài đặt chung",
+        "auto_start": "Khởi động cùng hệ thống",
+        "check_update": "Kiểm tra cập nhật",
+        "server_port": "Cổng dịch vụ",
+        "server_port_change": "Cổng dịch vụ đã thay đổi, vui lòng khởi động lại ứng dụng để áp dụng",
+        "app_language": "Ngôn ngữ hiển thị",
+        "app_theme": "Giao diện",
+        "app_font": "Phông chữ",
+        "app_fallback_font": "Phông chữ dự phòng",
+        "font_size": {
+          "title": "Cỡ chữ",
+          "10": "Cực nhỏ (10px)",
+          "12": "Rất nhỏ (12px)",
+          "14": "Nhỏ (14px)",
+          "16": "Tiêu chuẩn (16px)",
+          "18": "Lớn (18px)",
+          "20": "Rất lớn (20px)",
+          "24": "Cực lớn (24px)"
         },
-        "languages": {
-            "auto": "Tự động phát hiện",
-            "zh_cn": "Tiếng Trung (Giản thể)",
-            "zh_tw": "Tiếng Trung (Phồn thể)",
-            "ja": "Tiếng Nhật",
-            "en": "Tiếng Anh",
-            "ko": "Tiếng Hàn",
-            "fr": "Tiếng Pháp",
-            "es": "Tiếng Tây Ban Nha",
-            "ru": "Tiếng Nga",
-            "de": "Tiếng Đức",
-            "it": "Tiếng Ý",
-            "tr": "Tiếng Thổ Nhĩ Kỳ",
-            "pt_pt": "Tiếng Bồ Đào Nha",
-            "pt_br": "Tiếng Bồ Đào Nha (Brazil)",
-            "vi": "Tiếng Việt",
-            "id": "Tiếng Indonesia",
-            "th": "Tiếng Thái",
-            "ms": "Tiếng Mã Lai",
-            "ar": "Tiếng Ả Rập",
-            "hi": "Tiếng Hindi",
-            "mn_mo": "Tiếng Mông Cổ",
-            "mn_cy": "Tiếng Mông Cổ (Cyrillic)",
-            "km": "Tiếng Khmer",
-            "nb_no": "Tiếng Na Uy (Bokmål)",
-            "nn_no": "Tiếng Na Uy (Nynorsk)",
-            "fa": "Tiếng Ba Tư",
-            "sv": "Tiếng Thụy Điển",
-            "pl": "Tiếng Ba Lan",
-            "nl": "Tiếng Hà Lan",
-            "uk": "Tiếng Ukraina",
-            "he": "Tiếng Hebrew"
+        "default_font": "Mặc định",
+        "theme": {
+          "light": "Sáng",
+          "dark": "Tối",
+          "system": "Theo hệ thống"
         },
-        "config": {
-            "general": {
-                "label": "Chung",
-                "title": "Cài đặt chung",
-                "auto_start": "Khởi động cùng hệ thống",
-                "check_update": "Kiểm tra cập nhật",
-                "server_port": "Cổng dịch vụ",
-                "server_port_change": "Cổng dịch vụ đã thay đổi, vui lòng khởi động lại ứng dụng để áp dụng",
-                "app_language": "Ngôn ngữ hiển thị",
-                "app_theme": "Giao diện",
-                "app_font": "Phông chữ",
-                "app_fallback_font": "Phông chữ dự phòng",
-                "font_size": {
-                    "title": "Cỡ chữ",
-                    "10": "Cực nhỏ (10px)",
-                    "12": "Rất nhỏ (12px)",
-                    "14": "Nhỏ (14px)",
-                    "16": "Tiêu chuẩn (16px)",
-                    "18": "Lớn (18px)",
-                    "20": "Rất lớn (20px)",
-                    "24": "Cực lớn (24px)"
-                },
-                "default_font": "Mặc định",
-                "theme": {
-                    "light": "Sáng",
-                    "dark": "Tối",
-                    "system": "Theo hệ thống"
-                },
-                "transparent": "Hiệu ứng trong suốt",
-                "dev_mode": "Chế độ nhà phát triển",
-                "proxy": {
-                    "title": "Proxy",
-                    "host": "Máy chủ",
-                    "port": "Cổng",
-                    "username": "Tên đăng nhập",
-                    "password": "Mật khẩu",
-                    "no_proxy": "Không dùng Proxy"
-                },
-                "proxy_change": "Proxy đã thay đổi, khởi động lại ứng dụng để áp dụng",
-                "proxy_error": "Vui lòng điền máy chủ và cổng",
-                "tray_click_event": "Sự kiện khi nhấp vào biểu tượng",
-                "event": {
-                    "config": "Mở cài đặt",
-                    "translate": "Dịch",
-                    "disable": "Vô hiệu hóa",
-                    "ocr_recognize": "Nhận dạng văn bản",
-                    "ocr_translate": "Dịch ảnh chụp màn hình"
-                }
-            },
-            "translate": {
-                "label": "Dịch",
-                "title": "Cài đặt dịch thuật",
-                "source_language": "Ngôn ngữ nguồn",
-                "target_language": "Ngôn ngữ đích",
-                "second_language": "Ngôn ngữ đích bổ sung",
-                "auto_copy": "Tự động sao chép",
-                "source": "Ngôn ngữ nguồn",
-                "target": "Ngôn ngữ đích",
-                "source_target": "Ngôn ngữ nguồn+Ngôn ngữ đích",
-                "disable": "Không tự động sao chép",
-                "history_disable": "Tắt lịch sử",
-                "incremental_translate": "Thêm bản dịch mới vào nội dung đã có",
-                "dynamic_translate": "Dịch khi gõ",
-                "delete_newline": "Xóa xuống dòng",
-                "remember_language": "Ghi nhớ ngôn ngữ đích",
-                "font_size": {
-                    "title": "Cỡ chữ",
-                    "10": "Cực nhỏ (10px)",
-                    "12": "Rất nhỏ (12px)",
-                    "14": "Nhỏ (14px)",
-                    "16": "Tiêu chuẩn (16px)",
-                    "18": "Lớn (18px)",
-                    "20": "Rất lớn (20px)",
-                    "24": "Cực lớn (24px)"
-                },
-                "window_position": "Vị trí cửa sổ",
-                "mouse": "Theo vị trí chuột",
-                "pre_state": "Nhớ vị trí",
-                "remember_window_size": "Nhớ kích thước cửa sổ",
-                "close_on_blur": "Đóng cửa sổ dịch khi click bên ngoài",
-                "always_on_top": "Luôn ở trên cùng",
-                "fixed_providers": "Luôn hiển thị nhà cung cấp (Dịch nhanh)",
-                "hide_source": "Ẩn vùng nguồn",
-                "hide_language": "Ẩn vùng ngôn ngữ",
-                "hide_window": "Ẩn cửa sổ dịch",
-                "detect_engine": "Công cụ phát hiện ngôn ngữ",
-                "baidu": "Baidu",
-                "tencent": "Tencent",
-                "niutrans": "NiuTrans",
-                "google": "Google",
-                "bing": "Bing",
-                "yandex": "Yandex",
-                "local": "Cục bộ"
-            },
-            "recognize": {
-                "label": "Nhận diện OCR",
-                "title": "Cài đặt nhận diện văn bản",
-                "language": "Ngôn ngữ nhận diện",
-                "delete_newline": "Tự động xóa xuống dòng",
-                "auto_copy": "Tự động sao chép",
-                "close_on_blur": "Đóng cửa sổ dịch khi click bên ngoài",
-                "hide_window": "Ẩn cửa sổ nhận diện"
-            },
-            "audio_translate": {
-                "label": "Dịch Audio Realtime",
-                "title": "Dịch Audio Thời Gian Thực"
-            },
-            "hotkey": {
-                "label": "Phím tắt",
-                "title": "Cài đặt phím tắt",
-                "selection_translate": "Dịch văn bản đã chọn",
-                "input_translate": "Mở hộp thoại dịch",
-                "ocr_recognize": "OCR - Nhận diện văn bản",
-                "ocr_translate": "OCR - Dịch ảnh chụp màn hình",
-                "audio_monitor": "Dịch âm thanh realtime",
-                "is_register": "Phím tắt đã được đăng ký",
-                "success": "Đăng ký phím tắt thành công",
-                "set_hotkey": "Nhấn để đặt phím tắt"
-            },
-            "service": {
-                "label": "Dịch vụ",
-                "title": "Cài đặt dịch vụ",
-                "translate": "Dịch",
-                "tts": "TTS",
-                "ai": {
-                    "label": "AI",
-                    "empty": "Chưa có dịch vụ AI. Nhấn thêm để bắt đầu."
-                },
-                "recognize": "Nhận diện OCR",
-                "collection": "Bộ sưu tập",
-                "transcription": "Phiên âm",
-                "audio": {
-                    "label": "Âm thanh",
-                    "title": "Soniox - Dịch âm thanh thời gian thực",
-                    "api_key_label": "Soniox API Key",
-                    "api_key_placeholder": "Nhập Soniox API key của bạn...",
-                    "api_key_hint": "Lấy API key tại",
-                    "info_label": "Giới thiệu",
-                    "info_desc": "Soniox cung cấp nhận dạng giọng nói thời gian thực với tính năng dịch thuật tích hợp. Hỗ trợ microphone và âm thanh hệ thống.",
-                    "saved": "Đã lưu cài đặt",
-                    "tts_title": "Đọc bản dịch (TTS)",
-                    "tts_server_url": "URL máy chủ TTS",
-                    "tts_api_type": "Loại API",
-                    "tts_model": "Model",
-                    "tts_voice_id": "Voice ID (tùy chọn)",
-                    "tts_voice_id_placeholder": "Để trống để dùng giọng mặc định",
-                    "tts_test": "Kiểm tra kết nối",
-                    "tts_test_ok": "Đã kết nối",
-                    "tts_test_fail": "Không thể kết nối tới máy chủ",
-                    "tts_hint": "Khởi động máy chủ TTS trước khi bật. VieNeu: chạy `vieneu-stream` (port 8001). OpenAI-compatible: bất kỳ server hỗ trợ POST /v1/audio/speech. Google: không cần server.",
-                    "tts_google_lang": "Mã ngôn ngữ (ví dụ: vi, en, ja)",
-                    "tts_google_speed": "Tốc độ (0.5 – 2.0)",
-                    "tts_active_service": "Dịch vụ TTS đang dùng",
-                    "tts_active_service_hint": "Cấu hình chi tiết từng dịch vụ trong tab TTS.",
-                    "tts_playback_rate": "Tốc độ phát mặc định",
-                    "tts_playback_rate_hint": "Khi có hàng chờ, tốc độ tự tăng theo (×1.5 / ×2.0 / ×2.5 so với giá trị này).",
-                    "tts_edge_builtin": "Tích hợp sẵn",
-                    "tts_edge_builtin_hint": "Không cần server riêng — chạy trực tiếp trong Transkit",
-                    "tts_edge_voice": "Giọng đọc",
-                    "tts_edge_rate": "Tốc độ đọc (vd: +0%, +20%, -10%)",
-                    "tts_edge_pitch": "Cao độ giọng (vd: +0Hz, +5Hz, -5Hz)",
-                    "soniox_advanced_title": "Cài đặt nâng cao Soniox",
-                    "soniox_endpoint_delay": "Endpoint delay (ms)",
-                    "soniox_endpoint_delay_hint": "Thời gian Soniox chờ thêm âm thanh trước khi xác nhận câu. Thấp hơn = phản hồi nhanh hơn, cao hơn = câu chính xác hơn.",
-                    "soniox_batch_interval": "Chu kỳ gửi audio (ms)",
-                    "soniox_batch_interval_hint": "Tần suất gửi dữ liệu âm thanh lên Soniox. Thấp hơn = độ trễ thấp hơn, cao hơn = ít cuộc gọi mạng hơn.",
-                    "soniox_speaker_diarization": "Phân biệt giọng nói",
-                    "soniox_speaker_diarization_hint": "Nhận dạng và gán nhãn từng người nói. Tắt để giảm độ trễ.",
-                    "stt_title": "Dịch vụ phiên âm",
-                    "stt_active_service": "Provider đang dùng",
-                    "stt_active_service_hint": "Cấu hình chi tiết từng provider trong tab Phiên âm.",
-                    "autosave_title": "Tự động lưu bản ghi",
-                    "autosave_enable_label": "Bật tự động lưu mặc định",
-                    "autosave_enable_hint": "Khi bật, cửa sổ monitor sẽ tự động lưu bản ghi vào file Markdown (~/Documents/TransKit/) sau mỗi phiên. Bạn có thể bật/tắt bất cứ lúc nào ngay trong cửa sổ monitor."
-                },
-                "least": "Vui lòng giữ ít nhất một dịch vụ",
-                "add_builtin_service": "Thêm dịch vụ có sẵn",
-                "add_external_service": "Thêm tiện ích mở rộng",
-                "add_service": "Thêm dịch vụ",
-                "test_failed": "Kiểm tra thất bại",
-                "install_plugin": "Cài đặt Plugin",
-                "view_plugin_list": "Xem danh sách Plugin",
-                "uninstall_success": "Gỡ cài đặt Plugin thành công",
-                "homepage": "Trang chủ",
-                "more_services": "Dịch vụ khác"
-            },
-            "history": {
-                "label": "Lịch sử",
-                "title": "Lịch sử"
-            },
-            "backup": {
-                "label": "Sao lưu",
-                "title": "Cài đặt sao lưu",
-                "type": "Loại dịch vụ",
-                "webdav": "WebDav",
-                "aliyun": "Aliyun Drive",
-                "local": "Cục bộ",
-                "webdav_url": "URL WebDav",
-                "username": "Tên đăng nhập",
-                "password": "Mật khẩu",
-                "logout": "Đăng xuất",
-                "aliyun_login_first": "Vui lòng quét mã để đăng nhập trước.",
-                "login_success": "Đăng nhập thành công",
-                "backup": "Sao lưu",
-                "restore": "Khôi phục",
-                "list": "Danh sách sao lưu",
-                "load_success": "Tải sao lưu thành công",
-                "backup_success": "Sao lưu thành công",
-                "empty": "Bạn chưa sao lưu"
-            },
-            "about": {
-                "label": "Giới thiệu",
-                "title": "Về ứng dụng",
-                "description": "Ứng dụng dịch thuật & OCR đa nền tảng",
-                "website": "Trang web",
-                "github": "GitHub",
-                "feedback": "Phản hồi",
-                "issue": "Báo lỗi",
-                "email": "Email",
-                "community": "Cộng đồng",
-                "system": "Hệ thống",
-                "check_update": "Kiểm tra cập nhật",
-                "view_log": "Xem nhật ký",
-                "view_config": "Xem cấu hình",
-                "qq_channel": "Kênh QQ",
-                "qq_group": "Nhóm QQ",
-                "telegram": "Telegram",
-                "discussion": "Thảo luận GitHub"
-            }
+        "transparent": "Hiệu ứng trong suốt",
+        "dev_mode": "Chế độ nhà phát triển",
+        "proxy": {
+          "title": "Proxy",
+          "host": "Máy chủ",
+          "port": "Cổng",
+          "username": "Tên đăng nhập",
+          "password": "Mật khẩu",
+          "no_proxy": "Không dùng Proxy"
         },
-        "monitor": {
-            "source_system": "Âm thanh hệ thống",
-            "source_system_unavailable": "Âm thanh hệ thống (chỉ macOS)",
-            "source_mic": "Microphone",
-            "start": "Bắt đầu",
-            "stop": "Dừng",
-            "pin": "Ghim cửa sổ",
-            "unpin": "Bỏ ghim cửa sổ",
-            "placeholder": "Nhấn Bắt đầu để bắt đầu nghe...",
-            "listening": "Đang nghe...",
-            "no_api_key": "Vui lòng đặt Soniox API key trong Cài đặt > Dịch vụ > Âm thanh",
-            "status_connecting": "Đang kết nối...",
-            "status_connected": "Đang nghe",
-            "status_disconnected": "Sẵn sàng",
-            "status_error": "Lỗi",
-            "font_larger": "Tăng cỡ chữ",
-            "font_smaller": "Giảm cỡ chữ",
-            "sub_mode": "Chế độ phụ đề",
-            "exit_sub_mode": "Thoát chế độ phụ đề",
-            "tts_enable": "Bật đọc bản dịch",
-            "tts_disable": "Tắt đọc bản dịch",
-            "tts_volume": "Âm lượng",
-            "context_panel": "Ngữ cảnh",
-            "ctx_domain_placeholder": "Mô tả chủ đề (VD: hội nghị Web3, y khoa...)",
-            "ctx_terms_placeholder": "Thuật ngữ, cách nhau bằng dấu phẩy (VD: TransKit, Soniox, API)",
-            "ctx_preset_meeting": "Họp",
-            "ctx_preset_movie_cn": "Phim CN",
-            "ctx_preset_movie_en": "Phim EN",
-            "ctx_preset_tech": "Công nghệ",
-            "ctx_preset_medical": "Y khoa",
-            "ctx_preset_sport": "Thể thao",
-            "show_original": "Hiện văn bản gốc",
-            "hide_original": "Ẩn văn bản gốc",
-            "transparent_on": "Bật nền trong suốt",
-            "transparent_off": "Tắt nền trong suốt",
-            "opacity": "Độ mờ",
-            "ctx_general_label": "Thông tin ngữ cảnh",
-            "ctx_general_key_placeholder": "Khóa (VD: domain)",
-            "ctx_general_value_placeholder": "Giá trị (VD: Y khoa)",
-            "ctx_general_add": "Thêm trường",
-            "ctx_text_label": "Văn bản nền",
-            "ctx_text_placeholder": "Mô tả nền hoặc tài liệu tham khảo cho phiên này...",
-            "ctx_terms_label": "Thuật ngữ",
-            "ctx_terms_new_placeholder": "Thêm thuật ngữ...",
-            "ctx_translation_terms_label": "Thuật ngữ dịch",
-            "ctx_translation_src_placeholder": "Nguồn",
-            "ctx_translation_tgt_placeholder": "Đích",
-            "ctx_translation_add": "Thêm cặp",
-            "ctx_presets_label": "Mẫu định sẵn",
-            "ctx_preset_save": "Lưu thành mẫu",
-            "ctx_preset_name_placeholder": "Tên mẫu...",
-            "ctx_preset_confirm_save": "Lưu",
-            "ctx_preset_delete": "Xóa mẫu",
-            "ctx_preset_builtin": "(mặc định)",
-            "ctx_ai_label": "Tạo bằng AI",
-            "ctx_ai_placeholder": "Mô tả chủ đề (VD: tư vấn y tế về tiểu đường...)",
-            "ctx_ai_generate": "Tạo",
-            "ctx_ai_generating": "Đang tạo...",
-            "ctx_ai_no_service": "Chưa cấu hình dịch vụ AI. Thêm tại Cài đặt > Dịch vụ > AI",
-            "ctx_ai_error": "Tạo context bằng AI thất bại",
-            "ctx_ai_success": "Đã tạo context",
-            "ctx_char_limit_warning": "Context gần đạt giới hạn 10.000 ký tự",
-            "autosave_label": "Tự động lưu",
-            "autosave_on": "Tự động lưu file: ON",
-            "autosave_off": "Không lưu file",
-            "autosave_saving": "Đang lưu...",
-            "autosave_saved": "Đã lưu",
-            "autosave_error": "Lỗi lưu file",
-            "autosave_clear_blocked": "Không thể xóa khi đang ghi và tự động lưu. Hãy dừng trước để lưu file.",
-            "autosave_toggle": "Bật/tắt tự động lưu file",
-            "autosave_disabled_warning": "Tự động lưu file: OFF"
-        },
-        "updater": {
-            "title": "Kiểm tra cập nhật",
-            "latest": "## Đã cài đặt phiên bản mới nhất",
-            "progress": "Tiến độ tải xuống",
-            "update": "Cập nhật",
-            "downloading": "Đang tải xuống…",
-            "installing": "Đang cài đặt…",
-            "cancel": "Hủy",
-            "installed": "Cài đặt hoàn tất, khởi động lại ứng dụng để áp dụng thay đổi"
-        },
-        "services": {
-            "help": "Hướng dẫn cấu hình",
-            "no_need": "Không cần cấu hình",
-            "instance_name": "Tên cấu hình",
-            "translate": {
-                "deepl": {
-                    "title": "DeepL",
-                    "custom_url": "URL DeepLX",
-                    "auth_key": "Khóa xác thực",
-                    "type": "Loại dịch vụ",
-                    "free": "Miễn phí",
-                    "api": "Khóa xác thực",
-                    "deeplx": "DeepLX"
-                },
-                "google": {
-                    "title": "Google",
-                    "custom_url": "URL tùy chỉnh"
-                },
-                "lingva": {
-                    "title": "Lingva"
-                },
-                "bing": {
-                    "title": "Bing"
-                },
-                "ollama": {
-                    "title": "Ollama",
-                    "install_ollama": "Không thể kết nối đến ollama cục bộ, vui lòng tải xuống, cài đặt và khởi động ollama trước. Nếu bạn sử dụng ollama không phải trên máy này, hãy thay đổi địa chỉ yêu cầu.",
-                    "install_ollama_link": "Tải Ollama",
-                    "request_path": "Đường dẫn yêu cầu",
-                    "stream": "Chế độ Stream",
-                    "model": "Mô hình",
-                    "install_model": "Cài đặt",
-                    "ready": "Sẵn sàng",
-                    "not_installed": "Mô hình này chưa được cài đặt, nhấp để tải xuống và cài đặt ngay",
-                    "supported_models": "Nhấp để xem danh sách các mô hình Ollama có sẵn",
-                    "prompt_description": "Bằng cách tùy chỉnh Prompt, bạn có thể tùy chỉnh hành vi của AI. $text $from $to $detect sẽ được thay thế bằng văn bản cần dịch, ngôn ngữ nguồn, ngôn ngữ đích và ngôn ngữ được phát hiện.",
-                    "add": "Thêm Prompt"
-                },
-                "openai": {
-                    "title": "OpenAI",
-                    "service": "Nhà cung cấp dịch vụ",
-                    "openai": "OpenAI",
-                    "azure": "Azure",
-                    "request_path": "Đường dẫn yêu cầu",
-                    "api_key": "Api Key",
-                    "model": "Mô hình",
-                    "stream": "Chế độ Stream",
-                    "prompt_description": "Bằng cách tùy chỉnh Prompt, bạn có thể tùy chỉnh hành vi của OpenAI. $text $from $to $detect sẽ được thay thế bằng văn bản cần dịch, ngôn ngữ nguồn, ngôn ngữ đích và ngôn ngữ được phát hiện.",
-                    "add": "Thêm Prompt"
-                },
-                "geminipro": {
-                    "title": "Gemini Pro",
-                    "request_path": "Đường dẫn yêu cầu",
-                    "api_key": "Api Key",
-                    "stream": "Chế độ Stream",
-                    "prompt_description": "Bằng cách tùy chỉnh Prompt, bạn có thể tùy chỉnh hành vi của Gemini Pro. $text $from $to $detect sẽ được thay thế bằng văn bản cần dịch, ngôn ngữ nguồn, ngôn ngữ đích và ngôn ngữ được phát hiện.",
-                    "add": "Thêm Prompt"
-                },
-                "openrouter": {
-                    "title": "OpenRouter",
-                    "request_path": "Đường dẫn yêu cầu",
-                    "api_key": "Api Key",
-                    "model": "Mô hình",
-                    "stream": "Chế độ Stream",
-                    "prompt_description": "Bằng cách tùy chỉnh Prompt, bạn có thể tùy chỉnh hành vi của OpenRouter. $text $from $to $detect sẽ được thay thế bằng văn bản cần dịch, ngôn ngữ nguồn, ngôn ngữ đích và ngôn ngữ được phát hiện.",
-                    "add": "Thêm Prompt"
-                },
-                "groq": {
-                    "title": "Groq",
-                    "request_path": "Đường dẫn yêu cầu",
-                    "api_key": "Api Key",
-                    "model": "Mô hình",
-                    "stream": "Chế độ Stream",
-                    "prompt_description": "Bằng cách tùy chỉnh Prompt, bạn có thể tùy chỉnh hành vi của Groq. $text $from $to $detect sẽ được thay thế bằng văn bản cần dịch, ngôn ngữ nguồn, ngôn ngữ đích và ngôn ngữ được phát hiện.",
-                    "add": "Thêm Prompt"
-                },
-                "chatglm": {
-                    "title": "ChatGLM",
-                    "model": "Mô hình",
-                    "chatglm_turbo": "ChatGLM Turbo",
-                    "chatglm_pro": "ChatGLM Pro",
-                    "chatglm_std": "ChatGLM Std",
-                    "chatglm_lite": "ChatGLM Lite",
-                    "api_key": "Api Key",
-                    "prompt_description": "Bằng cách tùy chỉnh Prompt, bạn có thể tùy chỉnh hành vi của AI. $text $from $to $detect sẽ được thay thế bằng văn bản cần dịch, ngôn ngữ nguồn, ngôn ngữ đích và ngôn ngữ được phát hiện.",
-                    "add": "Thêm Prompt"
-                },
-                "yandex": {
-                    "title": "Yandex"
-                },
-                "ecdict": {
-                    "title": "ECDict (Trực tuyến)"
-                },
-                "transmart": {
-                    "title": "TranSmart",
-                    "username": "Tên đăng nhập",
-                    "token": "Token"
-                },
-                "baidu": {
-                    "title": "Baidu",
-                    "appid": "App ID",
-                    "secret": "Secret"
-                },
-                "baidu_field": {
-                    "title": "Baidu Field",
-                    "it": "Công nghệ thông tin",
-                    "finance": "Tài chính - Kinh tế",
-                    "machinery": "Sản xuất máy móc",
-                    "senimed": "Y sinh học",
-                    "novel": "Văn học mạng",
-                    "academic": "Luận văn học thuật",
-                    "aerospace": "Hàng không vũ trụ",
-                    "wiki": "Khoa học xã hội và nhân văn",
-                    "news": "Tin tức",
-                    "law": "Luật pháp",
-                    "contract": "Hợp đồng"
-                },
-                "alibaba": {
-                    "title": "Alibaba",
-                    "accesskey_id": "AccessKey ID",
-                    "accesskey_secret": "AccessKey Secret"
-                },
-                "tencent": {
-                    "title": "Tencent",
-                    "secret_id": "Secret ID",
-                    "secret_key": "Secret Key"
-                },
-                "volcengine": {
-                    "title": "VolcEngine",
-                    "appid": "App ID",
-                    "secret": "Secret"
-                },
-                "niutrans": {
-                    "title": "NiuTrans",
-                    "https": "Sử dụng Https",
-                    "apikey": "API Key"
-                },
-                "youdao": {
-                    "title": "Youdao",
-                    "appkey": "App ID",
-                    "key": "Key"
-                },
-                "bing_dict": {
-                    "title": "Từ điển Bing"
-                },
-                "cambridge_dict": {
-                    "title": "Từ điển Cambridge"
-                },
-                "caiyun": {
-                    "title": "Caiyun",
-                    "token": "Token"
-                }
-            },
-            "recognize": {
-                "system": {
-                    "title": "OCR Hệ thống"
-                },
-                "tesseract": {
-                    "title": "Tesseract.js"
-                },
-                "baidu_ocr": {
-                    "title": "Baidu OCR",
-                    "client_id": "API Key",
-                    "client_secret": "Secret Key"
-                },
-                "baidu_accurate_ocr": {
-                    "title": "Baidu OCR (Chính xác)",
-                    "client_id": "API Key",
-                    "client_secret": "Secret Key"
-                },
-                "baidu_img_ocr": {
-                    "title": "Dịch hình ảnh Baidu",
-                    "appid": "App ID",
-                    "secret": "Secret"
-                },
-                "iflytek_ocr": {
-                    "title": "iFlyTek OCR",
-                    "appid": "App ID",
-                    "apisecret": "API Secret",
-                    "apikey": "API Key"
-                },
-                "iflytek_intsig_ocr": {
-                    "title": "iFlyTek OCR (Intsig)",
-                    "appid": "App ID",
-                    "apisecret": "API Secret",
-                    "apikey": "API Key"
-                },
-                "iflytek_latex_ocr": {
-                    "title": "iFlyTek LaTeX",
-                    "appid": "App ID",
-                    "apisecret": "API Secret",
-                    "apikey": "API Key"
-                },
-                "simple_latex_ocr": {
-                    "title": "Simple LaTeX",
-                    "token": "Token"
-                },
-                "tencent_ocr": {
-                    "title": "Tencent OCR",
-                    "secret_id": "Secret ID",
-                    "secret_key": "Secret Key"
-                },
-                "tencent_accurate_ocr": {
-                    "title": "Tencent OCR (Chính xác)",
-                    "secret_id": "Secret ID",
-                    "secret_key": "Secret Key"
-                },
-                "tencent_img_ocr": {
-                    "title": "Dịch hình ảnh Tencent",
-                    "secret_id": "Secret ID",
-                    "secret_key": "Secret Key"
-                },
-                "volcengine_ocr": {
-                    "title": "VolcEngine OCR",
-                    "appid": "App ID",
-                    "secret": "Secret"
-                },
-                "volcengine_multi_lang_ocr": {
-                    "title": "VolcEngine OCR (Đa ngôn ngữ)",
-                    "appid": "App ID",
-                    "secret": "Secret"
-                },
-                "qrcode": {
-                    "title": "Mã QR"
-                }
-            },
-            "tts": {
-                "lingva_tts": {
-                    "title": "Lingva",
-                    "request_path": "Đường dẫn yêu cầu"
-                },
-                "google_tts": {
-                    "title": "Google TTS",
-                    "lang": "Mã ngôn ngữ (vd: vi, en, ja)",
-                    "speed": "Tốc độ (0.5 – 2.0)"
-                },
-                "edge_tts": {
-                    "title": "Microsoft Edge TTS",
-                    "builtin": "Tích hợp sẵn",
-                    "builtin_hint": "Không cần server riêng — chạy trực tiếp trong Transkit",
-                    "voice": "Giọng đọc",
-                    "rate": "Tốc độ đọc (vd: +0%, +20%, -10%)",
-                    "pitch": "Cao độ giọng (vd: +0Hz, +5Hz, -5Hz)"
-                },
-                "elevenlabs_tts": {
-                    "title": "ElevenLabs",
-                    "api_key": "API Key",
-                    "voice_id": "Voice ID",
-                    "model": "Model",
-                    "mode": "Chế độ kết nối",
-                    "mode_wss_hint": "Độ trễ thấp — model v2",
-                    "mode_http_hint": "Tương thích — model v3"
-                },
-                "vieneu_tts": {
-                    "title": "VieNeu TTS",
-                    "server_url": "URL máy chủ",
-                    "voice_id": "Voice ID",
-                    "model": "Model"
-                },
-                "openai_tts": {
-                    "title": "OpenAI Compatible TTS",
-                    "server_url": "URL máy chủ",
-                    "api_key": "API Key (tùy chọn)",
-                    "voice": "Giọng đọc",
-                    "model": "Model"
-                }
-            },
-            "ai": {
-                "openai_compat_ai": {
-                    "title": "OpenAI Compatible AI",
-                    "request_path": "API Endpoint",
-                    "api_key": "API Key",
-                    "model": "Model",
-                    "system_prompt": "System Prompt",
-                    "system_prompt_hint": "Điều hướng hành vi AI. Dùng cho tổng hợp bản dịch, thêm context, v.v."
-                },
-                "openai_ai": {
-                    "title": "OpenAI"
-                },
-                "groq_ai": {
-                    "title": "Groq"
-                },
-                "ollama_ai": {
-                    "title": "Ollama (LLaMA cục bộ)"
-                },
-                "gemini_ai": {
-                    "title": "Google Gemini"
-                }
-            },
-            "collection": {
-                "anki": {
-                    "title": "Anki",
-                    "port": "Cổng"
-                },
-                "eudic": {
-                    "title": "Eudic",
-                    "name": "Tên bộ sưu tập",
-                    "token": "Token"
-                }
-            },
-            "transcription": {
-                "soniox_stt": {
-                    "title": "Soniox",
-                    "api_key": "API Key",
-                    "api_key_hint": "Lấy API key tại",
-                    "endpoint_delay": "Endpoint delay (ms)",
-                    "endpoint_delay_hint": "Thời gian Soniox chờ thêm âm thanh trước khi xác nhận câu. Thấp hơn = phản hồi nhanh hơn, cao hơn = câu chính xác hơn.",
-                    "batch_interval": "Chu kỳ gửi audio (ms)",
-                    "batch_interval_hint": "Tần suất gửi dữ liệu âm thanh lên Soniox. Thấp hơn = độ trễ thấp hơn, cao hơn = ít cuộc gọi mạng hơn.",
-                    "speaker_diarization": "Phân biệt giọng nói",
-                    "speaker_diarization_hint": "Nhận dạng và gán nhãn từng người nói. Tắt để giảm độ trễ."
-                },
-                "assemblyai_stt": {
-                    "title": "AssemblyAI",
-                    "api_key": "API Key",
-                    "api_key_hint": "Lấy API key tại",
-                    "no_translation_note": "Lưu ý: AssemblyAI real-time API không hỗ trợ dịch tích hợp. Bản ghi sẽ hiển thị như văn bản gốc và bản dịch."
-                },
-                "openai_whisper_stt": {
-                    "title": "OpenAI Whisper",
-                    "api_key": "API Key",
-                    "server_url": "URL máy chủ",
-                    "model": "Model",
-                    "chunk_interval": "Chu kỳ gửi chunk (giây)",
-                    "chunk_interval_hint": "Audio được tích lũy và gửi lên Whisper mỗi N giây. Thấp hơn = phản hồi nhanh hơn, cao hơn = chính xác hơn.",
-                    "batch_note": "Whisper là API batch. Âm thanh được gửi theo từng đoạn nên sẽ có độ trễ giữa lời nói và bản ghi."
-                }
-            }
-        },
-        "translate": {
-            "translate": "Dịch",
-            "add_collection_success": "Thêm vào bộ sưu tập thành công",
-            "recognizing": "Đang nhận dạng…",
-            "speak": "Phát âm",
-            "copy": "Sao chép",
-            "retry": "Thử lại",
-            "delete_newline": "Xóa xuống dòng",
-            "translate_back": "Dịch ngược lại ngôn ngữ gốc",
-            "loading": "Đang dịch...",
-            "show_other_translations": "Xem các bản dịch khác",
-            "hide_other_translations": "Ẩn các bản dịch khác"
-        },
-        "recognize": {
-            "recognize": "Nhận dạng",
-            "translate": "Dịch",
-            "copy_img": "Sao chép hình ảnh",
-            "copy_text": "Sao chép",
-            "delete_newline": "Xóa xuống dòng",
-            "delete_space": "Xóa khoảng trắng"
+        "proxy_change": "Proxy đã thay đổi, khởi động lại ứng dụng để áp dụng",
+        "proxy_error": "Vui lòng điền máy chủ và cổng",
+        "tray_click_event": "Sự kiện khi nhấp vào biểu tượng",
+        "event": {
+          "config": "Mở cài đặt",
+          "translate": "Dịch",
+          "disable": "Vô hiệu hóa",
+          "ocr_recognize": "Nhận dạng văn bản",
+          "ocr_translate": "Dịch ảnh chụp màn hình"
         }
+      },
+      "translate": {
+        "label": "Dịch",
+        "title": "Cài đặt dịch thuật",
+        "source_language": "Ngôn ngữ nguồn",
+        "target_language": "Ngôn ngữ đích",
+        "second_language": "Ngôn ngữ đích bổ sung",
+        "auto_copy": "Tự động sao chép",
+        "source": "Ngôn ngữ nguồn",
+        "target": "Ngôn ngữ đích",
+        "source_target": "Ngôn ngữ nguồn+Ngôn ngữ đích",
+        "disable": "Không tự động sao chép",
+        "history_disable": "Tắt lịch sử",
+        "incremental_translate": "Thêm bản dịch mới vào nội dung đã có",
+        "dynamic_translate": "Dịch khi gõ",
+        "delete_newline": "Xóa xuống dòng",
+        "remember_language": "Ghi nhớ ngôn ngữ đích",
+        "font_size": {
+          "title": "Cỡ chữ",
+          "10": "Cực nhỏ (10px)",
+          "12": "Rất nhỏ (12px)",
+          "14": "Nhỏ (14px)",
+          "16": "Tiêu chuẩn (16px)",
+          "18": "Lớn (18px)",
+          "20": "Rất lớn (20px)",
+          "24": "Cực lớn (24px)"
+        },
+        "window_position": "Vị trí cửa sổ",
+        "mouse": "Theo vị trí chuột",
+        "pre_state": "Nhớ vị trí",
+        "remember_window_size": "Nhớ kích thước cửa sổ",
+        "close_on_blur": "Đóng cửa sổ dịch khi click bên ngoài",
+        "always_on_top": "Luôn ở trên cùng",
+        "fixed_providers": "Luôn hiển thị nhà cung cấp (Dịch nhanh)",
+        "hide_source": "Ẩn vùng nguồn",
+        "hide_language": "Ẩn vùng ngôn ngữ",
+        "hide_window": "Ẩn cửa sổ dịch",
+        "detect_engine": "Công cụ phát hiện ngôn ngữ",
+        "baidu": "Baidu",
+        "tencent": "Tencent",
+        "niutrans": "NiuTrans",
+        "google": "Google",
+        "bing": "Bing",
+        "yandex": "Yandex",
+        "local": "Cục bộ"
+      },
+      "recognize": {
+        "label": "Nhận diện OCR",
+        "title": "Cài đặt nhận diện văn bản",
+        "language": "Ngôn ngữ nhận diện",
+        "delete_newline": "Tự động xóa xuống dòng",
+        "auto_copy": "Tự động sao chép",
+        "close_on_blur": "Đóng cửa sổ dịch khi click bên ngoài",
+        "hide_window": "Ẩn cửa sổ nhận diện"
+      },
+      "audio_translate": {
+        "label": "Dịch Audio Realtime",
+        "title": "Dịch Audio Thời Gian Thực"
+      },
+      "hotkey": {
+        "label": "Phím tắt",
+        "title": "Cài đặt phím tắt",
+        "selection_translate": "Dịch văn bản đã chọn",
+        "input_translate": "Mở hộp thoại dịch",
+        "ocr_recognize": "OCR - Nhận diện văn bản",
+        "ocr_translate": "OCR - Dịch ảnh chụp màn hình",
+        "audio_monitor": "Dịch âm thanh realtime",
+        "is_register": "Phím tắt đã được đăng ký",
+        "success": "Đăng ký phím tắt thành công",
+        "set_hotkey": "Nhấn để đặt phím tắt"
+      },
+      "service": {
+        "label": "Dịch vụ",
+        "title": "Cài đặt dịch vụ",
+        "translate": "Dịch",
+        "tts": "TTS",
+        "ai": {
+          "label": "AI",
+          "empty": "Chưa có dịch vụ AI. Nhấn thêm để bắt đầu."
+        },
+        "recognize": "Nhận diện OCR",
+        "collection": "Bộ sưu tập",
+        "transcription": "Phiên âm",
+        "audio": {
+          "label": "Âm thanh",
+          "title": "Soniox - Dịch âm thanh thời gian thực",
+          "api_key_label": "Soniox API Key",
+          "api_key_placeholder": "Nhập Soniox API key của bạn...",
+          "api_key_hint": "Lấy API key tại",
+          "info_label": "Giới thiệu",
+          "info_desc": "Soniox cung cấp nhận dạng giọng nói thời gian thực với tính năng dịch thuật tích hợp. Hỗ trợ microphone và âm thanh hệ thống.",
+          "saved": "Đã lưu cài đặt",
+          "tts_title": "Đọc bản dịch (TTS)",
+          "tts_server_url": "URL máy chủ TTS",
+          "tts_api_type": "Loại API",
+          "tts_model": "Model",
+          "tts_voice_id": "Voice ID (tùy chọn)",
+          "tts_voice_id_placeholder": "Để trống để dùng giọng mặc định",
+          "tts_test": "Kiểm tra kết nối",
+          "tts_test_ok": "Đã kết nối",
+          "tts_test_fail": "Không thể kết nối tới máy chủ",
+          "tts_hint": "Khởi động máy chủ TTS trước khi bật. VieNeu: chạy `vieneu-stream` (port 8001). OpenAI-compatible: bất kỳ server hỗ trợ POST /v1/audio/speech. Google: không cần server.",
+          "tts_google_lang": "Mã ngôn ngữ (ví dụ: vi, en, ja)",
+          "tts_google_speed": "Tốc độ (0.5 – 2.0)",
+          "tts_active_service": "Dịch vụ TTS đang dùng",
+          "tts_active_service_hint": "Cấu hình chi tiết từng dịch vụ trong tab TTS.",
+          "tts_playback_rate": "Tốc độ phát mặc định",
+          "tts_playback_rate_hint": "Khi có hàng chờ, tốc độ tự tăng theo (×1.5 / ×2.0 / ×2.5 so với giá trị này).",
+          "tts_edge_builtin": "Tích hợp sẵn",
+          "tts_edge_builtin_hint": "Không cần server riêng — chạy trực tiếp trong Transkit",
+          "tts_edge_voice": "Giọng đọc",
+          "tts_edge_rate": "Tốc độ đọc (vd: +0%, +20%, -10%)",
+          "tts_edge_pitch": "Cao độ giọng (vd: +0Hz, +5Hz, -5Hz)",
+          "soniox_advanced_title": "Cài đặt nâng cao Soniox",
+          "soniox_endpoint_delay": "Endpoint delay (ms)",
+          "soniox_endpoint_delay_hint": "Thời gian Soniox chờ thêm âm thanh trước khi xác nhận câu. Thấp hơn = phản hồi nhanh hơn, cao hơn = câu chính xác hơn.",
+          "soniox_batch_interval": "Chu kỳ gửi audio (ms)",
+          "soniox_batch_interval_hint": "Tần suất gửi dữ liệu âm thanh lên Soniox. Thấp hơn = độ trễ thấp hơn, cao hơn = ít cuộc gọi mạng hơn.",
+          "soniox_speaker_diarization": "Phân biệt giọng nói",
+          "soniox_speaker_diarization_hint": "Nhận dạng và gán nhãn từng người nói. Tắt để giảm độ trễ.",
+          "stt_title": "Dịch vụ phiên âm",
+          "stt_active_service": "Provider đang dùng",
+          "stt_active_service_hint": "Cấu hình chi tiết từng provider trong tab Phiên âm.",
+          "autosave_title": "Tự động lưu bản ghi",
+          "autosave_enable_label": "Bật tự động lưu mặc định",
+          "autosave_enable_hint": "Khi bật, cửa sổ monitor sẽ tự động lưu bản ghi vào file Markdown (~/Documents/TransKit/) sau mỗi phiên. Bạn có thể bật/tắt bất cứ lúc nào ngay trong cửa sổ monitor.",
+          "ai_suggestion_title": "Gợi ý AI",
+          "ai_suggestion_service": "Nhà cung cấp AI",
+          "ai_suggestion_service_placeholder": "Chọn dịch vụ AI",
+          "ai_suggestion_no_service": "Chưa cấu hình dịch vụ AI. Thêm tại Cài đặt > Dịch vụ > AI",
+          "ai_suggestion_response_lang": "Ngôn ngữ phản hồi",
+          "ai_suggestion_lang_both": "Cả hai (nguồn + đích)",
+          "ai_suggestion_lang_source": "Chỉ ngôn ngữ nguồn",
+          "ai_suggestion_lang_target": "Chỉ ngôn ngữ đích",
+          "ai_suggestion_response_lang_hint": "Ngôn ngữ dùng trong phần Tìm hiểu và Đề xuất câu trả lời.",
+          "ai_suggestion_context_lines": "Số dòng ngữ cảnh",
+          "ai_suggestion_context_lines_hint": "Số dòng hội thoại trước được gửi cho AI để làm ngữ cảnh.",
+          "ai_suggestion_font_size": "Cỡ chữ gợi ý"
+        },
+        "least": "Vui lòng giữ ít nhất một dịch vụ",
+        "add_builtin_service": "Thêm dịch vụ có sẵn",
+        "add_external_service": "Thêm tiện ích mở rộng",
+        "add_service": "Thêm dịch vụ",
+        "test_failed": "Kiểm tra thất bại",
+        "install_plugin": "Cài đặt Plugin",
+        "view_plugin_list": "Xem danh sách Plugin",
+        "uninstall_success": "Gỡ cài đặt Plugin thành công",
+        "homepage": "Trang chủ",
+        "more_services": "Dịch vụ khác"
+      },
+      "history": {
+        "label": "Lịch sử",
+        "title": "Lịch sử"
+      },
+      "backup": {
+        "label": "Sao lưu",
+        "title": "Cài đặt sao lưu",
+        "type": "Loại dịch vụ",
+        "webdav": "WebDav",
+        "aliyun": "Aliyun Drive",
+        "local": "Cục bộ",
+        "webdav_url": "URL WebDav",
+        "username": "Tên đăng nhập",
+        "password": "Mật khẩu",
+        "logout": "Đăng xuất",
+        "aliyun_login_first": "Vui lòng quét mã để đăng nhập trước.",
+        "login_success": "Đăng nhập thành công",
+        "backup": "Sao lưu",
+        "restore": "Khôi phục",
+        "list": "Danh sách sao lưu",
+        "load_success": "Tải sao lưu thành công",
+        "backup_success": "Sao lưu thành công",
+        "empty": "Bạn chưa sao lưu"
+      },
+      "about": {
+        "label": "Giới thiệu",
+        "title": "Về ứng dụng",
+        "description": "Ứng dụng dịch thuật & OCR đa nền tảng",
+        "website": "Trang web",
+        "github": "GitHub",
+        "feedback": "Phản hồi",
+        "issue": "Báo lỗi",
+        "email": "Email",
+        "community": "Cộng đồng",
+        "system": "Hệ thống",
+        "check_update": "Kiểm tra cập nhật",
+        "view_log": "Xem nhật ký",
+        "view_config": "Xem cấu hình",
+        "qq_channel": "Kênh QQ",
+        "qq_group": "Nhóm QQ",
+        "telegram": "Telegram",
+        "discussion": "Thảo luận GitHub"
+      },
+      "profile": {
+        "label": "Hồ sơ",
+        "title": "Hồ sơ người dùng",
+        "hint": "Hồ sơ của bạn giúp AI Suggestion tạo ra các gợi ý phù hợp và cá nhân hoá hơn.",
+        "name": "Họ và tên",
+        "name_placeholder": "Tên của bạn",
+        "role": "Vai trò / Chức danh",
+        "role_placeholder": "VD: Kỹ sư phần mềm, Quản lý sản phẩm",
+        "company": "Công ty / Tổ chức",
+        "company_placeholder": "VD: Công ty ABC",
+        "experience_level": "Cấp độ kinh nghiệm",
+        "experience_placeholder": "Chọn cấp độ",
+        "expertise": "Lĩnh vực chuyên môn",
+        "expertise_placeholder": "VD: Fintech, AI, Y tế — nhấn Enter hoặc dấu phẩy",
+        "expertise_hint": "Các lĩnh vực này giúp AI điều chỉnh gợi ý phù hợp với chuyên môn của bạn.",
+        "notes": "Ghi chú / Giới thiệu",
+        "notes_placeholder": "VD: Tôi tham dự cuộc họp tiếng Anh nhưng muốn câu trả lời bằng tiếng Việt",
+        "preview_label": "Xem trước hồ sơ"
+      }
+    },
+    "monitor": {
+      "source_system": "Âm thanh hệ thống",
+      "source_system_unavailable": "Âm thanh hệ thống (chỉ macOS)",
+      "source_mic": "Microphone",
+      "start": "Bắt đầu",
+      "stop": "Dừng",
+      "pin": "Ghim cửa sổ",
+      "unpin": "Bỏ ghim cửa sổ",
+      "placeholder": "Nhấn Bắt đầu để bắt đầu nghe...",
+      "listening": "Đang nghe...",
+      "no_api_key": "Vui lòng đặt Soniox API key trong Cài đặt > Dịch vụ > Âm thanh",
+      "status_connecting": "Đang kết nối...",
+      "status_connected": "Đang nghe",
+      "status_disconnected": "Sẵn sàng",
+      "status_error": "Lỗi",
+      "font_larger": "Tăng cỡ chữ",
+      "font_smaller": "Giảm cỡ chữ",
+      "sub_mode": "Chế độ phụ đề",
+      "exit_sub_mode": "Thoát chế độ phụ đề",
+      "tts_enable": "Bật đọc bản dịch",
+      "tts_disable": "Tắt đọc bản dịch",
+      "tts_volume": "Âm lượng",
+      "context_panel": "Ngữ cảnh",
+      "ctx_domain_placeholder": "Mô tả chủ đề (VD: hội nghị Web3, y khoa...)",
+      "ctx_terms_placeholder": "Thuật ngữ, cách nhau bằng dấu phẩy (VD: TransKit, Soniox, API)",
+      "ctx_preset_meeting": "Họp",
+      "ctx_preset_movie_cn": "Phim CN",
+      "ctx_preset_movie_en": "Phim EN",
+      "ctx_preset_tech": "Công nghệ",
+      "ctx_preset_medical": "Y khoa",
+      "ctx_preset_sport": "Thể thao",
+      "show_original": "Hiện văn bản gốc",
+      "hide_original": "Ẩn văn bản gốc",
+      "transparent_on": "Bật nền trong suốt",
+      "transparent_off": "Tắt nền trong suốt",
+      "opacity": "Độ mờ",
+      "ctx_general_label": "Thông tin ngữ cảnh",
+      "ctx_general_key_placeholder": "Khóa (VD: domain)",
+      "ctx_general_value_placeholder": "Giá trị (VD: Y khoa)",
+      "ctx_general_add": "Thêm trường",
+      "ctx_text_label": "Văn bản nền",
+      "ctx_text_placeholder": "Mô tả nền hoặc tài liệu tham khảo cho phiên này...",
+      "ctx_terms_label": "Thuật ngữ",
+      "ctx_terms_new_placeholder": "Thêm thuật ngữ...",
+      "ctx_translation_terms_label": "Thuật ngữ dịch",
+      "ctx_translation_src_placeholder": "Nguồn",
+      "ctx_translation_tgt_placeholder": "Đích",
+      "ctx_translation_add": "Thêm cặp",
+      "ctx_presets_label": "Mẫu định sẵn",
+      "ctx_preset_save": "Lưu thành mẫu",
+      "ctx_preset_name_placeholder": "Tên mẫu...",
+      "ctx_preset_confirm_save": "Lưu",
+      "ctx_preset_delete": "Xóa mẫu",
+      "ctx_preset_builtin": "(mặc định)",
+      "ctx_ai_label": "Tạo bằng AI",
+      "ctx_ai_placeholder": "Mô tả chủ đề (VD: tư vấn y tế về tiểu đường...)",
+      "ctx_ai_generate": "Tạo",
+      "ctx_ai_generating": "Đang tạo...",
+      "ctx_ai_no_service": "Chưa cấu hình dịch vụ AI. Thêm tại Cài đặt > Dịch vụ > AI",
+      "ctx_ai_error": "Tạo context bằng AI thất bại",
+      "ctx_ai_success": "Đã tạo context",
+      "ctx_char_limit_warning": "Context gần đạt giới hạn 10.000 ký tự",
+      "autosave_label": "Tự động lưu",
+      "autosave_on": "Tự động lưu file: ON",
+      "autosave_off": "Không lưu file",
+      "autosave_saving": "Đang lưu...",
+      "autosave_saved": "Đã lưu",
+      "autosave_error": "Lỗi lưu file",
+      "autosave_clear_blocked": "Không thể xóa khi đang ghi và tự động lưu. Hãy dừng trước để lưu file.",
+      "autosave_toggle": "Bật/tắt tự động lưu file",
+      "autosave_disabled_warning": "Tự động lưu file: OFF",
+      "ai_suggestion_hint": "Gợi ý AI cho dòng này",
+      "ai_suggestion_dismiss": "Đóng gợi ý AI",
+      "ai_suggestion_loading": "Đang phân tích...",
+      "ai_suggestion_error": "Gợi ý AI thất bại. Kiểm tra cài đặt dịch vụ AI.",
+      "ai_suggestion_no_service": "Chưa cấu hình AI để gợi ý. Vào Cài đặt > Audio Translate.",
+      "ai_suggestion_research": "Tìm hiểu",
+      "ai_suggestion_answer": "Đề xuất câu trả lời",
+      "scroll_to_latest": "Mới nhất",
+      "ai_suggestion_source_lang": "Ngôn ngữ gốc",
+      "ai_suggestion_target_lang": "Ngôn ngữ dịch",
+      "bookmark_add": "Đánh dấu dòng này",
+      "bookmark_remove": "Xóa đánh dấu",
+      "tts_replay": "Phát lại audio"
+    },
+    "updater": {
+      "title": "Kiểm tra cập nhật",
+      "latest": "## Đã cài đặt phiên bản mới nhất",
+      "progress": "Tiến độ tải xuống",
+      "update": "Cập nhật",
+      "downloading": "Đang tải xuống…",
+      "installing": "Đang cài đặt…",
+      "cancel": "Hủy",
+      "installed": "Cài đặt hoàn tất, khởi động lại ứng dụng để áp dụng thay đổi"
+    },
+    "services": {
+      "help": "Hướng dẫn cấu hình",
+      "no_need": "Không cần cấu hình",
+      "instance_name": "Tên cấu hình",
+      "translate": {
+        "deepl": {
+          "title": "DeepL",
+          "custom_url": "URL DeepLX",
+          "auth_key": "Khóa xác thực",
+          "type": "Loại dịch vụ",
+          "free": "Miễn phí",
+          "api": "Khóa xác thực",
+          "deeplx": "DeepLX"
+        },
+        "google": {
+          "title": "Google",
+          "custom_url": "URL tùy chỉnh"
+        },
+        "lingva": {
+          "title": "Lingva"
+        },
+        "bing": {
+          "title": "Bing"
+        },
+        "ollama": {
+          "title": "Ollama",
+          "install_ollama": "Không thể kết nối đến ollama cục bộ, vui lòng tải xuống, cài đặt và khởi động ollama trước. Nếu bạn sử dụng ollama không phải trên máy này, hãy thay đổi địa chỉ yêu cầu.",
+          "install_ollama_link": "Tải Ollama",
+          "request_path": "Đường dẫn yêu cầu",
+          "stream": "Chế độ Stream",
+          "model": "Mô hình",
+          "install_model": "Cài đặt",
+          "ready": "Sẵn sàng",
+          "not_installed": "Mô hình này chưa được cài đặt, nhấp để tải xuống và cài đặt ngay",
+          "supported_models": "Nhấp để xem danh sách các mô hình Ollama có sẵn",
+          "prompt_description": "Bằng cách tùy chỉnh Prompt, bạn có thể tùy chỉnh hành vi của AI. $text $from $to $detect sẽ được thay thế bằng văn bản cần dịch, ngôn ngữ nguồn, ngôn ngữ đích và ngôn ngữ được phát hiện.",
+          "add": "Thêm Prompt"
+        },
+        "openai": {
+          "title": "OpenAI",
+          "service": "Nhà cung cấp dịch vụ",
+          "openai": "OpenAI",
+          "azure": "Azure",
+          "request_path": "Đường dẫn yêu cầu",
+          "api_key": "Api Key",
+          "model": "Mô hình",
+          "stream": "Chế độ Stream",
+          "prompt_description": "Bằng cách tùy chỉnh Prompt, bạn có thể tùy chỉnh hành vi của OpenAI. $text $from $to $detect sẽ được thay thế bằng văn bản cần dịch, ngôn ngữ nguồn, ngôn ngữ đích và ngôn ngữ được phát hiện.",
+          "add": "Thêm Prompt"
+        },
+        "geminipro": {
+          "title": "Gemini Pro",
+          "request_path": "Đường dẫn yêu cầu",
+          "api_key": "Api Key",
+          "stream": "Chế độ Stream",
+          "prompt_description": "Bằng cách tùy chỉnh Prompt, bạn có thể tùy chỉnh hành vi của Gemini Pro. $text $from $to $detect sẽ được thay thế bằng văn bản cần dịch, ngôn ngữ nguồn, ngôn ngữ đích và ngôn ngữ được phát hiện.",
+          "add": "Thêm Prompt"
+        },
+        "openrouter": {
+          "title": "OpenRouter",
+          "request_path": "Đường dẫn yêu cầu",
+          "api_key": "Api Key",
+          "model": "Mô hình",
+          "stream": "Chế độ Stream",
+          "prompt_description": "Bằng cách tùy chỉnh Prompt, bạn có thể tùy chỉnh hành vi của OpenRouter. $text $from $to $detect sẽ được thay thế bằng văn bản cần dịch, ngôn ngữ nguồn, ngôn ngữ đích và ngôn ngữ được phát hiện.",
+          "add": "Thêm Prompt"
+        },
+        "groq": {
+          "title": "Groq",
+          "request_path": "Đường dẫn yêu cầu",
+          "api_key": "Api Key",
+          "model": "Mô hình",
+          "stream": "Chế độ Stream",
+          "prompt_description": "Bằng cách tùy chỉnh Prompt, bạn có thể tùy chỉnh hành vi của Groq. $text $from $to $detect sẽ được thay thế bằng văn bản cần dịch, ngôn ngữ nguồn, ngôn ngữ đích và ngôn ngữ được phát hiện.",
+          "add": "Thêm Prompt"
+        },
+        "chatglm": {
+          "title": "ChatGLM",
+          "model": "Mô hình",
+          "chatglm_turbo": "ChatGLM Turbo",
+          "chatglm_pro": "ChatGLM Pro",
+          "chatglm_std": "ChatGLM Std",
+          "chatglm_lite": "ChatGLM Lite",
+          "api_key": "Api Key",
+          "prompt_description": "Bằng cách tùy chỉnh Prompt, bạn có thể tùy chỉnh hành vi của AI. $text $from $to $detect sẽ được thay thế bằng văn bản cần dịch, ngôn ngữ nguồn, ngôn ngữ đích và ngôn ngữ được phát hiện.",
+          "add": "Thêm Prompt"
+        },
+        "yandex": {
+          "title": "Yandex"
+        },
+        "ecdict": {
+          "title": "ECDict (Trực tuyến)"
+        },
+        "transmart": {
+          "title": "TranSmart",
+          "username": "Tên đăng nhập",
+          "token": "Token"
+        },
+        "baidu": {
+          "title": "Baidu",
+          "appid": "App ID",
+          "secret": "Secret"
+        },
+        "baidu_field": {
+          "title": "Baidu Field",
+          "it": "Công nghệ thông tin",
+          "finance": "Tài chính - Kinh tế",
+          "machinery": "Sản xuất máy móc",
+          "senimed": "Y sinh học",
+          "novel": "Văn học mạng",
+          "academic": "Luận văn học thuật",
+          "aerospace": "Hàng không vũ trụ",
+          "wiki": "Khoa học xã hội và nhân văn",
+          "news": "Tin tức",
+          "law": "Luật pháp",
+          "contract": "Hợp đồng"
+        },
+        "alibaba": {
+          "title": "Alibaba",
+          "accesskey_id": "AccessKey ID",
+          "accesskey_secret": "AccessKey Secret"
+        },
+        "tencent": {
+          "title": "Tencent",
+          "secret_id": "Secret ID",
+          "secret_key": "Secret Key"
+        },
+        "volcengine": {
+          "title": "VolcEngine",
+          "appid": "App ID",
+          "secret": "Secret"
+        },
+        "niutrans": {
+          "title": "NiuTrans",
+          "https": "Sử dụng Https",
+          "apikey": "API Key"
+        },
+        "youdao": {
+          "title": "Youdao",
+          "appkey": "App ID",
+          "key": "Key"
+        },
+        "bing_dict": {
+          "title": "Từ điển Bing"
+        },
+        "cambridge_dict": {
+          "title": "Từ điển Cambridge"
+        },
+        "caiyun": {
+          "title": "Caiyun",
+          "token": "Token"
+        }
+      },
+      "recognize": {
+        "system": {
+          "title": "OCR Hệ thống"
+        },
+        "tesseract": {
+          "title": "Tesseract.js"
+        },
+        "baidu_ocr": {
+          "title": "Baidu OCR",
+          "client_id": "API Key",
+          "client_secret": "Secret Key"
+        },
+        "baidu_accurate_ocr": {
+          "title": "Baidu OCR (Chính xác)",
+          "client_id": "API Key",
+          "client_secret": "Secret Key"
+        },
+        "baidu_img_ocr": {
+          "title": "Dịch hình ảnh Baidu",
+          "appid": "App ID",
+          "secret": "Secret"
+        },
+        "iflytek_ocr": {
+          "title": "iFlyTek OCR",
+          "appid": "App ID",
+          "apisecret": "API Secret",
+          "apikey": "API Key"
+        },
+        "iflytek_intsig_ocr": {
+          "title": "iFlyTek OCR (Intsig)",
+          "appid": "App ID",
+          "apisecret": "API Secret",
+          "apikey": "API Key"
+        },
+        "iflytek_latex_ocr": {
+          "title": "iFlyTek LaTeX",
+          "appid": "App ID",
+          "apisecret": "API Secret",
+          "apikey": "API Key"
+        },
+        "simple_latex_ocr": {
+          "title": "Simple LaTeX",
+          "token": "Token"
+        },
+        "tencent_ocr": {
+          "title": "Tencent OCR",
+          "secret_id": "Secret ID",
+          "secret_key": "Secret Key"
+        },
+        "tencent_accurate_ocr": {
+          "title": "Tencent OCR (Chính xác)",
+          "secret_id": "Secret ID",
+          "secret_key": "Secret Key"
+        },
+        "tencent_img_ocr": {
+          "title": "Dịch hình ảnh Tencent",
+          "secret_id": "Secret ID",
+          "secret_key": "Secret Key"
+        },
+        "volcengine_ocr": {
+          "title": "VolcEngine OCR",
+          "appid": "App ID",
+          "secret": "Secret"
+        },
+        "volcengine_multi_lang_ocr": {
+          "title": "VolcEngine OCR (Đa ngôn ngữ)",
+          "appid": "App ID",
+          "secret": "Secret"
+        },
+        "qrcode": {
+          "title": "Mã QR"
+        }
+      },
+      "tts": {
+        "lingva_tts": {
+          "title": "Lingva",
+          "request_path": "Đường dẫn yêu cầu"
+        },
+        "google_tts": {
+          "title": "Google TTS",
+          "lang": "Mã ngôn ngữ (vd: vi, en, ja)",
+          "speed": "Tốc độ (0.5 – 2.0)"
+        },
+        "edge_tts": {
+          "title": "Microsoft Edge TTS",
+          "builtin": "Tích hợp sẵn",
+          "builtin_hint": "Không cần server riêng — chạy trực tiếp trong Transkit",
+          "voice": "Giọng đọc",
+          "rate": "Tốc độ đọc (vd: +0%, +20%, -10%)",
+          "pitch": "Cao độ giọng (vd: +0Hz, +5Hz, -5Hz)"
+        },
+        "elevenlabs_tts": {
+          "title": "ElevenLabs",
+          "api_key": "API Key",
+          "voice_id": "Voice ID",
+          "model": "Model",
+          "mode": "Chế độ kết nối",
+          "mode_wss_hint": "Độ trễ thấp — model v2",
+          "mode_http_hint": "Tương thích — model v3"
+        },
+        "vieneu_tts": {
+          "title": "VieNeu TTS",
+          "server_url": "URL máy chủ",
+          "voice_id": "Voice ID",
+          "model": "Model"
+        },
+        "openai_tts": {
+          "title": "OpenAI Compatible TTS",
+          "server_url": "URL máy chủ",
+          "api_key": "API Key (tùy chọn)",
+          "voice": "Giọng đọc",
+          "model": "Model"
+        }
+      },
+      "ai": {
+        "openai_compat_ai": {
+          "title": "OpenAI Compatible AI",
+          "request_path": "API Endpoint",
+          "api_key": "API Key",
+          "model": "Model",
+          "system_prompt": "System Prompt",
+          "system_prompt_hint": "Điều hướng hành vi AI. Dùng cho tổng hợp bản dịch, thêm context, v.v."
+        },
+        "openai_ai": {
+          "title": "OpenAI"
+        },
+        "groq_ai": {
+          "title": "Groq"
+        },
+        "ollama_ai": {
+          "title": "Ollama (LLaMA cục bộ)"
+        },
+        "gemini_ai": {
+          "title": "Google Gemini"
+        }
+      },
+      "collection": {
+        "anki": {
+          "title": "Anki",
+          "port": "Cổng"
+        },
+        "eudic": {
+          "title": "Eudic",
+          "name": "Tên bộ sưu tập",
+          "token": "Token"
+        }
+      },
+      "transcription": {
+        "soniox_stt": {
+          "title": "Soniox",
+          "api_key": "API Key",
+          "api_key_hint": "Lấy API key tại",
+          "endpoint_delay": "Endpoint delay (ms)",
+          "endpoint_delay_hint": "Thời gian Soniox chờ thêm âm thanh trước khi xác nhận câu. Thấp hơn = phản hồi nhanh hơn, cao hơn = câu chính xác hơn.",
+          "batch_interval": "Chu kỳ gửi audio (ms)",
+          "batch_interval_hint": "Tần suất gửi dữ liệu âm thanh lên Soniox. Thấp hơn = độ trễ thấp hơn, cao hơn = ít cuộc gọi mạng hơn.",
+          "speaker_diarization": "Phân biệt giọng nói",
+          "speaker_diarization_hint": "Nhận dạng và gán nhãn từng người nói. Tắt để giảm độ trễ."
+        },
+        "assemblyai_stt": {
+          "title": "AssemblyAI",
+          "api_key": "API Key",
+          "api_key_hint": "Lấy API key tại",
+          "no_translation_note": "Lưu ý: AssemblyAI real-time API không hỗ trợ dịch tích hợp. Bản ghi sẽ hiển thị như văn bản gốc và bản dịch."
+        },
+        "openai_whisper_stt": {
+          "title": "OpenAI Whisper",
+          "api_key": "API Key",
+          "server_url": "URL máy chủ",
+          "model": "Model",
+          "chunk_interval": "Chu kỳ gửi chunk (giây)",
+          "chunk_interval_hint": "Audio được tích lũy và gửi lên Whisper mỗi N giây. Thấp hơn = phản hồi nhanh hơn, cao hơn = chính xác hơn.",
+          "batch_note": "Whisper là API batch. Âm thanh được gửi theo từng đoạn nên sẽ có độ trễ giữa lời nói và bản ghi."
+        }
+      }
+    },
+    "translate": {
+      "translate": "Dịch",
+      "add_collection_success": "Thêm vào bộ sưu tập thành công",
+      "recognizing": "Đang nhận dạng…",
+      "speak": "Phát âm",
+      "copy": "Sao chép",
+      "retry": "Thử lại",
+      "delete_newline": "Xóa xuống dòng",
+      "translate_back": "Dịch ngược lại ngôn ngữ gốc",
+      "loading": "Đang dịch...",
+      "show_other_translations": "Xem các bản dịch khác",
+      "hide_other_translations": "Ẩn các bản dịch khác"
+    },
+    "recognize": {
+      "recognize": "Nhận dạng",
+      "translate": "Dịch",
+      "copy_img": "Sao chép hình ảnh",
+      "copy_text": "Sao chép",
+      "delete_newline": "Xóa xuống dòng",
+      "delete_space": "Xóa khoảng trắng"
     }
+  }
 }

@@ -129,6 +129,15 @@ export default function Monitor() {
     // Active AI service (for context generation)
     const [aiServiceList] = useConfig('ai_service_list', []);
 
+    // AI Suggestion config
+    const [aiSuggestionService] = useConfig('monitor_ai_suggestion_service', '');
+    const [aiSuggestionContextLines] = useConfig('monitor_ai_suggestion_context_lines', 10);
+    const [aiSuggestionResponseLang] = useConfig('monitor_ai_suggestion_response_lang', 'both');
+    const [aiSuggestionFontSize] = useConfig('monitor_ai_suggestion_font_size', 16);
+
+    // User profile (for AI suggestion context)
+    const [userProfile] = useConfig('user_profile', {});
+
     // Context — full Soniox context object
     const [sonioxContext, setSonioxContext] = useConfig('monitor_context', EMPTY_CONTEXT);
     // User-defined context templates (presets)
@@ -902,6 +911,14 @@ export default function Monitor() {
                 playingText={ttsPlayingText}
                 onReplayEntry={handleReplayEntry}
                 status={status}
+                aiSuggestionService={aiSuggestionService || (aiServiceList?.[0] ?? '')}
+                aiSuggestionContextLines={aiSuggestionContextLines ?? 10}
+                aiSuggestionResponseLang={aiSuggestionResponseLang ?? 'both'}
+                aiSuggestionFontSize={aiSuggestionFontSize ?? 16}
+                userProfile={userProfile ?? {}}
+                sourceLang={sourceLang ?? 'auto'}
+                targetLang={targetLang ?? 'vi'}
+                transcriptFileRef={transcriptFileRef}
             />
         </div>
     );

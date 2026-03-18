@@ -8,7 +8,7 @@ import React from 'react';
 import { BsInfoSquareFill } from 'react-icons/bs';
 import { PiTranslateFill, PiTextboxFill } from 'react-icons/pi';
 import { AiFillAppstore, AiFillCloud } from 'react-icons/ai';
-import { MdKeyboardAlt, MdExtension, MdHeadset } from 'react-icons/md';
+import { MdKeyboardAlt, MdExtension, MdHeadset, MdPerson } from 'react-icons/md';
 import { FaHistory } from 'react-icons/fa';
 import { HiSun, HiMoon } from 'react-icons/hi';
 
@@ -21,6 +21,7 @@ const navigationConfig = [
             { id: 'translate', path: '/translate', icon: PiTranslateFill, labelKey: 'config.translate.label' },
             { id: 'recognize', path: '/recognize', icon: PiTextboxFill, labelKey: 'config.recognize.label' },
             { id: 'audio-translate', path: '/audio-translate', icon: MdHeadset, labelKey: 'config.audio_translate.label' },
+            { id: 'profile', path: '/profile', icon: MdPerson, labelKey: 'config.profile.label' },
             { id: 'hotkey', path: '/hotkey', icon: MdKeyboardAlt, labelKey: 'config.hotkey.label' },
         ],
     },

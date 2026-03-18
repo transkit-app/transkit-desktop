@@ -1,709 +1,753 @@
 {
-    "translation": {
-        "common": {
-            "ok": "Ok",
-            "cancel": "Cancel",
-            "save": "Save",
-            "write_clipboard": "Write to Clipboard",
-            "plugin": "Plugin",
-            "coming": "Coming soon…",
-            "clear": "Clear"
+  "translation": {
+    "common": {
+      "ok": "Ok",
+      "cancel": "Cancel",
+      "save": "Save",
+      "write_clipboard": "Write to Clipboard",
+      "plugin": "Plugin",
+      "coming": "Coming soon…",
+      "clear": "Clear"
+    },
+    "languages": {
+      "auto": "Auto Detect",
+      "zh_cn": "Simplified Chinese",
+      "zh_tw": "Traditional Chinese",
+      "ja": "Japanese",
+      "en": "English",
+      "ko": "Korean",
+      "fr": "French",
+      "es": "Spanish",
+      "ru": "Russian",
+      "de": "German",
+      "it": "Italian",
+      "tr": "Turkish",
+      "pt_pt": "Portuguese",
+      "pt_br": "Portuguese (Brazil)",
+      "vi": "Vietnamese",
+      "id": "Indonesian",
+      "th": "Thai",
+      "ms": "Malay",
+      "ar": "Arabic",
+      "hi": "Hindi",
+      "mn_mo": "Mongolian",
+      "mn_cy": "Mongolian(Cyrillic)",
+      "km": "Khmer",
+      "nb_no": "Norwegian Bokmål",
+      "nn_no": "Norwegian Nynorsk",
+      "fa": "Persian",
+      "sv": "Swedish",
+      "pl": "Polish",
+      "nl": "Dutch",
+      "uk": "Ukrainian",
+      "he": "Hebrew"
+    },
+    "config": {
+      "general": {
+        "label": "General",
+        "title": "General Settings",
+        "auto_start": "Auto Startup",
+        "check_update": "Check Update",
+        "server_port": "Listening Port",
+        "server_port_change": "The listening port has been changed, Please restart the application for the changes to take effect",
+        "app_language": "Display Language",
+        "app_theme": "Theme",
+        "app_font": "Font",
+        "app_fallback_font": "Fallback Font",
+        "font_size": {
+          "title": "Font Size",
+          "10": "Extra Small (10px)",
+          "12": "Very Small (12px)",
+          "14": "Small (14px)",
+          "16": "Standard (16px)",
+          "18": "Large (18px)",
+          "20": "Very Large (20px)",
+          "24": "Extra Large (24px)"
         },
-        "languages": {
-            "auto": "Auto Detect",
-            "zh_cn": "Simplified Chinese",
-            "zh_tw": "Traditional Chinese",
-            "ja": "Japanese",
-            "en": "English",
-            "ko": "Korean",
-            "fr": "French",
-            "es": "Spanish",
-            "ru": "Russian",
-            "de": "German",
-            "it": "Italian",
-            "tr": "Turkish",
-            "pt_pt": "Portuguese",
-            "pt_br": "Portuguese (Brazil)",
-            "vi": "Vietnamese",
-            "id": "Indonesian",
-            "th": "Thai",
-            "ms": "Malay",
-            "ar": "Arabic",
-            "hi": "Hindi",
-            "mn_mo": "Mongolian",
-            "mn_cy": "Mongolian(Cyrillic)",
-            "km": "Khmer",
-            "nb_no": "Norwegian Bokmål",
-            "nn_no": "Norwegian Nynorsk",
-            "fa": "Persian",
-            "sv": "Swedish",
-            "pl": "Polish",
-            "nl": "Dutch",
-            "uk": "Ukrainian",
-            "he": "Hebrew"
+        "default_font": "Default",
+        "theme": {
+          "light": "Light",
+          "dark": "Dark",
+          "system": "System"
         },
-        "config": {
-            "general": {
-                "label": "General",
-                "title": "General Settings",
-                "auto_start": "Auto Startup",
-                "check_update": "Check Update",
-                "server_port": "Listening Port",
-                "server_port_change": "The listening port has been changed, Please restart the application for the changes to take effect",
-                "app_language": "Display Language",
-                "app_theme": "Theme",
-                "app_font": "Font",
-                "app_fallback_font": "Fallback Font",
-                "font_size": {
-                    "title": "Font Size",
-                    "10": "Extra Small (10px)",
-                    "12": "Very Small (12px)",
-                    "14": "Small (14px)",
-                    "16": "Standard (16px)",
-                    "18": "Large (18px)",
-                    "20": "Very Large (20px)",
-                    "24": "Extra Large (24px)"
-                },
-                "default_font": "Default",
-                "theme": {
-                    "light": "Light",
-                    "dark": "Dark",
-                    "system": "System"
-                },
-                "transparent": "Transparent Effect",
-                "dev_mode": "Developer Mode",
-                "proxy": {
-                    "title": "Proxy",
-                    "host": "Host",
-                    "port": "Port",
-                    "username": "Username",
-                    "password": "Password",
-                    "no_proxy": "No Proxy"
-                },
-                "proxy_change": "The proxy has been changed, Restart the application for the changes to take effect",
-                "proxy_error": "Please fill in the host and port",
-                "tray_click_event": "Tray Click Event",
-                "event": {
-                    "config": "Preference",
-                    "translate": "Translate",
-                    "disable": "Disable",
-                    "ocr_recognize": "Text Recognition",
-                    "ocr_translate": "Screenshot Translation"
-                }
-            },
-            "translate": {
-                "label": "Translate",
-                "title": "Translation Settings",
-                "source_language": "Source Language",
-                "target_language": "Target Language",
-                "second_language": "Secondary Target Language",
-                "auto_copy": "Auto Copy",
-                "source": "Source",
-                "target": "Target",
-                "source_target": "Source+Target",
-                "disable": "Disable",
-                "history_disable": "Disable History",
-                "incremental_translate": "Incremental Translation",
-                "dynamic_translate": "Dynamic Translation",
-                "delete_newline": "Delete Newline",
-                "remember_language": "Remember Target Language",
-                "font_size": {
-                    "title": "Font Size",
-                    "10": "Very Very Small (10px)",
-                    "12": "Very Small (12px)",
-                    "14": "Small (14px)",
-                    "16": "Standard (16px)",
-                    "18": "Large (18px)",
-                    "20": "Very Large (20px)",
-                    "24": "Very Very Large (24px)"
-                },
-                "window_position": "Window Position",
-                "mouse": "Follow the Mouse",
-                "pre_state": "Remember Position",
-                "remember_window_size": "Remember Window Size",
-                "close_on_blur": "Close window when focus lost",
-                "always_on_top": "Always on Top",
-                "fixed_providers": "Always Show Providers (Quick Translate)",
-                "hide_source": "Hide Source Area",
-                "hide_language": "Hide Language Area",
-                "hide_window": "Hide Translation Window",
-                "detect_engine": "Language Detection Engine",
-                "baidu": "Baidu",
-                "tencent": "Tencent",
-                "niutrans": "NiuTrans",
-                "google": "Google",
-                "bing": "Bing",
-                "yandex": "Yandex",
-                "local": "Local"
-            },
-            "recognize": {
-                "label": "Recognize",
-                "title": "Recognition Settings",
-                "language": "Recognition Language",
-                "delete_newline": "Auto Delete Newline",
-                "auto_copy": "Auto Copy",
-                "close_on_blur": "Close window when focus lost",
-                "hide_window": "Hide Recognition Window"
-            },
-            "audio_translate": {
-                "label": "Realtime Audio",
-                "title": "Realtime Audio Translation"
-            },
-            "hotkey": {
-                "label": "Hotkey",
-                "title": "Hotkey Settings",
-                "selection_translate": "Selection Translation",
-                "input_translate": "Text Translation",
-                "ocr_recognize": "Text Recognition",
-                "ocr_translate": "Screenshot Translation",
-                "audio_monitor": "Audio Monitor",
-                "is_register": "The hotkey is already registered",
-                "success": "Hotkey register success",
-                "set_hotkey": "Press to Set Hotkey"
-            },
-            "service": {
-                "label": "Service",
-                "title": "Service Settings",
-                "translate": "Translate",
-                "tts": "TTS",
-                "ai": {
-                    "label": "AI",
-                    "empty": "No AI service configured. Add one to get started."
-                },
-                "recognize": "Recognize",
-                "collection": "Collection",
-                "transcription": "Transcription",
-                "audio": {
-                    "label": "Audio",
-                    "title": "Soniox - Real-time Audio Translation",
-                    "api_key_label": "Soniox API Key",
-                    "api_key_placeholder": "Enter your Soniox API key...",
-                    "api_key_hint": "Get your API key at",
-                    "info_label": "About",
-                    "info_desc": "Soniox provides real-time speech-to-text with built-in translation. Supports microphone and system audio.",
-                    "saved": "Settings saved",
-                    "tts_title": "Voice Playback (TTS)",
-                    "tts_server_url": "TTS Server URL",
-                    "tts_api_type": "API Type",
-                    "tts_model": "Model",
-                    "tts_voice_id": "Voice ID (optional)",
-                    "tts_voice_id_placeholder": "Leave empty for default voice",
-                    "tts_test": "Test Connection",
-                    "tts_test_ok": "Connected",
-                    "tts_test_fail": "Cannot connect to server",
-                    "tts_hint": "Start the TTS server before enabling playback. VieNeu: run `vieneu-stream` (port 8001). OpenAI-compatible: any server supporting POST /v1/audio/speech. Google: no server needed.",
-                    "tts_google_lang": "Language code (e.g. vi, en, ja)",
-                    "tts_google_speed": "Speed (0.5 – 2.0)",
-                    "tts_active_service": "Active TTS service",
-                    "tts_active_service_hint": "Configure each TTS service in the TTS tab.",
-                    "tts_playback_rate": "Base Playback Speed",
-                    "tts_playback_rate_hint": "When the queue has backlog, speed increases automatically (×1.5 / ×2.0 / ×2.5 of this base value).",
-                    "tts_edge_builtin": "Built-in",
-                    "tts_edge_builtin_hint": "No server required — runs directly inside Transkit",
-                    "tts_edge_voice": "Voice",
-                    "tts_edge_rate": "Rate (e.g. +0%, +20%, -10%)",
-                    "tts_edge_pitch": "Pitch (e.g. +0Hz, +5Hz, -5Hz)",
-                    "soniox_advanced_title": "Soniox Advanced",
-                    "soniox_endpoint_delay": "Endpoint delay (ms)",
-                    "soniox_endpoint_delay_hint": "How long Soniox waits for more audio before finalizing a segment. Lower = faster response, higher = more accurate sentences.",
-                    "soniox_batch_interval": "Audio batch interval (ms)",
-                    "soniox_batch_interval_hint": "How often audio chunks are sent to Soniox. Lower = lower latency, higher = fewer network calls.",
-                    "soniox_speaker_diarization": "Speaker diarization",
-                    "soniox_speaker_diarization_hint": "Identify and label different speakers. Disable to reduce latency.",
-                    "stt_title": "Transcription Provider",
-                    "stt_active_service": "Active provider",
-                    "stt_active_service_hint": "Configure providers in Services → Transcription tab.",
-                    "autosave_title": "Transcript Auto-save",
-                    "autosave_enable_label": "Enable auto-save by default",
-                    "autosave_enable_hint": "When enabled, the monitor window will automatically save transcripts to a Markdown file (~/Documents/TransKit/) each session. You can toggle this at any time in the monitor window."
-                },
-                "least": "Please keep at least one",
-                "add_builtin_service": "Add Builtin Service",
-                "add_external_service": "Add Extension",
-                "add_service": "Add Service",
-                "test_failed": "Test Failed",
-                "install_plugin": "Install Plugin",
-                "view_plugin_list": "View Plugin List",
-                "uninstall_success": "Plugin Uninstall Successfully",
-                "homepage": "Homepage",
-                "more_services": "More Services"
-            },
-            "history": {
-                "label": "History",
-                "title": "History"
-            },
-            "backup": {
-                "label": "Backup",
-                "title": "Backup Settings",
-                "type": "Service Type",
-                "webdav": "WebDav",
-                "aliyun": "Aliyun Drive",
-                "local": "Local",
-                "webdav_url": "WebDav URL",
-                "username": "Username",
-                "password": "Password",
-                "logout": "Logout",
-                "aliyun_login_first": "Please scan the code to log in first.",
-                "login_success": "Login Success",
-                "backup": "Backup",
-                "restore": "Restore",
-                "list": "Backup List",
-                "load_success": "Load Backup Success",
-                "backup_success": "Backup Success",
-                "empty": "You have not backed up yet"
-            },
-            "about": {
-                "label": "About",
-                "title": "About Application",
-                "description": "A cross-platform translation & OCR app",
-                "website": "Website",
-                "github": "GitHub",
-                "feedback": "Feedback",
-                "issue": "Issue",
-                "email": "Email",
-                "community": "Community",
-                "system": "System",
-                "check_update": "Check Update",
-                "view_log": "View Log",
-                "view_config": "View Config",
-                "qq_channel": "QQ Channel",
-                "qq_group": "QQ Group",
-                "telegram": "Telegram",
-                "discussion": "Github Discussion"
-            }
+        "transparent": "Transparent Effect",
+        "dev_mode": "Developer Mode",
+        "proxy": {
+          "title": "Proxy",
+          "host": "Host",
+          "port": "Port",
+          "username": "Username",
+          "password": "Password",
+          "no_proxy": "No Proxy"
         },
-        "monitor": {
-            "source_system": "System Audio",
-            "source_system_unavailable": "System Audio (macOS only)",
-            "source_mic": "Microphone",
-            "start": "Start",
-            "stop": "Stop",
-            "open_audio_config": "Audio settings",
-            "pin": "Pin window",
-            "unpin": "Unpin window",
-            "placeholder": "Press Start to begin listening...",
-            "listening": "Listening...",
-            "no_api_key": "Please set your Soniox API key in Settings > Service > Audio",
-            "status_connecting": "Connecting...",
-            "status_connected": "Listening",
-            "status_disconnected": "Ready",
-            "status_error": "Error",
-            "font_larger": "Increase font size",
-            "font_smaller": "Decrease font size",
-            "sub_mode": "Subtitle mode",
-            "exit_sub_mode": "Exit subtitle mode",
-            "tts_enable": "Enable voice playback",
-            "tts_disable": "Disable voice playback",
-            "tts_volume": "Volume",
-            "context_panel": "Context",
-            "ctx_domain_placeholder": "Topic context (e.g. Web3 conference, medical talk...)",
-            "ctx_terms_placeholder": "Key terms, comma-separated (e.g. TransKit, Soniox, API)",
-            "ctx_preset_meeting": "Meeting",
-            "ctx_preset_movie_cn": "Movie CN",
-            "ctx_preset_movie_en": "Movie EN",
-            "ctx_preset_tech": "Tech",
-            "ctx_preset_medical": "Medical",
-            "ctx_preset_sport": "Sport",
-            "show_original": "Show original text",
-            "hide_original": "Hide original text",
-            "transparent_on": "Enable transparent background",
-            "transparent_off": "Disable transparent background",
-            "opacity": "Opacity",
-            "ctx_general_label": "General context",
-            "ctx_general_key_placeholder": "Key (e.g. domain)",
-            "ctx_general_value_placeholder": "Value (e.g. Healthcare)",
-            "ctx_general_add": "Add field",
-            "ctx_text_label": "Background text",
-            "ctx_text_placeholder": "Background narrative or reference text for this session...",
-            "ctx_terms_label": "Terms",
-            "ctx_terms_new_placeholder": "Add term...",
-            "ctx_translation_terms_label": "Translation terms",
-            "ctx_translation_src_placeholder": "Source",
-            "ctx_translation_tgt_placeholder": "Target",
-            "ctx_translation_add": "Add pair",
-            "ctx_presets_label": "Presets",
-            "ctx_preset_save": "Save as preset",
-            "ctx_preset_name_placeholder": "Preset name...",
-            "ctx_preset_confirm_save": "Save",
-            "ctx_preset_delete": "Delete preset",
-            "ctx_preset_builtin": "(built-in)",
-            "ctx_ai_label": "AI Generate",
-            "ctx_ai_placeholder": "Describe the topic (e.g. medical consultation about diabetes...)",
-            "ctx_ai_generate": "Generate",
-            "ctx_ai_generating": "Generating...",
-            "ctx_ai_no_service": "No AI service configured. Add one in Settings > Service > AI",
-            "ctx_ai_error": "AI generation failed",
-            "ctx_ai_success": "Context generated",
-            "ctx_char_limit_warning": "Context is close to the 10,000 character limit",
-            "autosave_label": "Auto-save",
-            "autosave_on": "Auto-save enabled",
-            "autosave_off": "Auto-save off",
-            "autosave_saving": "Saving...",
-            "autosave_saved": "Saved",
-            "autosave_error": "Save error",
-            "autosave_clear_blocked": "Cannot clear while recording with auto-save on. Stop first to save the file.",
-            "autosave_toggle": "Toggle auto-save to file",
-            "autosave_disabled_warning": "Transcripts will not be saved"
-        },
-        "updater": {
-            "title": "Check Update",
-            "latest": "## The latest version is installed",
-            "progress": "Download Progress",
-            "update": "Update",
-            "downloading": "Downloading…",
-            "installing": "Installing…",
-            "cancel": "Cancel",
-            "installed": "Install completed, Restart the application for the changes to take effect"
-        },
-        "services": {
-            "help": "Configuration Guide",
-            "no_need": "No configuration required",
-            "instance_name": "Configuration Name",
-            "translate": {
-                "deepl": {
-                    "title": "DeepL",
-                    "custom_url": "DeepLX URL",
-                    "auth_key": "Auth Key",
-                    "type": "Service Type",
-                    "free": "Free",
-                    "api": "Auth Key",
-                    "deeplx": "DeepLX"
-                },
-                "google": {
-                    "title": "Google",
-                    "custom_url": "Custom URL"
-                },
-                "lingva": {
-                    "title": "Lingva"
-                },
-                "bing": {
-                    "title": "Bing"
-                },
-                "ollama": {
-                    "title": "Ollama",
-                    "install_ollama": "Unable to connect to local ollama, please download, install and start ollama first. If you use ollama that is not on this machine, please change the request address.",
-                    "install_ollama_link": "Download Ollama",
-                    "request_path": "Request Path",
-                    "stream": "Stream Mode",
-                    "model": "Model",
-                    "install_model": "Install",
-                    "ready": "Ready",
-                    "not_installed": "This model has not been installed yet, click to download and install now",
-                    "supported_models": "Click to see a list of Ollama available models",
-                    "prompt_description": "By customizing the Prompt, you can customize the behavior of AI. $text $from $to $detect will be replaced with the text to be translated, source language, target language and detected language.",
-                    "add": "Add Prompt"
-                },
-                "openai": {
-                    "title": "OpenAI",
-                    "service": "Service Provider",
-                    "openai": "OpenAI",
-                    "azure": "Azure",
-                    "request_path": "Request Path",
-                    "api_key": "Api Key",
-                    "model": "Model",
-                    "stream": "Stream Mode",
-                    "prompt_description": "By customizing the Prompt, you can customize the behavior of OpenAI. $text $from $to $detect will be replaced with the text to be translated, source language, target language and detected language.",
-                    "add": "Add Prompt"
-                },
-                "geminipro": {
-                    "title": "Gemini Pro",
-                    "request_path": "Request Path",
-                    "api_key": "Api Key",
-                    "stream": "Stream Mode",
-                    "prompt_description": "By customizing the Prompt, you can customize the behavior of Gemini Pro. $text $from $to $detect will be replaced with the text to be translated, source language, target language and detected language.",
-                    "add": "Add Prompt"
-                },
-                "openrouter": {
-                    "title": "OpenRouter",
-                    "request_path": "Request Path",
-                    "api_key": "Api Key",
-                    "model": "Model",
-                    "stream": "Stream Mode",
-                    "prompt_description": "By customizing the Prompt, you can customize the behavior of OpenRouter. $text $from $to $detect will be replaced with the text to be translated, source language, target language and detected language.",
-                    "add": "Add Prompt"
-                },
-                "groq": {
-                    "title": "Groq",
-                    "request_path": "Request Path",
-                    "api_key": "Api Key",
-                    "model": "Model",
-                    "stream": "Stream Mode",
-                    "prompt_description": "By customizing the Prompt, you can customize the behavior of Groq. $text $from $to $detect will be replaced with the text to be translated, source language, target language and detected language.",
-                    "add": "Add Prompt"
-                },
-                "chatglm": {
-                    "title": "ChatGLM",
-                    "model": "Model",
-                    "chatglm_turbo": "ChatGLM Turbo",
-                    "chatglm_pro": "ChatGLM Pro",
-                    "chatglm_std": "ChatGLM Std",
-                    "chatglm_lite": "ChatGLM Lite",
-                    "api_key": "Api Key",
-                    "prompt_description": "By customizing the Prompt, you can customize the behavior of AI. $text $from $to $detect will be replaced with the text to be translated, source language, target language and detected language.",
-                    "add": "Add Prompt"
-                },
-                "yandex": {
-                    "title": "Yandex"
-                },
-                "ecdict": {
-                    "title": "ECDict(Online)"
-                },
-                "transmart": {
-                    "title": "TranSmart",
-                    "username": "Username",
-                    "token": "Token"
-                },
-                "baidu": {
-                    "title": "Baidu",
-                    "appid": "App ID",
-                    "secret": "Secret"
-                },
-                "baidu_field": {
-                    "title": "Baidu Field",
-                    "it": "Information Technology",
-                    "finance": "Finance and Economics",
-                    "machinery": "Machinery Manufacturing",
-                    "senimed": "Biomedicine",
-                    "novel": "Network literature",
-                    "academic": "Academic Paper",
-                    "aerospace": "Aerospace",
-                    "wiki": "Humanities and Social Sciences",
-                    "news": "News and Information",
-                    "law": "Laws and Regulations",
-                    "contract": "Contract"
-                },
-                "alibaba": {
-                    "title": "Alibaba",
-                    "accesskey_id": "AccessKey ID",
-                    "accesskey_secret": "AccessKey Secret"
-                },
-                "tencent": {
-                    "title": "Tencent",
-                    "secret_id": "Secret ID",
-                    "secret_key": "Secret Key"
-                },
-                "volcengine": {
-                    "title": "VolcEngine",
-                    "appid": "App ID",
-                    "secret": "Secret"
-                },
-                "niutrans": {
-                    "title": "NiuTrans",
-                    "https": "Use Https",
-                    "apikey": "API Key"
-                },
-                "youdao": {
-                    "title": "Youdao",
-                    "appkey": "App ID",
-                    "key": "Key"
-                },
-                "bing_dict": {
-                    "title": "Bing Dictionary"
-                },
-                "cambridge_dict": {
-                    "title": "Cambridge Dictionary"
-                },
-                "caiyun": {
-                    "title": "Caiyun",
-                    "token": "Token"
-                }
-            },
-            "recognize": {
-                "system": {
-                    "title": "System OCR"
-                },
-                "tesseract": {
-                    "title": "Tesseract.js"
-                },
-                "baidu_ocr": {
-                    "title": "Baidu OCR",
-                    "client_id": "API Key",
-                    "client_secret": "Secret Key"
-                },
-                "baidu_accurate_ocr": {
-                    "title": "Baidu OCR (Accurate)",
-                    "client_id": "API Key",
-                    "client_secret": "Secret Key"
-                },
-                "baidu_img_ocr": {
-                    "title": "Baidu Image Translation",
-                    "appid": "App ID",
-                    "secret": "Secret"
-                },
-                "iflytek_ocr": {
-                    "title": "iFlyTek OCR",
-                    "appid": "App ID",
-                    "apisecret": "API Secret",
-                    "apikey": "API Key"
-                },
-                "iflytek_intsig_ocr": {
-                    "title": "iFlyTek OCR (Intsig)",
-                    "appid": "App ID",
-                    "apisecret": "API Secret",
-                    "apikey": "API Key"
-                },
-                "iflytek_latex_ocr": {
-                    "title": "iFlyTek LaTeX",
-                    "appid": "App ID",
-                    "apisecret": "API Secret",
-                    "apikey": "API Key"
-                },
-                "simple_latex_ocr": {
-                    "title": "Simple LaTeX",
-                    "token": "Token"
-                },
-                "tencent_ocr": {
-                    "title": "Tencent OCR",
-                    "secret_id": "Secret ID",
-                    "secret_key": "Secret Key"
-                },
-                "tencent_accurate_ocr": {
-                    "title": "Tencent OCR (Accurate)",
-                    "secret_id": "Secret ID",
-                    "secret_key": "Secret Key"
-                },
-                "tencent_img_ocr": {
-                    "title": "Tencent Image Translation",
-                    "secret_id": "Secret ID",
-                    "secret_key": "Secret Key"
-                },
-                "volcengine_ocr": {
-                    "title": "VolcEngine OCR",
-                    "appid": "App ID",
-                    "secret": "Secret"
-                },
-                "volcengine_multi_lang_ocr": {
-                    "title": "VolcEngine OCR (Multi Language)",
-                    "appid": "App ID",
-                    "secret": "Secret"
-                },
-                "qrcode": {
-                    "title": "QR Code"
-                }
-            },
-            "tts": {
-                "lingva_tts": {
-                    "title": "Lingva",
-                    "request_path": "Request Path"
-                },
-                "google_tts": {
-                    "title": "Google TTS",
-                    "lang": "Language code (e.g. vi, en, ja)",
-                    "speed": "Speed (0.5 – 2.0)"
-                },
-                "edge_tts": {
-                    "title": "Microsoft Edge TTS",
-                    "builtin": "Built-in",
-                    "builtin_hint": "No server required — runs directly inside Transkit",
-                    "voice": "Voice",
-                    "rate": "Rate (e.g. +0%, +20%, -10%)",
-                    "pitch": "Pitch (e.g. +0Hz, +5Hz, -5Hz)"
-                },
-                "elevenlabs_tts": {
-                    "title": "ElevenLabs",
-                    "api_key": "API Key",
-                    "voice_id": "Voice ID",
-                    "model": "Model",
-                    "mode": "Connection Mode",
-                    "mode_wss_hint": "Low latency — v2 models",
-                    "mode_http_hint": "Compatible — v3 models"
-                },
-                "vieneu_tts": {
-                    "title": "VieNeu TTS",
-                    "server_url": "Server URL",
-                    "voice_id": "Voice ID",
-                    "model": "Model"
-                },
-                "openai_tts": {
-                    "title": "OpenAI Compatible TTS",
-                    "server_url": "Server URL",
-                    "api_key": "API Key (optional)",
-                    "voice": "Voice",
-                    "model": "Model"
-                }
-            },
-            "ai": {
-                "openai_compat_ai": {
-                    "title": "OpenAI Compatible AI",
-                    "request_path": "API Endpoint",
-                    "api_key": "API Key",
-                    "model": "Model",
-                    "system_prompt": "System Prompt",
-                    "system_prompt_hint": "Guides the AI behavior. Use for summarization, translation context, etc."
-                },
-                "openai_ai": {
-                    "title": "OpenAI"
-                },
-                "groq_ai": {
-                    "title": "Groq"
-                },
-                "ollama_ai": {
-                    "title": "Ollama (Local LLaMA)"
-                },
-                "gemini_ai": {
-                    "title": "Google Gemini"
-                }
-            },
-            "collection": {
-                "anki": {
-                    "title": "Anki",
-                    "port": "Port"
-                },
-                "eudic": {
-                    "title": "Eudic",
-                    "name": "Collection Name",
-                    "token": "Token"
-                }
-            },
-            "transcription": {
-                "soniox_stt": {
-                    "title": "Soniox",
-                    "api_key": "API Key",
-                    "api_key_hint": "Get your API key at",
-                    "endpoint_delay": "Endpoint delay (ms)",
-                    "endpoint_delay_hint": "How long Soniox waits for more audio before finalizing a segment. Lower = faster response, higher = more accurate sentences.",
-                    "batch_interval": "Audio batch interval (ms)",
-                    "batch_interval_hint": "How often audio chunks are sent to Soniox. Lower = lower latency, higher = fewer network calls.",
-                    "speaker_diarization": "Speaker diarization",
-                    "speaker_diarization_hint": "Identify and label different speakers. Disable to reduce latency."
-                },
-                "assemblyai_stt": {
-                    "title": "AssemblyAI",
-                    "api_key": "API Key",
-                    "api_key_hint": "Get your API key at",
-                    "no_translation_note": "Note: AssemblyAI real-time API does not support built-in translation. The transcript will be shown as both source and translated text."
-                },
-                "openai_whisper_stt": {
-                    "title": "OpenAI Whisper",
-                    "api_key": "API Key",
-                    "server_url": "Server URL",
-                    "model": "Model",
-                    "chunk_interval": "Chunk interval (seconds)",
-                    "chunk_interval_hint": "Audio is buffered and sent to Whisper every N seconds. Lower = more responsive, higher = more accurate.",
-                    "batch_note": "Whisper is a batch API. Audio is sent in chunks, so there will be latency between speech and transcript."
-                }
-            }
-        },
-        "translate": {
-            "translate": "Translate",
-            "add_collection_success": "Add to collection successfully",
-            "recognizing": "Recognizing…",
-            "speak": "Speak",
-            "copy": "Copy",
-            "retry": "Try again",
-            "delete_newline": "Delete Newline",
-            "translate_back": "Translation back to the original",
-            "loading": "Translating...",
-            "show_other_translations": "View other translations",
-            "hide_other_translations": "Hide other translations"
-        },
-        "recognize": {
-            "recognize": "Recognize",
-            "translate": "Translate",
-            "copy_img": "Copy Image",
-            "copy_text": "Copy",
-            "delete_newline": "Delete Newline",
-            "delete_space": "Delete Space"
+        "proxy_change": "The proxy has been changed, Restart the application for the changes to take effect",
+        "proxy_error": "Please fill in the host and port",
+        "tray_click_event": "Tray Click Event",
+        "event": {
+          "config": "Preference",
+          "translate": "Translate",
+          "disable": "Disable",
+          "ocr_recognize": "Text Recognition",
+          "ocr_translate": "Screenshot Translation"
         }
+      },
+      "translate": {
+        "label": "Translate",
+        "title": "Translation Settings",
+        "source_language": "Source Language",
+        "target_language": "Target Language",
+        "second_language": "Secondary Target Language",
+        "auto_copy": "Auto Copy",
+        "source": "Source",
+        "target": "Target",
+        "source_target": "Source+Target",
+        "disable": "Disable",
+        "history_disable": "Disable History",
+        "incremental_translate": "Incremental Translation",
+        "dynamic_translate": "Dynamic Translation",
+        "delete_newline": "Delete Newline",
+        "remember_language": "Remember Target Language",
+        "font_size": {
+          "title": "Font Size",
+          "10": "Very Very Small (10px)",
+          "12": "Very Small (12px)",
+          "14": "Small (14px)",
+          "16": "Standard (16px)",
+          "18": "Large (18px)",
+          "20": "Very Large (20px)",
+          "24": "Very Very Large (24px)"
+        },
+        "window_position": "Window Position",
+        "mouse": "Follow the Mouse",
+        "pre_state": "Remember Position",
+        "remember_window_size": "Remember Window Size",
+        "close_on_blur": "Close window when focus lost",
+        "always_on_top": "Always on Top",
+        "fixed_providers": "Always Show Providers (Quick Translate)",
+        "hide_source": "Hide Source Area",
+        "hide_language": "Hide Language Area",
+        "hide_window": "Hide Translation Window",
+        "detect_engine": "Language Detection Engine",
+        "baidu": "Baidu",
+        "tencent": "Tencent",
+        "niutrans": "NiuTrans",
+        "google": "Google",
+        "bing": "Bing",
+        "yandex": "Yandex",
+        "local": "Local"
+      },
+      "recognize": {
+        "label": "Recognize",
+        "title": "Recognition Settings",
+        "language": "Recognition Language",
+        "delete_newline": "Auto Delete Newline",
+        "auto_copy": "Auto Copy",
+        "close_on_blur": "Close window when focus lost",
+        "hide_window": "Hide Recognition Window"
+      },
+      "audio_translate": {
+        "label": "Realtime Audio",
+        "title": "Realtime Audio Translation"
+      },
+      "hotkey": {
+        "label": "Hotkey",
+        "title": "Hotkey Settings",
+        "selection_translate": "Selection Translation",
+        "input_translate": "Text Translation",
+        "ocr_recognize": "Text Recognition",
+        "ocr_translate": "Screenshot Translation",
+        "audio_monitor": "Audio Monitor",
+        "is_register": "The hotkey is already registered",
+        "success": "Hotkey register success",
+        "set_hotkey": "Press to Set Hotkey"
+      },
+      "service": {
+        "label": "Service",
+        "title": "Service Settings",
+        "translate": "Translate",
+        "tts": "TTS",
+        "ai": {
+          "label": "AI",
+          "empty": "No AI service configured. Add one to get started."
+        },
+        "recognize": "Recognize",
+        "collection": "Collection",
+        "transcription": "Transcription",
+        "audio": {
+          "label": "Audio",
+          "title": "Soniox - Real-time Audio Translation",
+          "api_key_label": "Soniox API Key",
+          "api_key_placeholder": "Enter your Soniox API key...",
+          "api_key_hint": "Get your API key at",
+          "info_label": "About",
+          "info_desc": "Soniox provides real-time speech-to-text with built-in translation. Supports microphone and system audio.",
+          "saved": "Settings saved",
+          "tts_title": "Voice Playback (TTS)",
+          "tts_server_url": "TTS Server URL",
+          "tts_api_type": "API Type",
+          "tts_model": "Model",
+          "tts_voice_id": "Voice ID (optional)",
+          "tts_voice_id_placeholder": "Leave empty for default voice",
+          "tts_test": "Test Connection",
+          "tts_test_ok": "Connected",
+          "tts_test_fail": "Cannot connect to server",
+          "tts_hint": "Start the TTS server before enabling playback. VieNeu: run `vieneu-stream` (port 8001). OpenAI-compatible: any server supporting POST /v1/audio/speech. Google: no server needed.",
+          "tts_google_lang": "Language code (e.g. vi, en, ja)",
+          "tts_google_speed": "Speed (0.5 – 2.0)",
+          "tts_active_service": "Active TTS service",
+          "tts_active_service_hint": "Configure each TTS service in the TTS tab.",
+          "tts_playback_rate": "Base Playback Speed",
+          "tts_playback_rate_hint": "When the queue has backlog, speed increases automatically (×1.5 / ×2.0 / ×2.5 of this base value).",
+          "tts_edge_builtin": "Built-in",
+          "tts_edge_builtin_hint": "No server required — runs directly inside Transkit",
+          "tts_edge_voice": "Voice",
+          "tts_edge_rate": "Rate (e.g. +0%, +20%, -10%)",
+          "tts_edge_pitch": "Pitch (e.g. +0Hz, +5Hz, -5Hz)",
+          "soniox_advanced_title": "Soniox Advanced",
+          "soniox_endpoint_delay": "Endpoint delay (ms)",
+          "soniox_endpoint_delay_hint": "How long Soniox waits for more audio before finalizing a segment. Lower = faster response, higher = more accurate sentences.",
+          "soniox_batch_interval": "Audio batch interval (ms)",
+          "soniox_batch_interval_hint": "How often audio chunks are sent to Soniox. Lower = lower latency, higher = fewer network calls.",
+          "soniox_speaker_diarization": "Speaker diarization",
+          "soniox_speaker_diarization_hint": "Identify and label different speakers. Disable to reduce latency.",
+          "stt_title": "Transcription Provider",
+          "stt_active_service": "Active provider",
+          "stt_active_service_hint": "Configure providers in Services → Transcription tab.",
+          "autosave_title": "Transcript Auto-save",
+          "autosave_enable_label": "Enable auto-save by default",
+          "autosave_enable_hint": "When enabled, the monitor window will automatically save transcripts to a Markdown file (~/Documents/TransKit/) each session. You can toggle this at any time in the monitor window.",
+          "ai_suggestion_title": "AI Suggestion",
+          "ai_suggestion_service": "AI Provider",
+          "ai_suggestion_service_placeholder": "Select AI service",
+          "ai_suggestion_no_service": "No AI service configured. Add one in Settings > Service > AI",
+          "ai_suggestion_response_lang": "Response Language",
+          "ai_suggestion_lang_both": "Both (source + target)",
+          "ai_suggestion_lang_source": "Source language only",
+          "ai_suggestion_lang_target": "Target language only",
+          "ai_suggestion_response_lang_hint": "Language used in Research and Suggested Answer sections.",
+          "ai_suggestion_context_lines": "Context Lines",
+          "ai_suggestion_context_lines_hint": "Number of previous conversation lines sent to AI for context.",
+          "ai_suggestion_font_size": "Suggestion Font Size"
+        },
+        "least": "Please keep at least one",
+        "add_builtin_service": "Add Builtin Service",
+        "add_external_service": "Add Extension",
+        "add_service": "Add Service",
+        "test_failed": "Test Failed",
+        "install_plugin": "Install Plugin",
+        "view_plugin_list": "View Plugin List",
+        "uninstall_success": "Plugin Uninstall Successfully",
+        "homepage": "Homepage",
+        "more_services": "More Services"
+      },
+      "history": {
+        "label": "History",
+        "title": "History"
+      },
+      "backup": {
+        "label": "Backup",
+        "title": "Backup Settings",
+        "type": "Service Type",
+        "webdav": "WebDav",
+        "aliyun": "Aliyun Drive",
+        "local": "Local",
+        "webdav_url": "WebDav URL",
+        "username": "Username",
+        "password": "Password",
+        "logout": "Logout",
+        "aliyun_login_first": "Please scan the code to log in first.",
+        "login_success": "Login Success",
+        "backup": "Backup",
+        "restore": "Restore",
+        "list": "Backup List",
+        "load_success": "Load Backup Success",
+        "backup_success": "Backup Success",
+        "empty": "You have not backed up yet"
+      },
+      "about": {
+        "label": "About",
+        "title": "About Application",
+        "description": "A cross-platform translation & OCR app",
+        "website": "Website",
+        "github": "GitHub",
+        "feedback": "Feedback",
+        "issue": "Issue",
+        "email": "Email",
+        "community": "Community",
+        "system": "System",
+        "check_update": "Check Update",
+        "view_log": "View Log",
+        "view_config": "View Config",
+        "qq_channel": "QQ Channel",
+        "qq_group": "QQ Group",
+        "telegram": "Telegram",
+        "discussion": "Github Discussion"
+      },
+      "profile": {
+        "label": "Profile",
+        "title": "User Profile",
+        "hint": "Your profile helps AI Suggestion generate more relevant, personalized responses.",
+        "name": "Full Name",
+        "name_placeholder": "Your name",
+        "role": "Role / Title",
+        "role_placeholder": "e.g. Software Engineer, Product Manager",
+        "company": "Company / Organization",
+        "company_placeholder": "e.g. Acme Corp",
+        "experience_level": "Experience Level",
+        "experience_placeholder": "Select level",
+        "expertise": "Expertise Domains",
+        "expertise_placeholder": "e.g. Fintech, AI, Healthcare — press Enter or comma",
+        "expertise_hint": "These domains help AI tailor suggestions to your background.",
+        "notes": "Bio / Notes",
+        "notes_placeholder": "e.g. I attend English-speaking meetings but prefer answers in Vietnamese",
+        "preview_label": "Profile Preview"
+      }
+    },
+    "monitor": {
+      "source_system": "System Audio",
+      "source_system_unavailable": "System Audio (macOS only)",
+      "source_mic": "Microphone",
+      "start": "Start",
+      "stop": "Stop",
+      "open_audio_config": "Audio settings",
+      "pin": "Pin window",
+      "unpin": "Unpin window",
+      "placeholder": "Press Start to begin listening...",
+      "listening": "Listening...",
+      "no_api_key": "Please set your Soniox API key in Settings > Service > Audio",
+      "status_connecting": "Connecting...",
+      "status_connected": "Listening",
+      "status_disconnected": "Ready",
+      "status_error": "Error",
+      "font_larger": "Increase font size",
+      "font_smaller": "Decrease font size",
+      "sub_mode": "Subtitle mode",
+      "exit_sub_mode": "Exit subtitle mode",
+      "tts_enable": "Enable voice playback",
+      "tts_disable": "Disable voice playback",
+      "tts_volume": "Volume",
+      "context_panel": "Context",
+      "ctx_domain_placeholder": "Topic context (e.g. Web3 conference, medical talk...)",
+      "ctx_terms_placeholder": "Key terms, comma-separated (e.g. TransKit, Soniox, API)",
+      "ctx_preset_meeting": "Meeting",
+      "ctx_preset_movie_cn": "Movie CN",
+      "ctx_preset_movie_en": "Movie EN",
+      "ctx_preset_tech": "Tech",
+      "ctx_preset_medical": "Medical",
+      "ctx_preset_sport": "Sport",
+      "show_original": "Show original text",
+      "hide_original": "Hide original text",
+      "transparent_on": "Enable transparent background",
+      "transparent_off": "Disable transparent background",
+      "opacity": "Opacity",
+      "ctx_general_label": "General context",
+      "ctx_general_key_placeholder": "Key (e.g. domain)",
+      "ctx_general_value_placeholder": "Value (e.g. Healthcare)",
+      "ctx_general_add": "Add field",
+      "ctx_text_label": "Background text",
+      "ctx_text_placeholder": "Background narrative or reference text for this session...",
+      "ctx_terms_label": "Terms",
+      "ctx_terms_new_placeholder": "Add term...",
+      "ctx_translation_terms_label": "Translation terms",
+      "ctx_translation_src_placeholder": "Source",
+      "ctx_translation_tgt_placeholder": "Target",
+      "ctx_translation_add": "Add pair",
+      "ctx_presets_label": "Presets",
+      "ctx_preset_save": "Save as preset",
+      "ctx_preset_name_placeholder": "Preset name...",
+      "ctx_preset_confirm_save": "Save",
+      "ctx_preset_delete": "Delete preset",
+      "ctx_preset_builtin": "(built-in)",
+      "ctx_ai_label": "AI Generate",
+      "ctx_ai_placeholder": "Describe the topic (e.g. medical consultation about diabetes...)",
+      "ctx_ai_generate": "Generate",
+      "ctx_ai_generating": "Generating...",
+      "ctx_ai_no_service": "No AI service configured. Add one in Settings > Service > AI",
+      "ctx_ai_error": "AI generation failed",
+      "ctx_ai_success": "Context generated",
+      "ctx_char_limit_warning": "Context is close to the 10,000 character limit",
+      "autosave_label": "Auto-save",
+      "autosave_on": "Auto-save enabled",
+      "autosave_off": "Auto-save off",
+      "autosave_saving": "Saving...",
+      "autosave_saved": "Saved",
+      "autosave_error": "Save error",
+      "autosave_clear_blocked": "Cannot clear while recording with auto-save on. Stop first to save the file.",
+      "autosave_toggle": "Toggle auto-save to file",
+      "autosave_disabled_warning": "Transcripts will not be saved",
+      "ai_suggestion_hint": "Get AI suggestion for this line",
+      "ai_suggestion_dismiss": "Dismiss AI suggestion",
+      "ai_suggestion_loading": "Thinking...",
+      "ai_suggestion_error": "AI suggestion failed. Check your AI service settings.",
+      "ai_suggestion_no_service": "No AI service configured for suggestions. Go to Settings > Audio Translate.",
+      "ai_suggestion_research": "Research",
+      "ai_suggestion_answer": "Suggested Answer",
+      "scroll_to_latest": "Latest",
+      "ai_suggestion_source_lang": "Source language",
+      "ai_suggestion_target_lang": "Target language",
+      "bookmark_add": "Bookmark this line",
+      "bookmark_remove": "Remove bookmark",
+      "tts_replay": "Replay audio"
+    },
+    "updater": {
+      "title": "Check Update",
+      "latest": "## The latest version is installed",
+      "progress": "Download Progress",
+      "update": "Update",
+      "downloading": "Downloading…",
+      "installing": "Installing…",
+      "cancel": "Cancel",
+      "installed": "Install completed, Restart the application for the changes to take effect"
+    },
+    "services": {
+      "help": "Configuration Guide",
+      "no_need": "No configuration required",
+      "instance_name": "Configuration Name",
+      "translate": {
+        "deepl": {
+          "title": "DeepL",
+          "custom_url": "DeepLX URL",
+          "auth_key": "Auth Key",
+          "type": "Service Type",
+          "free": "Free",
+          "api": "Auth Key",
+          "deeplx": "DeepLX"
+        },
+        "google": {
+          "title": "Google",
+          "custom_url": "Custom URL"
+        },
+        "lingva": {
+          "title": "Lingva"
+        },
+        "bing": {
+          "title": "Bing"
+        },
+        "ollama": {
+          "title": "Ollama",
+          "install_ollama": "Unable to connect to local ollama, please download, install and start ollama first. If you use ollama that is not on this machine, please change the request address.",
+          "install_ollama_link": "Download Ollama",
+          "request_path": "Request Path",
+          "stream": "Stream Mode",
+          "model": "Model",
+          "install_model": "Install",
+          "ready": "Ready",
+          "not_installed": "This model has not been installed yet, click to download and install now",
+          "supported_models": "Click to see a list of Ollama available models",
+          "prompt_description": "By customizing the Prompt, you can customize the behavior of AI. $text $from $to $detect will be replaced with the text to be translated, source language, target language and detected language.",
+          "add": "Add Prompt"
+        },
+        "openai": {
+          "title": "OpenAI",
+          "service": "Service Provider",
+          "openai": "OpenAI",
+          "azure": "Azure",
+          "request_path": "Request Path",
+          "api_key": "Api Key",
+          "model": "Model",
+          "stream": "Stream Mode",
+          "prompt_description": "By customizing the Prompt, you can customize the behavior of OpenAI. $text $from $to $detect will be replaced with the text to be translated, source language, target language and detected language.",
+          "add": "Add Prompt"
+        },
+        "geminipro": {
+          "title": "Gemini Pro",
+          "request_path": "Request Path",
+          "api_key": "Api Key",
+          "stream": "Stream Mode",
+          "prompt_description": "By customizing the Prompt, you can customize the behavior of Gemini Pro. $text $from $to $detect will be replaced with the text to be translated, source language, target language and detected language.",
+          "add": "Add Prompt"
+        },
+        "openrouter": {
+          "title": "OpenRouter",
+          "request_path": "Request Path",
+          "api_key": "Api Key",
+          "model": "Model",
+          "stream": "Stream Mode",
+          "prompt_description": "By customizing the Prompt, you can customize the behavior of OpenRouter. $text $from $to $detect will be replaced with the text to be translated, source language, target language and detected language.",
+          "add": "Add Prompt"
+        },
+        "groq": {
+          "title": "Groq",
+          "request_path": "Request Path",
+          "api_key": "Api Key",
+          "model": "Model",
+          "stream": "Stream Mode",
+          "prompt_description": "By customizing the Prompt, you can customize the behavior of Groq. $text $from $to $detect will be replaced with the text to be translated, source language, target language and detected language.",
+          "add": "Add Prompt"
+        },
+        "chatglm": {
+          "title": "ChatGLM",
+          "model": "Model",
+          "chatglm_turbo": "ChatGLM Turbo",
+          "chatglm_pro": "ChatGLM Pro",
+          "chatglm_std": "ChatGLM Std",
+          "chatglm_lite": "ChatGLM Lite",
+          "api_key": "Api Key",
+          "prompt_description": "By customizing the Prompt, you can customize the behavior of AI. $text $from $to $detect will be replaced with the text to be translated, source language, target language and detected language.",
+          "add": "Add Prompt"
+        },
+        "yandex": {
+          "title": "Yandex"
+        },
+        "ecdict": {
+          "title": "ECDict(Online)"
+        },
+        "transmart": {
+          "title": "TranSmart",
+          "username": "Username",
+          "token": "Token"
+        },
+        "baidu": {
+          "title": "Baidu",
+          "appid": "App ID",
+          "secret": "Secret"
+        },
+        "baidu_field": {
+          "title": "Baidu Field",
+          "it": "Information Technology",
+          "finance": "Finance and Economics",
+          "machinery": "Machinery Manufacturing",
+          "senimed": "Biomedicine",
+          "novel": "Network literature",
+          "academic": "Academic Paper",
+          "aerospace": "Aerospace",
+          "wiki": "Humanities and Social Sciences",
+          "news": "News and Information",
+          "law": "Laws and Regulations",
+          "contract": "Contract"
+        },
+        "alibaba": {
+          "title": "Alibaba",
+          "accesskey_id": "AccessKey ID",
+          "accesskey_secret": "AccessKey Secret"
+        },
+        "tencent": {
+          "title": "Tencent",
+          "secret_id": "Secret ID",
+          "secret_key": "Secret Key"
+        },
+        "volcengine": {
+          "title": "VolcEngine",
+          "appid": "App ID",
+          "secret": "Secret"
+        },
+        "niutrans": {
+          "title": "NiuTrans",
+          "https": "Use Https",
+          "apikey": "API Key"
+        },
+        "youdao": {
+          "title": "Youdao",
+          "appkey": "App ID",
+          "key": "Key"
+        },
+        "bing_dict": {
+          "title": "Bing Dictionary"
+        },
+        "cambridge_dict": {
+          "title": "Cambridge Dictionary"
+        },
+        "caiyun": {
+          "title": "Caiyun",
+          "token": "Token"
+        }
+      },
+      "recognize": {
+        "system": {
+          "title": "System OCR"
+        },
+        "tesseract": {
+          "title": "Tesseract.js"
+        },
+        "baidu_ocr": {
+          "title": "Baidu OCR",
+          "client_id": "API Key",
+          "client_secret": "Secret Key"
+        },
+        "baidu_accurate_ocr": {
+          "title": "Baidu OCR (Accurate)",
+          "client_id": "API Key",
+          "client_secret": "Secret Key"
+        },
+        "baidu_img_ocr": {
+          "title": "Baidu Image Translation",
+          "appid": "App ID",
+          "secret": "Secret"
+        },
+        "iflytek_ocr": {
+          "title": "iFlyTek OCR",
+          "appid": "App ID",
+          "apisecret": "API Secret",
+          "apikey": "API Key"
+        },
+        "iflytek_intsig_ocr": {
+          "title": "iFlyTek OCR (Intsig)",
+          "appid": "App ID",
+          "apisecret": "API Secret",
+          "apikey": "API Key"
+        },
+        "iflytek_latex_ocr": {
+          "title": "iFlyTek LaTeX",
+          "appid": "App ID",
+          "apisecret": "API Secret",
+          "apikey": "API Key"
+        },
+        "simple_latex_ocr": {
+          "title": "Simple LaTeX",
+          "token": "Token"
+        },
+        "tencent_ocr": {
+          "title": "Tencent OCR",
+          "secret_id": "Secret ID",
+          "secret_key": "Secret Key"
+        },
+        "tencent_accurate_ocr": {
+          "title": "Tencent OCR (Accurate)",
+          "secret_id": "Secret ID",
+          "secret_key": "Secret Key"
+        },
+        "tencent_img_ocr": {
+          "title": "Tencent Image Translation",
+          "secret_id": "Secret ID",
+          "secret_key": "Secret Key"
+        },
+        "volcengine_ocr": {
+          "title": "VolcEngine OCR",
+          "appid": "App ID",
+          "secret": "Secret"
+        },
+        "volcengine_multi_lang_ocr": {
+          "title": "VolcEngine OCR (Multi Language)",
+          "appid": "App ID",
+          "secret": "Secret"
+        },
+        "qrcode": {
+          "title": "QR Code"
+        }
+      },
+      "tts": {
+        "lingva_tts": {
+          "title": "Lingva",
+          "request_path": "Request Path"
+        },
+        "google_tts": {
+          "title": "Google TTS",
+          "lang": "Language code (e.g. vi, en, ja)",
+          "speed": "Speed (0.5 – 2.0)"
+        },
+        "edge_tts": {
+          "title": "Microsoft Edge TTS",
+          "builtin": "Built-in",
+          "builtin_hint": "No server required — runs directly inside Transkit",
+          "voice": "Voice",
+          "rate": "Rate (e.g. +0%, +20%, -10%)",
+          "pitch": "Pitch (e.g. +0Hz, +5Hz, -5Hz)"
+        },
+        "elevenlabs_tts": {
+          "title": "ElevenLabs",
+          "api_key": "API Key",
+          "voice_id": "Voice ID",
+          "model": "Model",
+          "mode": "Connection Mode",
+          "mode_wss_hint": "Low latency — v2 models",
+          "mode_http_hint": "Compatible — v3 models"
+        },
+        "vieneu_tts": {
+          "title": "VieNeu TTS",
+          "server_url": "Server URL",
+          "voice_id": "Voice ID",
+          "model": "Model"
+        },
+        "openai_tts": {
+          "title": "OpenAI Compatible TTS",
+          "server_url": "Server URL",
+          "api_key": "API Key (optional)",
+          "voice": "Voice",
+          "model": "Model"
+        }
+      },
+      "ai": {
+        "openai_compat_ai": {
+          "title": "OpenAI Compatible AI",
+          "request_path": "API Endpoint",
+          "api_key": "API Key",
+          "model": "Model",
+          "system_prompt": "System Prompt",
+          "system_prompt_hint": "Guides the AI behavior. Use for summarization, translation context, etc."
+        },
+        "openai_ai": {
+          "title": "OpenAI"
+        },
+        "groq_ai": {
+          "title": "Groq"
+        },
+        "ollama_ai": {
+          "title": "Ollama (Local LLaMA)"
+        },
+        "gemini_ai": {
+          "title": "Google Gemini"
+        }
+      },
+      "collection": {
+        "anki": {
+          "title": "Anki",
+          "port": "Port"
+        },
+        "eudic": {
+          "title": "Eudic",
+          "name": "Collection Name",
+          "token": "Token"
+        }
+      },
+      "transcription": {
+        "soniox_stt": {
+          "title": "Soniox",
+          "api_key": "API Key",
+          "api_key_hint": "Get your API key at",
+          "endpoint_delay": "Endpoint delay (ms)",
+          "endpoint_delay_hint": "How long Soniox waits for more audio before finalizing a segment. Lower = faster response, higher = more accurate sentences.",
+          "batch_interval": "Audio batch interval (ms)",
+          "batch_interval_hint": "How often audio chunks are sent to Soniox. Lower = lower latency, higher = fewer network calls.",
+          "speaker_diarization": "Speaker diarization",
+          "speaker_diarization_hint": "Identify and label different speakers. Disable to reduce latency."
+        },
+        "assemblyai_stt": {
+          "title": "AssemblyAI",
+          "api_key": "API Key",
+          "api_key_hint": "Get your API key at",
+          "no_translation_note": "Note: AssemblyAI real-time API does not support built-in translation. The transcript will be shown as both source and translated text."
+        },
+        "openai_whisper_stt": {
+          "title": "OpenAI Whisper",
+          "api_key": "API Key",
+          "server_url": "Server URL",
+          "model": "Model",
+          "chunk_interval": "Chunk interval (seconds)",
+          "chunk_interval_hint": "Audio is buffered and sent to Whisper every N seconds. Lower = more responsive, higher = more accurate.",
+          "batch_note": "Whisper is a batch API. Audio is sent in chunks, so there will be latency between speech and transcript."
+        }
+      }
+    },
+    "translate": {
+      "translate": "Translate",
+      "add_collection_success": "Add to collection successfully",
+      "recognizing": "Recognizing…",
+      "speak": "Speak",
+      "copy": "Copy",
+      "retry": "Try again",
+      "delete_newline": "Delete Newline",
+      "translate_back": "Translation back to the original",
+      "loading": "Translating...",
+      "show_other_translations": "View other translations",
+      "hide_other_translations": "Hide other translations"
+    },
+    "recognize": {
+      "recognize": "Recognize",
+      "translate": "Translate",
+      "copy_img": "Copy Image",
+      "copy_text": "Copy",
+      "delete_newline": "Delete Newline",
+      "delete_space": "Delete Space"
     }
+  }
 }

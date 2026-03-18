@@ -9,6 +9,7 @@ import Hotkey from '../pages/Hotkey';
 import Backup from '../pages/Backup';
 import About from '../pages/About';
 import AudioTranslate from '../pages/AudioTranslate';
+import Profile from '../pages/Profile';
 
 const routes = [
     {
@@ -26,6 +27,10 @@ const routes = [
     {
         path: '/audio-translate',
         element: <AudioTranslate />,
+    },
+    {
+        path: '/profile',
+        element: <Profile />,
     },
     {
         path: '/hotkey',

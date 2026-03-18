@@ -1,10 +1,19 @@
 import { Card, CardBody, CardHeader, Select, SelectItem, Switch } from '@nextui-org/react';
 import { useTranslation } from 'react-i18next';
-import { MdMicNone, MdVolumeUp, MdSaveAlt } from 'react-icons/md';
+import { MdMicNone, MdVolumeUp, MdSaveAlt, MdAutoAwesome } from 'react-icons/md';
 import React from 'react';
 import { useConfig } from '../../../../hooks';
 import { Toaster } from 'react-hot-toast';
 import { getServiceName } from '../../../../utils/service_instance';
+import { store } from '../../../../utils/store';
+
+function getAiServiceLabel(instanceKey) {
+    const serviceName = getServiceName(instanceKey);
+    if (instanceKey.includes('@')) {
+        return `${serviceName} (${instanceKey.split('@')[1].slice(0, 6)})`;
+    }
+    return serviceName;
+}
 
 function getTranscriptionServiceLabel(instanceKey, t) {
     const serviceName = getServiceName(instanceKey);
@@ -33,6 +42,25 @@ export default function AudioTranslate() {
 
     // ── Auto-save ────────────────────────────────────────────────────────────
     const [autosaveEnabled, setAutosaveEnabled] = useConfig('monitor_autosave_enabled', false);
+
+    // ── AI Suggestion ────────────────────────────────────────────────────────
+    const [aiServiceList] = useConfig('ai_service_list', []);
+    const [aiSuggestionService, setAiSuggestionService] = useConfig('monitor_ai_suggestion_service', '');
+    const [aiSuggestionContextLines, setAiSuggestionContextLines] = useConfig('monitor_ai_suggestion_context_lines', 10);
+    const [aiSuggestionResponseLang, setAiSuggestionResponseLang] = useConfig('monitor_ai_suggestion_response_lang', 'both');
+    const [aiSuggestionFontSize, setAiSuggestionFontSize] = useConfig('monitor_ai_suggestion_font_size', 16);
+    const [aiServiceNames, setAiServiceNames] = React.useState({});
+
+    React.useEffect(() => {
+        if (!aiServiceList?.length) return;
+        Promise.all(
+            aiServiceList.map(async key => {
+                const cfg = await store.get(key).catch(() => null);
+                const displayName = cfg?.instanceName || cfg?.service_instance_name || getAiServiceLabel(key);
+                return [key, displayName];
+            })
+        ).then(pairs => setAiServiceNames(Object.fromEntries(pairs)));
+    }, [aiServiceList?.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // ── TTS selector (global) ────────────────────────────────────────────────
     const [ttsActiveService, setTtsActiveService] = useConfig('tts_active_service', 'edge_tts');
@@ -88,6 +116,90 @@ export default function AudioTranslate() {
                         />
                     </div>
                     <p className='text-xs text-default-400'>{t('config.service.audio.autosave_enable_hint')}</p>
+                </CardBody>
+            </Card>
+
+            {/* ── AI Suggestion ── */}
+            <Card>
+                <CardHeader className='flex gap-2 items-center pb-0'>
+                    <MdAutoAwesome className='text-[20px] text-secondary' />
+                    <p className='text-sm font-semibold'>{t('config.service.audio.ai_suggestion_title')}</p>
+                </CardHeader>
+                <CardBody className='flex flex-col gap-3'>
+                    {/* Provider */}
+                    <div className='flex flex-col gap-1'>
+                        <p className='text-xs text-default-500'>{t('config.service.audio.ai_suggestion_service')}</p>
+                        {aiServiceList?.length > 0 ? (
+                            <Select
+                                size='sm'
+                                selectedKeys={aiSuggestionService ? new Set([aiSuggestionService]) : new Set()}
+                                onSelectionChange={keys => {
+                                    const key = [...keys][0];
+                                    if (key) setAiSuggestionService(key);
+                                }}
+                                placeholder={t('config.service.audio.ai_suggestion_service_placeholder')}
+                            >
+                                {(aiServiceList ?? []).map(key => (
+                                    <SelectItem key={key} textValue={aiServiceNames[key] || getAiServiceLabel(key)}>
+                                        {aiServiceNames[key] || getAiServiceLabel(key)}
+                                    </SelectItem>
+                                ))}
+                            </Select>
+                        ) : (
+                            <p className='text-xs text-danger'>{t('config.service.audio.ai_suggestion_no_service')}</p>
+                        )}
+                    </div>
+
+                    {/* Response language */}
+                    <div className='flex flex-col gap-1'>
+                        <p className='text-xs text-default-500'>{t('config.service.audio.ai_suggestion_response_lang')}</p>
+                        <Select
+                            size='sm'
+                            selectedKeys={new Set([aiSuggestionResponseLang ?? 'both'])}
+                            onSelectionChange={keys => {
+                                const key = [...keys][0];
+                                if (key) setAiSuggestionResponseLang(key);
+                            }}
+                        >
+                            <SelectItem key='both'>{t('config.service.audio.ai_suggestion_lang_both')}</SelectItem>
+                            <SelectItem key='source'>{t('config.service.audio.ai_suggestion_lang_source')}</SelectItem>
+                            <SelectItem key='target'>{t('config.service.audio.ai_suggestion_lang_target')}</SelectItem>
+                        </Select>
+                        <p className='text-xs text-default-400'>{t('config.service.audio.ai_suggestion_response_lang_hint')}</p>
+                    </div>
+
+                    {/* Context lines */}
+                    <div className='flex flex-col gap-1'>
+                        <p className='text-xs text-default-500'>{t('config.service.audio.ai_suggestion_context_lines')}</p>
+                        <div className='flex items-center gap-3'>
+                            <input
+                                type='range' min={3} max={20} step={1}
+                                value={aiSuggestionContextLines ?? 10}
+                                onChange={e => setAiSuggestionContextLines(parseInt(e.target.value))}
+                                className='flex-1 accent-secondary'
+                            />
+                            <span className='text-xs text-default-500 w-8 text-right font-mono tabular-nums'>
+                                {aiSuggestionContextLines ?? 10}
+                            </span>
+                        </div>
+                        <p className='text-xs text-default-400'>{t('config.service.audio.ai_suggestion_context_lines_hint')}</p>
+                    </div>
+
+                    {/* Font size */}
+                    <div className='flex flex-col gap-1'>
+                        <p className='text-xs text-default-500'>{t('config.service.audio.ai_suggestion_font_size')}</p>
+                        <div className='flex items-center gap-3'>
+                            <input
+                                type='range' min={11} max={24} step={1}
+                                value={aiSuggestionFontSize ?? 16}
+                                onChange={e => setAiSuggestionFontSize(parseInt(e.target.value))}
+                                className='flex-1 accent-secondary'
+                            />
+                            <span className='text-xs text-default-500 w-10 text-right font-mono tabular-nums'>
+                                {aiSuggestionFontSize ?? 16}px
+                            </span>
+                        </div>
+                    </div>
                 </CardBody>
             </Card>
 
