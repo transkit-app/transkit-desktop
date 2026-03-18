@@ -1,10 +1,14 @@
-## 3.0.7 (2025-5-10)
+## 3.1.0 (2026-03-18)
 
 ### New feature:
 
--   signed macOS app
+-   first TransKit release line based on independent roadmap
+-   realtime monitor enhancements for meetings and live translation
+-   sub mode, AI suggestion, bookmarks, and transcript auto-save
+-   TTS providers with BYO API model (free + premium options)
+-   refreshed multilingual READMEs (EN/VI/CN/KR) with streamlined install/contribution guides
 
-### Bugs fixed:
+### Build & release:
 
--   fix screenshot on macOS
--   rm tray click event on macOS
+-   clarified CI release flow and platform packaging matrix
+-   aligned release documentation for updater artifacts and platform installers
