@@ -208,7 +208,10 @@
                     "soniox_batch_interval": "Chu kỳ gửi audio (ms)",
                     "soniox_batch_interval_hint": "Tần suất gửi dữ liệu âm thanh lên Soniox. Thấp hơn = độ trễ thấp hơn, cao hơn = ít cuộc gọi mạng hơn.",
                     "soniox_speaker_diarization": "Phân biệt giọng nói",
-                    "soniox_speaker_diarization_hint": "Nhận dạng và gán nhãn từng người nói. Tắt để giảm độ trễ."
+                    "soniox_speaker_diarization_hint": "Nhận dạng và gán nhãn từng người nói. Tắt để giảm độ trễ.",
+                    "autosave_title": "Tự động lưu bản ghi",
+                    "autosave_enable_label": "Bật tự động lưu mặc định",
+                    "autosave_enable_hint": "Khi bật, cửa sổ monitor sẽ tự động lưu bản ghi vào file Markdown (~/Documents/TransKit/) sau mỗi phiên. Bạn có thể bật/tắt bất cứ lúc nào ngay trong cửa sổ monitor."
                 },
                 "least": "Vui lòng giữ ít nhất một dịch vụ",
                 "add_builtin_service": "Thêm dịch vụ có sẵn",

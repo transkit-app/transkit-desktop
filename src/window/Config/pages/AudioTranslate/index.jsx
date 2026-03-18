@@ -1,7 +1,7 @@
 import { Input, Button, Divider, Card, CardBody, CardHeader, Select, SelectItem, Switch } from '@nextui-org/react';
 import { useTranslation } from 'react-i18next';
 import { AiFillEye, AiFillEyeInvisible } from 'react-icons/ai';
-import { MdMicNone, MdVolumeUp, MdTune } from 'react-icons/md';
+import { MdMicNone, MdVolumeUp, MdTune, MdSaveAlt } from 'react-icons/md';
 import React, { useState } from 'react';
 import { useConfig } from '../../../../hooks';
 import { Toaster } from 'react-hot-toast';
@@ -25,6 +25,9 @@ export default function AudioTranslate() {
     const [sonioxEndpointDelay, setSonioxEndpointDelay] = useConfig('soniox_endpoint_delay_ms', 250);
     const [sonioxBatchInterval, setSonioxBatchInterval] = useConfig('soniox_batch_interval_ms', 100);
     const [sonioxSpeakerDiarization, setSonioxSpeakerDiarization] = useConfig('soniox_speaker_diarization', true);
+
+    // ── Auto-save ────────────────────────────────────────────────────────────────
+    const [autosaveEnabled, setAutosaveEnabled] = useConfig('monitor_autosave_enabled', false);
 
     // ── TTS selector (global) ────────────────────────────────────────────────────
     const [ttsActiveService, setTtsActiveService] = useConfig('tts_active_service', 'edge_tts');
@@ -131,6 +134,26 @@ export default function AudioTranslate() {
                         </div>
                         <p className='text-xs text-default-400'>{t('config.service.audio.soniox_speaker_diarization_hint')}</p>
                     </div>
+                </CardBody>
+            </Card>
+
+            {/* ── Transcript Auto-save ── */}
+            <Card>
+                <CardHeader className='flex gap-2 items-center pb-0'>
+                    <MdSaveAlt className='text-[20px] text-primary' />
+                    <p className='text-sm font-semibold'>{t('config.service.audio.autosave_title')}</p>
+                </CardHeader>
+                <CardBody className='flex flex-col gap-2'>
+                    <div className='flex items-center justify-between'>
+                        <p className='text-xs text-default-500'>{t('config.service.audio.autosave_enable_label')}</p>
+                        <Switch
+                            size='sm'
+                            isSelected={autosaveEnabled === true}
+                            onValueChange={setAutosaveEnabled}
+                            color='primary'
+                        />
+                    </div>
+                    <p className='text-xs text-default-400'>{t('config.service.audio.autosave_enable_hint')}</p>
                 </CardBody>
             </Card>
 

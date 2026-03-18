@@ -115,11 +115,11 @@ export function Config(props) {
                         color='primary'
                         onPress={() => {
                             setIsLoading(true);
+                            setConfig(config, true);
+                            updateServiceList(instanceKey);
                             tts('hello', Language.en, { config }).then(
                                 () => {
                                     setIsLoading(false);
-                                    setConfig(config, true);
-                                    updateServiceList(instanceKey);
                                     onClose();
                                 },
                                 e => {

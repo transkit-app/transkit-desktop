@@ -60,7 +60,7 @@ export default function ConfigModal(props) {
                             <ConfigComponent
                                 name={serviceName}
                                 instanceKey={serviceInstanceKey}
-                                pluginType='translate'
+                                pluginType='tts'
                                 pluginList={pluginList}
                                 updateServiceList={updateServiceInstanceList}
                                 onClose={onClose}

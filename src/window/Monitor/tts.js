@@ -457,21 +457,8 @@ export class TTSQueue {
             });
     }
 
-    /**
-     * Catch-up playback speed.
-     * When many items are waiting in the decode/queue pipeline, earlier items
-     * play faster so the queue drains before falling too far behind speech.
-     *
-     *   0 pending → ×1.0 (normal)
-     *   1 pending → ×1.5
-     *   2 pending → ×2.0
-     *   ≥3 pending → ×2.5  (capped at 4.0)
-     */
     _calcRate() {
-        const base = this.baseRate || 1.0;
-        const n    = this._pendingCount;
-        const mul  = n >= 3 ? 2.5 : n === 2 ? 2.0 : n === 1 ? 1.5 : 1.0;
-        return Math.min(base * mul, 4.0);
+        return this.baseRate || 1.0;
     }
 
     /**

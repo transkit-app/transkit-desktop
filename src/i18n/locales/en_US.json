@@ -208,7 +208,10 @@
                     "soniox_batch_interval": "Audio batch interval (ms)",
                     "soniox_batch_interval_hint": "How often audio chunks are sent to Soniox. Lower = lower latency, higher = fewer network calls.",
                     "soniox_speaker_diarization": "Speaker diarization",
-                    "soniox_speaker_diarization_hint": "Identify and label different speakers. Disable to reduce latency."
+                    "soniox_speaker_diarization_hint": "Identify and label different speakers. Disable to reduce latency.",
+                    "autosave_title": "Transcript Auto-save",
+                    "autosave_enable_label": "Enable auto-save by default",
+                    "autosave_enable_hint": "When enabled, the monitor window will automatically save transcripts to a Markdown file (~/Documents/TransKit/) each session. You can toggle this at any time in the monitor window."
                 },
                 "least": "Please keep at least one",
                 "add_builtin_service": "Add Builtin Service",

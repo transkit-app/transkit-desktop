@@ -79,11 +79,11 @@ export function Config(props) {
                         color='primary'
                         onPress={() => {
                             setIsLoading(true);
+                            setLingvaConfig(lingvaConfig, true);
+                            updateServiceList(instanceKey);
                             tts('hello', Language.en, { config: lingvaConfig }).then(
                                 () => {
                                     setIsLoading(false);
-                                    setLingvaConfig(lingvaConfig, true);
-                                    updateServiceList(instanceKey);
                                     onClose();
                                 },
                                 (e) => {

@@ -92,11 +92,11 @@ export function Config(props) {
                         color='primary'
                         onPress={() => {
                             setIsLoading(true);
+                            setConfig(config, true);
+                            updateServiceList(instanceKey);
                             tts('xin chào', Language.vi, { config }).then(
                                 () => {
                                     setIsLoading(false);
-                                    setConfig(config, true);
-                                    updateServiceList(instanceKey);
                                     onClose();
                                 },
                                 e => {
