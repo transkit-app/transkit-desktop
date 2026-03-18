@@ -368,7 +368,7 @@
       "ctx_char_limit_warning": "Context is close to the 10,000 character limit",
       "autosave_label": "Auto-save",
       "autosave_on": "Auto-save enabled",
-      "autosave_off": "Auto-save off",
+      "autosave_off": "Auto-save: ON - Waiting to start",
       "autosave_saving": "Saving...",
       "autosave_saved": "Saved",
       "autosave_error": "Save error",
