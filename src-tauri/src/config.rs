@@ -26,8 +26,7 @@ pub fn init_config(app: &mut tauri::App) {
     let _ = check_service_available();
 }
 
-fn check_available(list: Vec<String>, builtin: Vec<&str>, plugin: Vec<String>, key: &str) {
-    let origin_length = list.len();
+fn filter_available(list: Vec<String>, builtin: &[&str], plugin: &[String]) -> Vec<String> {
     let mut new_list = list.clone();
     for service in list {
         let name = service.split("@").collect::<Vec<&str>>()[0];
@@ -45,6 +44,12 @@ fn check_available(list: Vec<String>, builtin: Vec<&str>, plugin: Vec<String>, k
             new_list.retain(|x| x != &service);
         }
     }
+    new_list
+}
+
+fn check_available(list: Vec<String>, builtin: Vec<&str>, plugin: Vec<String>, key: &str) {
+    let origin_length = list.len();
+    let new_list = filter_available(list, &builtin, &plugin);
     if new_list.len() != origin_length {
         set(key, new_list);
     }
@@ -91,7 +96,7 @@ pub fn check_service_available() -> Result<(), Error> {
         "yandex",
         "youdao",
     ];
-    let builtin_tts_list: Vec<&str> = vec!["lingva_tts"];
+    let builtin_tts_list: Vec<&str> = vec!["edge_tts", "google_tts"];
     let builtin_collection_list: Vec<&str> = vec!["anki", "eudic"];
 
     let plugin_recognize_list: Vec<String> = get_plugin_list("recognize").unwrap_or_default();
@@ -118,12 +123,15 @@ pub fn check_service_available() -> Result<(), Error> {
     }
     if let Some(tts_service_list) = get("tts_service_list") {
         let tts_service_list: Vec<String> = serde_json::from_value(tts_service_list)?;
-        check_available(
-            tts_service_list,
-            builtin_tts_list,
-            plugin_tts_list,
-            "tts_service_list",
-        );
+        let filtered = filter_available(tts_service_list.clone(), &builtin_tts_list, &plugin_tts_list);
+        let fixed = if filtered.is_empty() {
+            vec!["edge_tts".to_string()]
+        } else {
+            filtered
+        };
+        if fixed != tts_service_list {
+            set("tts_service_list", fixed);
+        }
     }
     if let Some(collection_service_list) = get("collection_service_list") {
         let collection_service_list: Vec<String> = serde_json::from_value(collection_service_list)?;
