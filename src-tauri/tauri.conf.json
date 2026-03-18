@@ -1,152 +1,153 @@
 {
-    "build": {
-        "beforeDevCommand": "pnpm dev",
-        "beforeBuildCommand": "pnpm build",
-        "devPath": "http://localhost:1420",
-        "distDir": "../dist",
-        "withGlobalTauri": false
+  "build": {
+    "beforeDevCommand": "pnpm dev",
+    "beforeBuildCommand": "pnpm build",
+    "devPath": "http://localhost:1420",
+    "distDir": "../dist",
+    "withGlobalTauri": false
+  },
+  "package": {
+    "productName": "TransKit",
+    "version": "3.0.7"
+  },
+  "tauri": {
+    "allowlist": {
+      "all": false,
+      "shell": {
+        "all": true,
+        "open": ".*"
+      },
+      "path": {
+        "all": true
+      },
+      "window": {
+        "all": true
+      },
+      "clipboard": {
+        "all": true
+      },
+      "globalShortcut": {
+        "all": true
+      },
+      "notification": {
+        "all": true
+      },
+      "http": {
+        "all": true,
+        "request": true,
+        "scope": [
+          "http://**",
+          "https://**"
+        ]
+      },
+      "os": {
+        "all": true
+      },
+      "protocol": {
+        "asset": true,
+        "assetScope": [
+          "$CACHE/**",
+          "$CONFIG/**"
+        ]
+      },
+      "fs": {
+        "all": true,
+        "scope": [
+          "$APPCONFIG/**",
+          "$APPCACHE/**",
+          "$DOCUMENT/**"
+        ]
+      },
+      "dialog": {
+        "open": true,
+        "save": true
+      }
     },
-    "package": {
-        "productName": "TransKit",
-        "version": "3.0.7"
+    "bundle": {
+      "active": true,
+      "category": "Utility",
+      "copyright": "GPLv3",
+      "targets": "all",
+      "identifier": "com.transkit.desktop",
+      "longDescription": "A cross-platform text translation and ocr software",
+      "shortDescription": "TransKit",
+      "externalBin": [],
+      "resources": [],
+      "icon": [
+        "icons/32x32.png",
+        "icons/128x128.png",
+        "icons/128x128@2x.png",
+        "icons/icon.icns",
+        "icons/icon.ico"
+      ],
+      "deb": {
+        "depends": [
+          "libxdo-dev",
+          "libxcb1",
+          "libxrandr2",
+          "tesseract-ocr"
+        ]
+      },
+      "rpm": {
+        "depends": [
+          "libxdo-dev",
+          "libxcb1",
+          "libxrandr2",
+          "tesseract-ocr"
+        ]
+      },
+      "macOS": {
+        "entitlements": null,
+        "exceptionDomain": "",
+        "frameworks": [],
+        "providerShortName": null,
+        "signingIdentity": null
+      }
     },
-    "tauri": {
-        "allowlist": {
-            "all": false,
-            "shell": {
-                "all": true,
-                "open": ".*"
-            },
-            "path": {
-                "all": true
-            },
-            "window": {
-                "all": true
-            },
-            "clipboard": {
-                "all": true
-            },
-            "globalShortcut": {
-                "all": true
-            },
-            "notification": {
-                "all": true
-            },
-            "http": {
-                "all": true,
-                "request": true,
-                "scope": [
-                    "http://**",
-                    "https://**"
-                ]
-            },
-            "os": {
-                "all": true
-            },
-            "protocol": {
-                "asset": true,
-                "assetScope": [
-                    "$CACHE/**",
-                    "$CONFIG/**"
-                ]
-            },
-            "fs": {
-                "all": true,
-                "scope": [
-                    "$APPCONFIG/**",
-                    "$APPCACHE/**"
-                ]
-            },
-            "dialog": {
-                "open": true,
-                "save": true
-            }
-        },
-        "bundle": {
-            "active": true,
-            "category": "Utility",
-            "copyright": "GPLv3",
-            "targets": "all",
-            "identifier": "com.transkit.desktop",
-            "longDescription": "A cross-platform text translation and ocr software",
-            "shortDescription": "TransKit",
-            "externalBin": [],
-            "resources": [],
-            "icon": [
-                "icons/32x32.png",
-                "icons/128x128.png",
-                "icons/128x128@2x.png",
-                "icons/icon.icns",
-                "icons/icon.ico"
-            ],
-            "deb": {
-                "depends": [
-                    "libxdo-dev",
-                    "libxcb1",
-                    "libxrandr2",
-                    "tesseract-ocr"
-                ]
-            },
-            "rpm": {
-                "depends": [
-                    "libxdo-dev",
-                    "libxcb1",
-                    "libxrandr2",
-                    "tesseract-ocr"
-                ]
-            },
-            "macOS": {
-                "entitlements": null,
-                "exceptionDomain": "",
-                "frameworks": [],
-                "providerShortName": null,
-                "signingIdentity": null
-            }
-        },
-        "security": {
-            "csp": "default-src * data: ; connect-src * wss: https: ipc://localhost ; img-src * 'self' asset: https: data: ; style-src * 'unsafe-inline'; worker-src 'self' blob: ; script-src * 'unsafe-eval';",
-            "devCsp": "default-src * data: ; connect-src * wss: https: ipc://localhost ; img-src * 'self' asset: https: data: ; style-src * 'unsafe-inline'; worker-src 'self' blob: ; script-src * 'unsafe-eval';"
-        },
-        "macOSPrivateApi": true,
-        "windows": [
-            {
-                "title": "Daemon",
-                "label": "daemon",
-                "decorations": false,
-                "transparent": true,
-                "visible": false,
-                "url": "daemon.html",
-                "additionalBrowserArgs": "--disable-web-security"
-            },
-            {
-                "title": "Audio Monitor",
-                "label": "monitor",
-                "url": "index.html",
-                "transparent": true,
-                "decorations": false,
-                "alwaysOnTop": true,
-                "skipTaskbar": true,
-                "width": 720,
-                "height": 400,
-                "minWidth": 400,
-                "minHeight": 60,
-                "visible": false,
-                "focus": false,
-                "additionalBrowserArgs": "--disable-web-security"
-            }
-        ],
-        "systemTray": {
-            "iconPath": "icons/icon.png",
-            "iconAsTemplate": true
-        },
-        "updater": {
-            "active": true,
-            "dialog": false,
-            "endpoints": [
-                "https://transkit.app/transkit-desktop/updater/update.json",
-                "https://github.com/transkit-app/transkit-desktop/releases/download/updater/update.json"
-            ],
-            "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEM0MDY3ODA3OEMzOTdBRUIKUldUcmVqbU1CM2dHeER2UGQ3YU42YlQ2cWRBVkdGbjB0UTUyL0tKRW5sbHNTa252YVg3THNNWVEK"
-        }
+    "security": {
+      "csp": "default-src * data: ; connect-src * wss: https: ipc://localhost ; img-src * 'self' asset: https: data: ; style-src * 'unsafe-inline'; worker-src 'self' blob: ; script-src * 'unsafe-eval';",
+      "devCsp": "default-src * data: ; connect-src * wss: https: ipc://localhost ; img-src * 'self' asset: https: data: ; style-src * 'unsafe-inline'; worker-src 'self' blob: ; script-src * 'unsafe-eval';"
+    },
+    "macOSPrivateApi": true,
+    "windows": [
+      {
+        "title": "Daemon",
+        "label": "daemon",
+        "decorations": false,
+        "transparent": true,
+        "visible": false,
+        "url": "daemon.html",
+        "additionalBrowserArgs": "--disable-web-security"
+      },
+      {
+        "title": "Audio Monitor",
+        "label": "monitor",
+        "url": "index.html",
+        "transparent": true,
+        "decorations": false,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "width": 720,
+        "height": 400,
+        "minWidth": 400,
+        "minHeight": 60,
+        "visible": false,
+        "focus": false,
+        "additionalBrowserArgs": "--disable-web-security"
+      }
+    ],
+    "systemTray": {
+      "iconPath": "icons/icon.png",
+      "iconAsTemplate": true
+    },
+    "updater": {
+      "active": true,
+      "dialog": false,
+      "endpoints": [
+        "https://transkit.app/transkit-desktop/updater/update.json",
+        "https://github.com/transkit-app/transkit-desktop/releases/download/updater/update.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEM0MDY3ODA3OEMzOTdBRUIKUldUcmVqbU1CM2dHeER2UGQ3YU42YlQ2cWRBVkdGbjB0UTUyL0tKRW5sbHNTa252YVg3THNNWVEK"
     }
+  }
 }

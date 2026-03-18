@@ -1,11 +1,14 @@
 import { appWindow, LogicalSize } from '@tauri-apps/api/window';
 import { listen } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/tauri';
+import { documentDir, join } from '@tauri-apps/api/path';
+import { open as openPath } from '@tauri-apps/api/shell';
+import { writeTextFile, createDir, exists } from '@tauri-apps/api/fs';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@nextui-org/react';
 import { BsPinFill } from 'react-icons/bs';
 import { AiFillCloseCircle } from 'react-icons/ai';
-import { MdOpenInFull, MdBlurOn, MdVolumeUp, MdVolumeOff, MdSettings } from 'react-icons/md';
+import { MdOpenInFull, MdBlurOn, MdVolumeUp, MdVolumeOff, MdSettings, MdSaveAlt, MdFolderOpen, MdClose } from 'react-icons/md';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useConfig } from '../../hooks';
 import { osType } from '../../utils/env';
@@ -13,25 +16,24 @@ import { store } from '../../utils/store';
 import { getServiceName } from '../../utils/service_instance';
 import MonitorToolbar from './components/MonitorToolbar';
 import MonitorLog from './components/MonitorLog';
+import ContextPanel from './components/ContextPanel';
 import { SonioxClient } from './soniox';
 import { getTTSQueue } from './tts';
 
 const MAX_ENTRIES = 100;
-const SUB_MODE_HEIGHT = 190;   // fits 2 lines at ~44px + hover bar + padding
+const SUB_MODE_HEIGHT = 190;
 const NORMAL_HEIGHT = 400;
 const CONTEXT_PANEL_HEIGHT = 110;
 const WINDOW_WIDTH = 720;
 const SUB_FONT_MIN = 6;
 const SUB_FONT_MAX = 72;
 
-const CONTEXT_PRESETS = [
-    { key: 'meeting',  domain: 'Business meeting, conference call, workplace discussion' },
-    { key: 'movie_cn', domain: 'Chinese drama or movie, casual conversational Mandarin' },
-    { key: 'movie_en', domain: 'English action or drama movie dialogue' },
-    { key: 'tech',     domain: 'Software engineering and technology conference talk' },
-    { key: 'medical',  domain: 'Medical and healthcare discussion' },
-    { key: 'sport',    domain: 'Sports commentary and game analysis' },
-];
+const EMPTY_CONTEXT = {
+    general: [],
+    text: '',
+    terms: [],
+    translation_terms: [],
+};
 
 function StatusDot({ status }) {
     const colors = {
@@ -92,6 +94,29 @@ function getSonioxClient() {
     return sonioxClientInstance;
 }
 
+// ─── Transcript file helpers ──────────────────────────────────────────────────
+
+function formatEntryMarkdown(entry, index) {
+    const speaker = entry.speaker ? `[${entry.speaker}] ` : '';
+    const lines = [];
+    if (entry.original) lines.push(`> ${speaker}${entry.original}`);
+    if (entry.translation) lines.push(entry.translation);
+    return lines.join('\n');
+}
+
+async function buildTranscriptPath() {
+    const docsDir = await documentDir();
+    const dir = await join(docsDir, 'TransKit');
+    if (!(await exists(dir))) {
+        await createDir(dir, { recursive: true });
+    }
+    const now = new Date();
+    const ts = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}-${String(now.getSeconds()).padStart(2, '0')}`;
+    return await join(dir, `transcript_${ts}.md`);
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
+
 export default function Monitor() {
     const { t } = useTranslation();
 
@@ -101,7 +126,7 @@ export default function Monitor() {
     const [sourceAudio, setSourceAudio] = useConfig('audio_source', 'microphone');
     const [fontSize, setFontSize] = useConfig('monitor_font_size', 14);
 
-    // TTS config — active service + global playback settings
+    // TTS config
     const [activeTtsService] = useConfig('tts_active_service', 'edge_tts');
     const [ttsPlaybackRate] = useConfig('tts_playback_rate', 1);
     const [ttsVolume, setTtsVolume] = useConfig('tts_volume', 1.0);
@@ -111,19 +136,24 @@ export default function Monitor() {
     const [sonioxSpeakerDiarization] = useConfig('soniox_speaker_diarization', true);
     const [sonioxBatchInterval] = useConfig('soniox_batch_interval_ms', 100);
 
-    // Context panel config (persisted)
-    const [contextDomain, setContextDomain] = useConfig('monitor_context_domain', '');
-    const [contextTerms, setContextTerms] = useConfig('monitor_context_terms', '');
+    // Active AI service (for context generation)
+    const [aiServiceList] = useConfig('ai_service_list', []);
 
-    // Show/hide original source text (separate defaults for each mode)
+    // Context — full Soniox context object
+    const [sonioxContext, setSonioxContext] = useConfig('monitor_context', EMPTY_CONTEXT);
+    // User-defined context templates (presets)
+    const [contextTemplates, setContextTemplates] = useConfig('monitor_context_templates', []);
+
+    // Auto-save
+    const [autosaveEnabled, setAutosaveEnabled] = useConfig('monitor_autosave_enabled', false);
+
+    // Show/hide original
     const [showOriginal, setShowOriginal] = useConfig('monitor_show_original', true);
     const [showOriginalSub, setShowOriginalSub] = useConfig('monitor_sub_show_original', false);
 
-    // Background opacity: 100 = fully opaque, lower = transparent + blur
+    // Background opacity
     const [bgOpacity, setBgOpacity] = useConfig('monitor_bg_opacity', 100);
-    // Separate font size for submode (default 44 — large enough to read from distance)
     const [subFontSize, setSubFontSize] = useConfig('monitor_sub_font_size', 44);
-    // Remember last submode window size so the user's adjustments persist
     const [subWidth, setSubWidth] = useConfig('monitor_sub_width', WINDOW_WIDTH);
     const [subHeight, setSubHeight] = useConfig('monitor_sub_height', SUB_MODE_HEIGHT);
     const [showContextPanel, setShowContextPanel] = useState(false);
@@ -139,10 +169,42 @@ export default function Monitor() {
     const [audioCapabilities, setAudioCapabilities] = useState({ system_audio: false, microphone: true });
     const [errorMsg, setErrorMsg] = useState('');
 
+    // Auto-save state
+    const [saveStatus, setSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
+    const [savePath, setSavePath] = useState('');
+    const [savedNotification, setSavedNotification] = useState(null); // { path } | null
+    const transcriptFileRef = useRef(null); // current session file path
+    const saveQueueRef = useRef([]); // entries pending write
+    const autosaveEnabledRef = useRef(autosaveEnabled);
+
     const pendingOriginalRef = useRef(null);
     const unlistenAudioRef = useRef(null);
 
-    // Sync TTS config whenever active service or global settings change
+    // ── Backward migration: old context keys → new format ────────────────────
+    useEffect(() => {
+        (async () => {
+            const oldDomain = await store.get('monitor_context_domain');
+            const oldTerms = await store.get('monitor_context_terms');
+            if (oldDomain || oldTerms) {
+                const migrated = {
+                    general: oldDomain?.trim()
+                        ? [{ key: 'domain', value: oldDomain.trim() }]
+                        : [],
+                    text: '',
+                    terms: oldTerms?.trim()
+                        ? oldTerms.split(',').map(s => s.trim()).filter(Boolean)
+                        : [],
+                    translation_terms: [],
+                };
+                setSonioxContext(migrated);
+                await store.delete('monitor_context_domain');
+                await store.delete('monitor_context_terms');
+                await store.save();
+            }
+        })();
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // ── TTS config sync ───────────────────────────────────────────────────────
     useEffect(() => {
         const serviceKey = activeTtsService ?? 'edge_tts';
         const serviceName = getServiceName(serviceKey);
@@ -155,57 +217,84 @@ export default function Monitor() {
             });
         };
 
-        // Load current config from store
         store.get(serviceKey).then(applyConfig);
 
-        // Listen for real-time config changes when user saves settings
         const eventKey = serviceKey.replaceAll('.', '_').replaceAll('@', ':');
         const unlistenPromise = listen(`${eventKey}_changed`, (e) => applyConfig(e.payload));
         return () => { unlistenPromise.then(f => f()); };
     }, [activeTtsService, ttsPlaybackRate, ttsVolume]);
 
-    // Load audio capabilities
+    // ── Load audio capabilities ───────────────────────────────────────────────
     useEffect(() => {
         invoke('get_audio_capabilities')
             .then(caps => setAudioCapabilities(caps))
             .catch(() => {});
     }, []);
 
-    // If system audio not supported and current source is system, switch to mic
     useEffect(() => {
         if (audioCapabilities && !audioCapabilities.system_audio && sourceAudio === 'system') {
             setSourceAudio('microphone');
         }
     }, [audioCapabilities]);
 
-    // Wire up TTS callbacks + sync enabled state on mount.
-    // The enabled sync handles HMR: when tts.js hot-reloads the singleton resets
-    // (enabled=false) but React's isTTSEnabled state survives. Without this sync,
-    // enqueue() drops all items until the user toggles TTS off+on again.
+    // ── TTS callbacks ─────────────────────────────────────────────────────────
     useEffect(() => {
         const tts = getTTSQueue();
         tts.onPlayStart = (text) => setTtsPlayingText(text);
         tts.onPlayEnd = () => setTtsPlayingText(null);
-        // Sync flag directly — no AudioContext unlock here (outside user gesture).
-        // The unlock will happen on next toggle or replay click.
         tts.enabled = isTTSEnabled;
         return () => { tts.onPlayStart = null; tts.onPlayEnd = null; };
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Keep tts.enabled in sync whenever the React toggle state changes.
     useEffect(() => {
         const tts = getTTSQueue();
         if (tts.enabled !== isTTSEnabled) {
             if (isTTSEnabled) {
-                tts.enabled = true; // toggleTTS already called setEnabled(true) with unlock
+                tts.enabled = true;
             } else {
-                tts.stop();         // silence any in-flight audio
+                tts.stop();
                 tts.enabled = false;
             }
         }
     }, [isTTSEnabled]);
 
-    // Wire up Soniox callbacks once
+    // Keep ref in sync so close handler can read it without stale closure
+    useEffect(() => { autosaveEnabledRef.current = autosaveEnabled; }, [autosaveEnabled]);
+
+    // ── Finalize transcript file (flush queue + write footer) ─────────────────
+    const finalizeTranscript = useCallback(async (filePath) => {
+        if (!filePath) return;
+        // Flush remaining queue first
+        if (saveQueueRef.current.length > 0) {
+            const toWrite = saveQueueRef.current.splice(0);
+            const lines = toWrite.map(formatEntryMarkdown).join('\n\n');
+            try {
+                await writeTextFile(filePath, '\n\n' + lines, { append: true });
+            } catch (_) {}
+        }
+        // Write footer
+        try {
+            const footer = `\n\n---\n\n**Ended:** ${new Date().toLocaleString()}`;
+            await writeTextFile(filePath, footer, { append: true });
+        } catch (_) {}
+    }, []);
+
+    // ── Auto-save: append entry to file ──────────────────────────────────────
+    const flushSaveQueue = useCallback(async () => {
+        if (!transcriptFileRef.current || saveQueueRef.current.length === 0) return;
+        const toWrite = saveQueueRef.current.splice(0);
+        const lines = toWrite.map(formatEntryMarkdown).join('\n\n');
+        setSaveStatus('saving');
+        try {
+            await writeTextFile(transcriptFileRef.current, '\n\n' + lines, { append: true });
+            setSaveStatus('saved');
+        } catch (err) {
+            console.error('[Monitor] Auto-save write failed:', err);
+            setSaveStatus('error');
+        }
+    }, []);
+
+    // ── Soniox callbacks ──────────────────────────────────────────────────────
     useEffect(() => {
         const client = getSonioxClient();
 
@@ -216,18 +305,25 @@ export default function Monitor() {
         client.onTranslation = (text) => {
             const pending = pendingOriginalRef.current;
             pendingOriginalRef.current = null;
+            const entry = {
+                id: `${Date.now()}-${Math.random()}`,
+                original: pending?.text ?? '',
+                translation: text,
+                speaker: pending?.speaker ?? null,
+            };
+
             setEntries(prev => {
-                const entry = {
-                    id: `${Date.now()}-${Math.random()}`,
-                    original: pending?.text ?? '',
-                    translation: text,
-                    speaker: pending?.speaker ?? null,
-                };
                 const next = [...prev, entry];
                 return next.length > MAX_ENTRIES ? next.slice(-MAX_ENTRIES) : next;
             });
             setProvisional('');
-            // Send translation to TTS queue
+
+            // Queue for auto-save
+            if (transcriptFileRef.current) {
+                saveQueueRef.current.push(entry);
+                flushSaveQueue();
+            }
+
             getTTSQueue().enqueue(text);
         };
 
@@ -241,7 +337,7 @@ export default function Monitor() {
             setErrorMsg(msg);
             setTimeout(() => setErrorMsg(''), 5000);
         };
-    }, []);
+    }, [flushSaveQueue]);
 
     const sourceAudioRef = useRef(sourceAudio);
     useEffect(() => { sourceAudioRef.current = sourceAudio; }, [sourceAudio]);
@@ -263,7 +359,6 @@ export default function Monitor() {
         unlistenAudioRef.current = unlisten;
     }, []);
 
-    // Wire onReconnect — restart audio capture after Soniox auto-reconnects
     useEffect(() => {
         const client = getSonioxClient();
         client.onReconnect = async () => {
@@ -280,6 +375,7 @@ export default function Monitor() {
         };
     }, [addAudioChunkListener]);
 
+    // ── Start / Stop ──────────────────────────────────────────────────────────
     const start = useCallback(async () => {
         if (!apiKey) {
             setErrorMsg(t('monitor.no_api_key'));
@@ -289,23 +385,31 @@ export default function Monitor() {
         setIsRunning(true);
         setProvisional('');
 
-        const terms = contextTerms?.trim()
-            ? contextTerms.split(',').map(s => s.trim()).filter(Boolean)
-            : [];
-        const customContext = (contextDomain?.trim() || terms.length > 0)
-            ? { domain: contextDomain?.trim() || '', terms }
-            : null;
-
         client.connect({
             apiKey,
             sourceLanguage: sourceLang === 'auto' ? null : sourceLang,
             targetLanguage: targetLang,
-            customContext,
+            customContext: sonioxContext,
             endpointDelayMs: sonioxEndpointDelay ?? 250,
             speakerDiarization: sonioxSpeakerDiarization !== false,
         });
 
         await addAudioChunkListener();
+
+        // Init auto-save file
+        if (autosaveEnabled) {
+            try {
+                const filePath = await buildTranscriptPath();
+                const header = `# TransKit Transcript\n\n**Started:** ${new Date().toLocaleString()}\n**Source language:** ${sourceLang}\n**Target language:** ${targetLang}\n\n---\n\n`;
+                await writeTextFile(filePath, header);
+                transcriptFileRef.current = filePath;
+                setSavePath(filePath);
+                setSaveStatus('saved');
+            } catch (err) {
+                console.error('[Monitor] Auto-save init failed:', err);
+                setSaveStatus('error');
+            }
+        }
 
         try {
             await invoke('start_audio_capture', {
@@ -320,10 +424,11 @@ export default function Monitor() {
                 unlistenAudioRef.current();
                 unlistenAudioRef.current = null;
             }
+            transcriptFileRef.current = null;
         }
-    }, [apiKey, sourceLang, targetLang, sourceAudio, contextDomain, contextTerms, sonioxEndpointDelay, sonioxSpeakerDiarization, sonioxBatchInterval, addAudioChunkListener, t]);
+    }, [apiKey, sourceLang, targetLang, sourceAudio, sonioxContext, sonioxEndpointDelay, sonioxSpeakerDiarization, sonioxBatchInterval, autosaveEnabled, addAudioChunkListener, t]);
 
-    const stop = useCallback(async () => {
+    const stop = useCallback(async (silent = false) => {
         setIsRunning(false);
         try { await invoke('stop_audio_capture'); } catch (_) {}
         getSonioxClient().disconnect();
@@ -333,7 +438,18 @@ export default function Monitor() {
         }
         setProvisional('');
         getTTSQueue().stop();
-    }, []);
+
+        // Finalize transcript file
+        const filePath = transcriptFileRef.current;
+        if (filePath) {
+            transcriptFileRef.current = null;
+            await finalizeTranscript(filePath);
+            setSaveStatus('saved');
+            if (!silent) {
+                setSavedNotification({ path: filePath });
+            }
+        }
+    }, [finalizeTranscript]);
 
     const toggleTTS = useCallback(() => {
         const next = !isTTSEnabled;
@@ -343,7 +459,6 @@ export default function Monitor() {
 
     const handleReplayEntry = useCallback((text) => {
         if (!isTTSEnabled) setIsTTSEnabled(true);
-        // Always sync — handles HMR desync where React state is true but singleton is false.
         getTTSQueue().setEnabled(true);
         getTTSQueue().replay(text);
     }, [isTTSEnabled]);
@@ -367,18 +482,33 @@ export default function Monitor() {
     }, []);
 
     const handleClear = useCallback(() => {
+        // Block clear when running with auto-save enabled
+        if (isRunning && autosaveEnabled) {
+            setErrorMsg(t('monitor.autosave_clear_blocked'));
+            setTimeout(() => setErrorMsg(''), 5000);
+            return;
+        }
         setEntries([]);
         setProvisional('');
-    }, []);
+    }, [isRunning, autosaveEnabled, t]);
 
     const toggleOriginal = useCallback(() => setShowOriginal(!(showOriginal ?? true)), [showOriginal, setShowOriginal]);
     const toggleOriginalSub = useCallback(() => setShowOriginalSub(!(showOriginalSub ?? false)), [showOriginalSub, setShowOriginalSub]);
 
-    // Also persist submode position so it opens where the user last placed it
+    // ── Template management ───────────────────────────────────────────────────
+    const handleSaveTemplate = useCallback((name, context) => {
+        const id = `custom_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+        setContextTemplates([...(contextTemplates ?? []), { id, name, context }]);
+    }, [contextTemplates, setContextTemplates]);
+
+    const handleDeleteTemplate = useCallback((id) => {
+        setContextTemplates((contextTemplates ?? []).filter(t => t.id !== id));
+    }, [contextTemplates, setContextTemplates]);
+
+    // ── Sub mode position persistence ─────────────────────────────────────────
     const [subX, setSubX] = useConfig('monitor_sub_x', null);
     const [subY, setSubY] = useConfig('monitor_sub_y', null);
 
-    // ── Sub mode: resize window + hide/show native traffic lights ──
     const toggleSubMode = useCallback(async () => {
         const entering = !isSubMode;
         setIsSubMode(entering);
@@ -392,8 +522,6 @@ export default function Monitor() {
                 }
                 await appWindow.setAlwaysOnTop(true);
             } else {
-                // Snapshot submode geometry NOW (before any resize) — this is the
-                // only reliable moment to capture what the user last set.
                 try {
                     const scale = await appWindow.scaleFactor();
                     const physical = await appWindow.innerSize();
@@ -403,7 +531,6 @@ export default function Monitor() {
                     setSubX(Math.round(pos.x / scale));
                     setSubY(Math.round(pos.y / scale));
                 } catch (_) {}
-                // Then restore main window to its fixed default
                 await appWindow.setSize(new LogicalSize(WINDOW_WIDTH, NORMAL_HEIGHT));
                 await appWindow.center();
                 await appWindow.setAlwaysOnTop(isPinned);
@@ -415,13 +542,80 @@ export default function Monitor() {
     }, [isSubMode, isPinned, subWidth, subHeight, subX, subY, setSubWidth, setSubHeight, setSubX, setSubY]);
 
     useEffect(() => {
-        return () => { stop(); };
+        return () => { stop(true); };
     }, []);
 
-    // ── Sub mode layout ──
+    // ── Flush on app close (Cmd+Q, OS close, etc.) ───────────────────────────
+    useEffect(() => {
+        const unlistenPromise = appWindow.onCloseRequested(async (event) => {
+            if (autosaveEnabledRef.current && transcriptFileRef.current) {
+                event.preventDefault();
+                const filePath = transcriptFileRef.current;
+                transcriptFileRef.current = null;
+                await finalizeTranscript(filePath);
+            }
+            // Allow close to proceed
+            appWindow.close();
+        });
+        // Best-effort sync flush for browser-level unload
+        const handleUnload = () => {
+            if (transcriptFileRef.current && saveQueueRef.current.length > 0) {
+                const lines = saveQueueRef.current.splice(0).map(formatEntryMarkdown).join('\n\n');
+                // Fire-and-forget — can't await in beforeunload
+                writeTextFile(transcriptFileRef.current, '\n\n' + lines, { append: true }).catch(() => {});
+            }
+        };
+        window.addEventListener('beforeunload', handleUnload);
+        return () => {
+            unlistenPromise.then(f => f());
+            window.removeEventListener('beforeunload', handleUnload);
+        };
+    }, [finalizeTranscript]);
+
+    // ── Open transcripts folder ───────────────────────────────────────────────
+    const handleOpenTranscriptFolder = useCallback(async () => {
+        try {
+            const docsDir = await documentDir();
+            const dir = await join(docsDir, 'TransKit');
+            await openPath(dir);
+        } catch (_) {}
+    }, []);
+
+    // ── Save status label ─────────────────────────────────────────────────────
+    const saveStatusLabel = () => {
+        if (!autosaveEnabled) {
+            return (
+                <span className='text-[11px] font-medium text-danger flex items-center gap-0.5'>
+                    <MdSaveAlt className='text-[12px]' />
+                    {t('monitor.autosave_disabled_warning')}
+                </span>
+            );
+        }
+        const labelMap = {
+            idle: t('monitor.autosave_off'),
+            saving: t('monitor.autosave_saving'),
+            saved: t('monitor.autosave_on'),
+            error: t('monitor.autosave_error'),
+        };
+        const colorMap = {
+            idle: 'text-default-400',
+            saving: 'text-warning animate-pulse',
+            saved: 'text-success',
+            error: 'text-danger',
+        };
+        return (
+            <span className={`text-[11px] font-medium ${colorMap[saveStatus] ?? 'text-default-400'} flex items-center gap-0.5`}>
+                <MdSaveAlt className='text-[12px]' />
+                {labelMap[saveStatus] ?? ''}
+            </span>
+        );
+    };
+
+    // ── Active AI service key — picked inside ContextPanel ───────────────────
+    // (aiServiceList is passed down so ContextPanel can render its own selector)
+
+    // ── Sub mode layout ───────────────────────────────────────────────────────
     const bgAlpha = (bgOpacity ?? 100) / 100;
-    // Sub mode always shows a darkened semi-transparent background for readability;
-    // bgOpacity scales between 25% (fully transparent setting) and 88% (fully opaque setting).
     const subBgAlpha = 0.25 + bgAlpha * 0.63;
 
     if (isSubMode) {
@@ -431,7 +625,6 @@ export default function Monitor() {
                 style={{ background: `rgba(18,18,20,${subBgAlpha.toFixed(2)})`, backdropFilter: bgAlpha < 1 ? 'blur(16px)' : undefined }}
                 data-tauri-drag-region='true'
             >
-                {/* Top bar — auto-hide, appears on window hover */}
                 <div
                     className='absolute top-0 left-0 right-0 h-7 z-10 flex items-center justify-between px-2
                                rounded-t-[10px] border-b border-white/10
@@ -439,12 +632,10 @@ export default function Monitor() {
                     style={{ background: 'rgba(18,18,20,0.96)' }}
                     data-tauri-drag-region='true'
                 >
-                    {/* Left: status + font size */}
                     <div className='flex items-center gap-1'>
                         <div className='pointer-events-none'>
                             <StatusDot status={status} />
                         </div>
-                        {/* Font size controls */}
                         <button
                             onClick={() => setSubFontSize(Math.max(SUB_FONT_MIN, (subFontSize ?? 44) - 2))}
                             className='w-5 h-5 flex items-center justify-center text-white/60 hover:text-white text-[11px] font-bold transition-colors'
@@ -458,7 +649,6 @@ export default function Monitor() {
                         >A+</button>
                     </div>
 
-                    {/* Right: original toggle, transparent, play/stop, expand */}
                     <div className='flex items-center gap-1'>
                         <button
                             onClick={toggleOriginalSub}
@@ -516,7 +706,6 @@ export default function Monitor() {
                     </div>
                 </div>
 
-                {/* Log — fills full height; pointer-events-none keeps drag on root, icons within use pointer-events-auto */}
                 <div className='pointer-events-none w-full h-full flex flex-col'>
                     <MonitorLog
                         entries={entries}
@@ -532,10 +721,10 @@ export default function Monitor() {
         );
     }
 
-    // ── Normal mode layout ──
+    // ── Normal mode layout ────────────────────────────────────────────────────
     return (
         <div
-            className='w-screen h-screen flex flex-col overflow-hidden rounded-[12px] border border-white/[0.08]'
+            className='w-screen h-screen flex flex-col overflow-hidden rounded-[12px] border border-white/[0.08] relative'
             style={{
                 background: bgAlpha >= 1
                     ? 'hsl(var(--nextui-background))'
@@ -543,21 +732,43 @@ export default function Monitor() {
                 backdropFilter: bgAlpha < 1 ? 'blur(24px) saturate(1.6)' : undefined,
             }}
         >
-            {/* Header — acts as drag region */}
+            {/* Header */}
             <div
                 className='h-[30px] flex items-center justify-between px-2 z-10 relative select-none'
                 data-tauri-drag-region='true'
             >
-                {/* Status indicator — far left, pointer-events-none so drag works through it */}
+                {/* Left: status + save status */}
                 <div className='flex items-center gap-1.5 pointer-events-none'>
                     <StatusDot status={status} />
                     <span className='text-[11px] text-default-500 font-medium'>
                         {t(`monitor.status_${status}`) || status}
                     </span>
+                    {saveStatusLabel()}
                 </div>
 
-                {/* Right: Config + Pin + Close (close only on non-macOS since macOS has traffic lights) */}
+                {/* Right: auto-save toggle + Config + Pin + Close */}
                 <div className='flex items-center gap-0.5'>
+                    <Button
+                        isIconOnly
+                        size='sm'
+                        variant={autosaveEnabled ? 'flat' : 'light'}
+                        color={autosaveEnabled ? 'primary' : 'default'}
+                        className='h-[26px] w-[26px] min-w-0'
+                        onPress={() => setAutosaveEnabled(!autosaveEnabled)}
+                        title={t('monitor.autosave_toggle')}
+                    >
+                        <MdSaveAlt className='text-[16px]' />
+                    </Button>
+                    <Button
+                        isIconOnly
+                        size='sm'
+                        variant='light'
+                        className='h-[26px] w-[26px] min-w-0 bg-transparent'
+                        onPress={handleOpenTranscriptFolder}
+                        title='Open transcripts folder'
+                    >
+                        <MdFolderOpen className='text-[16px] text-default-400' />
+                    </Button>
                     <Button
                         isIconOnly
                         size='sm'
@@ -600,7 +811,6 @@ export default function Monitor() {
                 fontSize={fontSize ?? 14}
                 isSubMode={isSubMode}
                 isTTSEnabled={isTTSEnabled}
-                ttsVolume={ttsVolume ?? 1.0}
                 showContextPanel={showContextPanel}
                 showOriginal={showOriginal ?? true}
                 bgOpacity={bgOpacity ?? 100}
@@ -614,43 +824,52 @@ export default function Monitor() {
                 onFontSizeChange={setFontSize}
                 onToggleSubMode={toggleSubMode}
                 onToggleTTS={toggleTTS}
-                onSetTtsVolume={setTtsVolume}
                 onToggleContextPanel={toggleContextPanel}
             />
 
-            {/* Context panel */}
+            {/* Context panel — absolute overlay, does not affect window size */}
             {showContextPanel && (
-                <div className='mx-2 mb-1 p-2 bg-content2 rounded-lg border border-content3/30 flex-shrink-0'>
-                    {/* Preset topic buttons */}
-                    <div className='flex flex-wrap gap-1 mb-1.5'>
-                        {CONTEXT_PRESETS.map(preset => (
-                            <button
-                                key={preset.key}
-                                onClick={() => setContextDomain(preset.domain)}
-                                className={`px-2 py-0.5 text-[11px] rounded-md border transition-colors ${
-                                    contextDomain === preset.domain
-                                        ? 'bg-secondary/20 border-secondary/40 text-secondary'
-                                        : 'bg-content3/50 border-content3/50 text-default-500 hover:text-default-foreground'
-                                }`}
-                            >
-                                {t(`monitor.ctx_preset_${preset.key}`)}
-                            </button>
-                        ))}
+                <div className='absolute left-2 right-2 z-50 overflow-y-auto rounded-lg border border-content3/40 shadow-xl'
+                    style={{
+                        top: '72px', // below header + toolbar
+                        maxHeight: 'calc(100% - 72px)',
+                        background: 'hsl(var(--nextui-content2))',
+                    }}
+                >
+                    <div className='p-3'>
+                        <ContextPanel
+                            context={sonioxContext ?? EMPTY_CONTEXT}
+                            templates={contextTemplates ?? []}
+                            aiServiceList={aiServiceList ?? []}
+                            onContextChange={setSonioxContext}
+                            onSaveTemplate={handleSaveTemplate}
+                            onDeleteTemplate={handleDeleteTemplate}
+                            onOpenAiSettings={openAudioConfig}
+                        />
                     </div>
-                    {/* Domain input */}
-                    <input
-                        value={contextDomain ?? ''}
-                        onChange={e => setContextDomain(e.target.value)}
-                        placeholder={t('monitor.ctx_domain_placeholder')}
-                        className='w-full bg-content1 text-xs rounded-md px-2 py-1 border border-content3/50 text-default-foreground placeholder:text-default-400 outline-none focus:border-secondary/50 mb-1'
-                    />
-                    {/* Terms input */}
-                    <input
-                        value={contextTerms ?? ''}
-                        onChange={e => setContextTerms(e.target.value)}
-                        placeholder={t('monitor.ctx_terms_placeholder')}
-                        className='w-full bg-content1 text-xs rounded-md px-2 py-1 border border-content3/50 text-default-foreground placeholder:text-default-400 outline-none focus:border-secondary/50'
-                    />
+                </div>
+            )}
+
+            {/* Saved notification */}
+            {savedNotification && (
+                <div
+                    className='absolute bottom-2 left-2 right-2 z-50 flex items-start gap-2 px-3 py-2 rounded-lg shadow-xl border border-success/50'
+                    style={{ background: 'rgba(17, 24, 20, 0.97)', backdropFilter: 'none' }}
+                >
+                    <MdSaveAlt className='text-success text-[16px] flex-shrink-0 mt-0.5' />
+                    <div className='flex-1 min-w-0'>
+                        <p className='text-xs font-semibold' style={{ color: '#4ade80' }}>{t('monitor.autosave_saved')}</p>
+                        <p className='text-[10px] truncate' style={{ color: '#9ca3af' }} title={savedNotification.path}>
+                            {savedNotification.path}
+                        </p>
+                    </div>
+                    <button
+                        onClick={() => setSavedNotification(null)}
+                        className='flex-shrink-0 hover:opacity-70 transition-opacity'
+                        style={{ color: '#9ca3af' }}
+                    >
+                        <MdClose className='text-[14px]' />
+                    </button>
                 </div>
             )}
 

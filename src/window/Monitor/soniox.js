@@ -108,13 +108,8 @@ export class SonioxClient {
             }
 
             // Context: merge user custom context + carryover context
-            const domain = this._buildDomain(customContext, carryoverContext);
-            const terms = customContext?.terms || [];
-            if (domain || terms.length > 0) {
-                configMsg.context = {};
-                if (domain) configMsg.context.domain = domain;
-                if (terms.length > 0) configMsg.context.terms = terms;
-            }
+            const ctxMsg = this._buildContextMessage(customContext, carryoverContext);
+            if (ctxMsg) configMsg.context = ctxMsg;
 
             console.log('[Soniox] Sending config (model:', configMsg.model, ')');
             newWs.send(JSON.stringify(configMsg));
@@ -348,15 +343,43 @@ export class SonioxClient {
         return this._recentTranslations.join(' ').trim();
     }
 
-    _buildDomain(customContext, carryoverContext) {
-        const parts = [];
-        if (customContext?.domain) {
-            parts.push(customContext.domain);
+    /**
+     * Build the full Soniox context object from the rich context shape:
+     *   { general: [{key,value}], text: string, terms: string[], translation_terms: [{source,target}] }
+     * Carryover context from recent translations is appended to the `text` field.
+     */
+    _buildContextMessage(customContext, carryoverContext) {
+        if (!customContext && !carryoverContext) return null;
+
+        const ctx = {};
+
+        // general: array of {key, value} pairs
+        const general = customContext?.general?.filter(g => g.key?.trim() && g.value?.trim()) ?? [];
+        if (general.length > 0) {
+            ctx.general = general.map(g => ({ key: g.key.trim(), value: g.value.trim() }));
         }
-        if (carryoverContext) {
-            parts.push(`Recent conversation context: ${carryoverContext}`);
+
+        // text: background narrative + carryover
+        const textParts = [];
+        if (customContext?.text?.trim()) textParts.push(customContext.text.trim());
+        if (carryoverContext) textParts.push(`Recent conversation context: ${carryoverContext}`);
+        if (textParts.length > 0) ctx.text = textParts.join('\n\n');
+
+        // terms: array of strings
+        const terms = (customContext?.terms ?? []).filter(t => t?.trim());
+        if (terms.length > 0) ctx.terms = terms.map(t => t.trim());
+
+        // translation_terms: array of {source, target}
+        const translationTerms = (customContext?.translation_terms ?? [])
+            .filter(tt => tt.source?.trim() && tt.target?.trim());
+        if (translationTerms.length > 0) {
+            ctx.translation_terms = translationTerms.map(tt => ({
+                source: tt.source.trim(),
+                target: tt.target.trim(),
+            }));
         }
-        return parts.length > 0 ? parts.join('. ') : null;
+
+        return Object.keys(ctx).length > 0 ? ctx : null;
     }
 
     // ─── Error Handling ──────────────────────────────────────
