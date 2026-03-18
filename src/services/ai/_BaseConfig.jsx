@@ -43,31 +43,31 @@ export function makeAiConfig(serviceName, defaults, summarizeFn) {
                     <div className='config-item'>
                         <Input
                             label={t('services.instance_name')}
-                            labelPlacement='outside-left'
+                            labelPlacement='outside'
                             value={config[INSTANCE_NAME_CONFIG_KEY]}
                             variant='bordered'
-                            classNames={{ base: 'justify-between', label: 'text-[length:--nextui-font-size-medium]', mainWrapper: 'max-w-[50%]' }}
+                            classNames={{ label: 'text-xs text-default-500 pb-1' }}
                             onValueChange={v => setConfig({ ...config, [INSTANCE_NAME_CONFIG_KEY]: v })}
                         />
                     </div>
                     <div className='config-item'>
                         <Input
                             label={t('services.ai.openai_compat_ai.request_path')}
-                            labelPlacement='outside-left'
+                            labelPlacement='outside'
                             value={config.requestPath ?? defaults.requestPath}
                             variant='bordered'
-                            classNames={{ base: 'justify-between', label: 'text-[length:--nextui-font-size-medium]', mainWrapper: 'max-w-[50%]' }}
+                            classNames={{ label: 'text-xs text-default-500 pb-1' }}
                             onValueChange={v => setConfig({ ...config, requestPath: v })}
                         />
                     </div>
                     <div className='config-item'>
                         <Input
                             label={t('services.ai.openai_compat_ai.api_key')}
-                            labelPlacement='outside-left'
+                            labelPlacement='outside'
                             type={isVisible ? 'text' : 'password'}
                             value={config.apiKey ?? ''}
                             variant='bordered'
-                            classNames={{ base: 'justify-between', label: 'text-[length:--nextui-font-size-medium]', mainWrapper: 'max-w-[50%]' }}
+                            classNames={{ label: 'text-xs text-default-500 pb-1' }}
                             onValueChange={v => setConfig({ ...config, apiKey: v })}
                             endContent={
                                 <Button isIconOnly size='sm' variant='light' className='h-6 w-6 min-w-0' onPress={() => setIsVisible(!isVisible)}>
@@ -79,10 +79,10 @@ export function makeAiConfig(serviceName, defaults, summarizeFn) {
                     <div className='config-item'>
                         <Input
                             label={t('services.ai.openai_compat_ai.model')}
-                            labelPlacement='outside-left'
+                            labelPlacement='outside'
                             value={config.model ?? defaults.model}
                             variant='bordered'
-                            classNames={{ base: 'justify-between', label: 'text-[length:--nextui-font-size-medium]', mainWrapper: 'max-w-[50%]' }}
+                            classNames={{ label: 'text-xs text-default-500 pb-1' }}
                             onValueChange={v => setConfig({ ...config, model: v })}
                         />
                     </div>

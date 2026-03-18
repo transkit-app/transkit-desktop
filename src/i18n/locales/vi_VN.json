@@ -172,6 +172,7 @@
                 },
                 "recognize": "Nhận diện OCR",
                 "collection": "Bộ sưu tập",
+                "transcription": "Phiên âm",
                 "audio": {
                     "label": "Âm thanh",
                     "title": "Soniox - Dịch âm thanh thời gian thực",
@@ -209,6 +210,9 @@
                     "soniox_batch_interval_hint": "Tần suất gửi dữ liệu âm thanh lên Soniox. Thấp hơn = độ trễ thấp hơn, cao hơn = ít cuộc gọi mạng hơn.",
                     "soniox_speaker_diarization": "Phân biệt giọng nói",
                     "soniox_speaker_diarization_hint": "Nhận dạng và gán nhãn từng người nói. Tắt để giảm độ trễ.",
+                    "stt_title": "Dịch vụ phiên âm",
+                    "stt_active_service": "Provider đang dùng",
+                    "stt_active_service_hint": "Cấu hình chi tiết từng provider trong tab Phiên âm.",
                     "autosave_title": "Tự động lưu bản ghi",
                     "autosave_enable_label": "Bật tự động lưu mặc định",
                     "autosave_enable_hint": "Khi bật, cửa sổ monitor sẽ tự động lưu bản ghi vào file Markdown (~/Documents/TransKit/) sau mỗi phiên. Bạn có thể bật/tắt bất cứ lúc nào ngay trong cửa sổ monitor."
@@ -648,6 +652,34 @@
                     "title": "Eudic",
                     "name": "Tên bộ sưu tập",
                     "token": "Token"
+                }
+            },
+            "transcription": {
+                "soniox_stt": {
+                    "title": "Soniox",
+                    "api_key": "API Key",
+                    "api_key_hint": "Lấy API key tại",
+                    "endpoint_delay": "Endpoint delay (ms)",
+                    "endpoint_delay_hint": "Thời gian Soniox chờ thêm âm thanh trước khi xác nhận câu. Thấp hơn = phản hồi nhanh hơn, cao hơn = câu chính xác hơn.",
+                    "batch_interval": "Chu kỳ gửi audio (ms)",
+                    "batch_interval_hint": "Tần suất gửi dữ liệu âm thanh lên Soniox. Thấp hơn = độ trễ thấp hơn, cao hơn = ít cuộc gọi mạng hơn.",
+                    "speaker_diarization": "Phân biệt giọng nói",
+                    "speaker_diarization_hint": "Nhận dạng và gán nhãn từng người nói. Tắt để giảm độ trễ."
+                },
+                "assemblyai_stt": {
+                    "title": "AssemblyAI",
+                    "api_key": "API Key",
+                    "api_key_hint": "Lấy API key tại",
+                    "no_translation_note": "Lưu ý: AssemblyAI real-time API không hỗ trợ dịch tích hợp. Bản ghi sẽ hiển thị như văn bản gốc và bản dịch."
+                },
+                "openai_whisper_stt": {
+                    "title": "OpenAI Whisper",
+                    "api_key": "API Key",
+                    "server_url": "URL máy chủ",
+                    "model": "Model",
+                    "chunk_interval": "Chu kỳ gửi chunk (giây)",
+                    "chunk_interval_hint": "Audio được tích lũy và gửi lên Whisper mỗi N giây. Thấp hơn = phản hồi nhanh hơn, cao hơn = chính xác hơn.",
+                    "batch_note": "Whisper là API batch. Âm thanh được gửi theo từng đoạn nên sẽ có độ trễ giữa lời nói và bản ghi."
                 }
             }
         },

@@ -172,6 +172,7 @@
                 },
                 "recognize": "Recognize",
                 "collection": "Collection",
+                "transcription": "Transcription",
                 "audio": {
                     "label": "Audio",
                     "title": "Soniox - Real-time Audio Translation",
@@ -209,6 +210,9 @@
                     "soniox_batch_interval_hint": "How often audio chunks are sent to Soniox. Lower = lower latency, higher = fewer network calls.",
                     "soniox_speaker_diarization": "Speaker diarization",
                     "soniox_speaker_diarization_hint": "Identify and label different speakers. Disable to reduce latency.",
+                    "stt_title": "Transcription Provider",
+                    "stt_active_service": "Active provider",
+                    "stt_active_service_hint": "Configure providers in Services → Transcription tab.",
                     "autosave_title": "Transcript Auto-save",
                     "autosave_enable_label": "Enable auto-save by default",
                     "autosave_enable_hint": "When enabled, the monitor window will automatically save transcripts to a Markdown file (~/Documents/TransKit/) each session. You can toggle this at any time in the monitor window."
@@ -649,6 +653,34 @@
                     "title": "Eudic",
                     "name": "Collection Name",
                     "token": "Token"
+                }
+            },
+            "transcription": {
+                "soniox_stt": {
+                    "title": "Soniox",
+                    "api_key": "API Key",
+                    "api_key_hint": "Get your API key at",
+                    "endpoint_delay": "Endpoint delay (ms)",
+                    "endpoint_delay_hint": "How long Soniox waits for more audio before finalizing a segment. Lower = faster response, higher = more accurate sentences.",
+                    "batch_interval": "Audio batch interval (ms)",
+                    "batch_interval_hint": "How often audio chunks are sent to Soniox. Lower = lower latency, higher = fewer network calls.",
+                    "speaker_diarization": "Speaker diarization",
+                    "speaker_diarization_hint": "Identify and label different speakers. Disable to reduce latency."
+                },
+                "assemblyai_stt": {
+                    "title": "AssemblyAI",
+                    "api_key": "API Key",
+                    "api_key_hint": "Get your API key at",
+                    "no_translation_note": "Note: AssemblyAI real-time API does not support built-in translation. The transcript will be shown as both source and translated text."
+                },
+                "openai_whisper_stt": {
+                    "title": "OpenAI Whisper",
+                    "api_key": "API Key",
+                    "server_url": "Server URL",
+                    "model": "Model",
+                    "chunk_interval": "Chunk interval (seconds)",
+                    "chunk_interval_hint": "Audio is buffered and sent to Whisper every N seconds. Lower = more responsive, higher = more accurate.",
+                    "batch_note": "Whisper is a batch API. Audio is sent in chunks, so there will be latency between speech and transcript."
                 }
             }
         },

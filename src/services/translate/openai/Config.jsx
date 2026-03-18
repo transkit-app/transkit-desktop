@@ -97,14 +97,10 @@ export function Config(props) {
                 <div className='config-item'>
                     <Input
                         label={t('services.instance_name')}
-                        labelPlacement='outside-left'
+                        labelPlacement='outside'
                         value={openaiConfig[INSTANCE_NAME_CONFIG_KEY]}
                         variant='bordered'
-                        classNames={{
-                            base: 'justify-between',
-                            label: 'text-[length:--nextui-font-size-medium]',
-                            mainWrapper: 'max-w-[50%]',
-                        }}
+                        classNames={{ label: 'text-xs text-default-500 pb-1' }}
                         onValueChange={(value) => {
                             setOpenaiConfig({
                                 ...openaiConfig,
@@ -163,14 +159,10 @@ export function Config(props) {
                 <div className='config-item'>
                     <Input
                         label={t('services.translate.openai.request_path')}
-                        labelPlacement='outside-left'
+                        labelPlacement='outside'
                         value={openaiConfig['requestPath']}
                         variant='bordered'
-                        classNames={{
-                            base: 'justify-between',
-                            label: 'text-[length:--nextui-font-size-medium]',
-                            mainWrapper: 'max-w-[50%]',
-                        }}
+                        classNames={{ label: 'text-xs text-default-500 pb-1' }}
                         onValueChange={(value) => {
                             setOpenaiConfig({
                                 ...openaiConfig,
@@ -182,15 +174,11 @@ export function Config(props) {
                 <div className='config-item'>
                     <Input
                         label={t('services.translate.openai.api_key')}
-                        labelPlacement='outside-left'
+                        labelPlacement='outside'
                         type='password'
                         value={openaiConfig['apiKey']}
                         variant='bordered'
-                        classNames={{
-                            base: 'justify-between',
-                            label: 'text-[length:--nextui-font-size-medium]',
-                            mainWrapper: 'max-w-[50%]',
-                        }}
+                        classNames={{ label: 'text-xs text-default-500 pb-1' }}
                         onValueChange={(value) => {
                             setOpenaiConfig({
                                 ...openaiConfig,
@@ -228,14 +216,10 @@ export function Config(props) {
                 <div className={`config-item ${openaiConfig.service === 'azure' && 'hidden'}`}>
                     <Input
                         label={t('services.translate.openai.model')}
-                        labelPlacement='outside-left'
+                        labelPlacement='outside'
                         value={openaiConfig['model']}
                         variant='bordered'
-                        classNames={{
-                            base: 'justify-between',
-                            label: 'text-[length:--nextui-font-size-medium]',
-                            mainWrapper: 'max-w-[50%]',
-                        }}
+                        classNames={{ label: 'text-xs text-default-500 pb-1' }}
                         onValueChange={(value) => {
                             setOpenaiConfig({
                                 ...openaiConfig,

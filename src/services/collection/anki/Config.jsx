@@ -49,14 +49,10 @@ export function Config(props) {
                     <div className='config-item'>
                         <Input
                             label={t('services.instance_name')}
-                            labelPlacement='outside-left'
+                            labelPlacement='outside'
                             value={ankiConfig[INSTANCE_NAME_CONFIG_KEY]}
                             variant='bordered'
-                            classNames={{
-                                base: 'justify-between',
-                                label: 'text-[length:--nextui-font-size-medium]',
-                                mainWrapper: 'max-w-[50%]',
-                            }}
+                            classNames={{ label: 'text-xs text-default-500 pb-1' }}
                             onValueChange={(value) => {
                                 setAnkiConfig({
                                     ...ankiConfig,
@@ -78,15 +74,11 @@ export function Config(props) {
                     <div className={'config-item'}>
                         <Input
                             label={t('services.collection.anki.port')}
-                            labelPlacement='outside-left'
+                            labelPlacement='outside'
                             value={ankiConfig['port']}
                             type='number'
                             variant='bordered'
-                            classNames={{
-                                base: 'justify-between',
-                                label: 'text-[length:--nextui-font-size-medium]',
-                                mainWrapper: 'max-w-[50%]',
-                            }}
+                            classNames={{ label: 'text-xs text-default-500 pb-1' }}
                             onValueChange={(value) => {
                                 setAnkiConfig({
                                     ...ankiConfig,

@@ -436,6 +436,3 @@ export class SonioxClient {
         this.onStatusChange?.(status);
     }
 }
-
-// Singleton
-export const sonioxClient = new SonioxClient();

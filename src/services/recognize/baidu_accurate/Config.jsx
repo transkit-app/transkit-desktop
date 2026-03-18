@@ -53,14 +53,10 @@ export function Config(props) {
                 <div className='config-item'>
                     <Input
                         label={t('services.instance_name')}
-                        labelPlacement='outside-left'
+                        labelPlacement='outside'
                         value={config[INSTANCE_NAME_CONFIG_KEY]}
                         variant='bordered'
-                        classNames={{
-                            base: 'justify-between',
-                            label: 'text-[length:--nextui-font-size-medium]',
-                            mainWrapper: 'max-w-[50%]',
-                        }}
+                        classNames={{ label: 'text-xs text-default-500 pb-1' }}
                         onValueChange={(value) => {
                             setConfig({
                                 ...config,
@@ -82,14 +78,10 @@ export function Config(props) {
                 <div className={'config-item'}>
                     <Input
                         label={t('services.recognize.baidu_accurate_ocr.client_id')}
-                        labelPlacement='outside-left'
+                        labelPlacement='outside'
                         value={config['client_id']}
                         variant='bordered'
-                        classNames={{
-                            base: 'justify-between',
-                            label: 'text-[length:--nextui-font-size-medium]',
-                            mainWrapper: 'max-w-[50%]',
-                        }}
+                        classNames={{ label: 'text-xs text-default-500 pb-1' }}
                         onValueChange={(value) => {
                             setConfig({
                                 ...config,
@@ -101,14 +93,10 @@ export function Config(props) {
                 <div className={'config-item'}>
                     <Input
                         label={t('services.recognize.baidu_accurate_ocr.client_secret')}
-                        labelPlacement='outside-left'
+                        labelPlacement='outside'
                         value={config['client_secret']}
                         variant='bordered'
-                        classNames={{
-                            base: 'justify-between',
-                            label: 'text-[length:--nextui-font-size-medium]',
-                            mainWrapper: 'max-w-[50%]',
-                        }}
+                        classNames={{ label: 'text-xs text-default-500 pb-1' }}
                         onValueChange={(value) => {
                             setConfig({
                                 ...config,

@@ -31,46 +31,34 @@ export function Config(props) {
                 <div className='config-item'>
                     <Input
                         label={t('services.instance_name')}
-                        labelPlacement='outside-left'
+                        labelPlacement='outside'
                         value={config[INSTANCE_NAME_CONFIG_KEY]}
                         variant='bordered'
-                        classNames={{
-                            base: 'justify-between',
-                            label: 'text-[length:--nextui-font-size-medium]',
-                            mainWrapper: 'max-w-[50%]',
-                        }}
+                        classNames={{ label: 'text-xs text-default-500 pb-1' }}
                         onValueChange={v => setConfig({ ...config, [INSTANCE_NAME_CONFIG_KEY]: v })}
                     />
                 </div>
                 <div className='config-item'>
                     <Input
                         label={t('services.tts.google_tts.lang')}
-                        labelPlacement='outside-left'
+                        labelPlacement='outside'
                         value={config.lang ?? 'vi'}
                         variant='bordered'
-                        classNames={{
-                            base: 'justify-between',
-                            label: 'text-[length:--nextui-font-size-medium]',
-                            mainWrapper: 'max-w-[50%]',
-                        }}
+                        classNames={{ label: 'text-xs text-default-500 pb-1' }}
                         onValueChange={v => setConfig({ ...config, lang: v })}
                     />
                 </div>
                 <div className='config-item'>
                     <Input
                         label={t('services.tts.google_tts.speed')}
-                        labelPlacement='outside-left'
+                        labelPlacement='outside'
                         type='number'
                         min={0.5}
                         max={2}
                         step={0.1}
                         value={String(config.speed ?? 1)}
                         variant='bordered'
-                        classNames={{
-                            base: 'justify-between',
-                            label: 'text-[length:--nextui-font-size-medium]',
-                            mainWrapper: 'max-w-[50%]',
-                        }}
+                        classNames={{ label: 'text-xs text-default-500 pb-1' }}
                         onValueChange={v => setConfig({ ...config, speed: parseFloat(v) || 1 })}
                     />
                 </div>

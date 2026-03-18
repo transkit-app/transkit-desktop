@@ -17,7 +17,7 @@ import { getServiceName } from '../../utils/service_instance';
 import MonitorToolbar from './components/MonitorToolbar';
 import MonitorLog from './components/MonitorLog';
 import ContextPanel from './components/ContextPanel';
-import { SonioxClient } from './soniox';
+import * as transcriptionServices from '../../services/transcription';
 import { getTTSQueue } from './tts';
 
 const MAX_ENTRIES = 100;
@@ -88,11 +88,6 @@ function mapServiceConfigToTTSParams(serviceName, config) {
     }
 }
 
-let sonioxClientInstance = null;
-function getSonioxClient() {
-    if (!sonioxClientInstance) sonioxClientInstance = new SonioxClient();
-    return sonioxClientInstance;
-}
 
 // ─── Transcript file helpers ──────────────────────────────────────────────────
 
@@ -120,7 +115,7 @@ async function buildTranscriptPath() {
 export default function Monitor() {
     const { t } = useTranslation();
 
-    const [apiKey] = useConfig('soniox_api_key', '');
+    const [activeTranscriptionService] = useConfig('transcription_active_service', 'soniox_stt');
     const [sourceLang, setSourceLang] = useConfig('audio_source_lang', 'auto');
     const [targetLang, setTargetLang] = useConfig('audio_target_lang', 'vi');
     const [sourceAudio, setSourceAudio] = useConfig('audio_source', 'microphone');
@@ -130,11 +125,6 @@ export default function Monitor() {
     const [activeTtsService] = useConfig('tts_active_service', 'edge_tts');
     const [ttsPlaybackRate] = useConfig('tts_playback_rate', 1);
     const [ttsVolume, setTtsVolume] = useConfig('tts_volume', 1.0);
-
-    // Soniox advanced config
-    const [sonioxEndpointDelay] = useConfig('soniox_endpoint_delay_ms', 250);
-    const [sonioxSpeakerDiarization] = useConfig('soniox_speaker_diarization', true);
-    const [sonioxBatchInterval] = useConfig('soniox_batch_interval_ms', 100);
 
     // Active AI service (for context generation)
     const [aiServiceList] = useConfig('ai_service_list', []);
@@ -177,6 +167,7 @@ export default function Monitor() {
     const saveQueueRef = useRef([]); // entries pending write
     const autosaveEnabledRef = useRef(autosaveEnabled);
 
+    const transcriptionClientRef = useRef({ name: null, client: null });
     const pendingOriginalRef = useRef(null);
     const unlistenAudioRef = useRef(null);
 
@@ -200,6 +191,26 @@ export default function Monitor() {
                 await store.delete('monitor_context_domain');
                 await store.delete('monitor_context_terms');
                 await store.save();
+            }
+        })();
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // ── Migration: old soniox_ keys → new transcription service config ────────
+    useEffect(() => {
+        (async () => {
+            const existingConfig = await store.get('soniox_stt');
+            if (!existingConfig?.apiKey) {
+                const oldApiKey = await store.get('soniox_api_key');
+                if (oldApiKey) {
+                    await store.set('soniox_stt', {
+                        apiKey: oldApiKey,
+                        endpointDelayMs: (await store.get('soniox_endpoint_delay_ms')) ?? 250,
+                        batchIntervalMs: (await store.get('soniox_batch_interval_ms')) ?? 100,
+                        speakerDiarization: (await store.get('soniox_speaker_diarization')) ?? true,
+                    });
+                    await store.save();
+                    console.log('[Monitor] Migrated old soniox_ config keys to soniox_stt');
+                }
             }
         })();
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -294,14 +305,58 @@ export default function Monitor() {
         }
     }, []);
 
-    // ── Soniox callbacks ──────────────────────────────────────────────────────
-    useEffect(() => {
-        const client = getSonioxClient();
+    // ── Transcription client callbacks are attached in start() ────────────────
 
+    const sourceAudioRef = useRef(sourceAudio);
+    useEffect(() => { sourceAudioRef.current = sourceAudio; }, [sourceAudio]);
+    const batchIntervalRef = useRef(100);
+
+
+    const addAudioChunkListener = useCallback(async () => {
+        if (unlistenAudioRef.current) {
+            unlistenAudioRef.current();
+            unlistenAudioRef.current = null;
+        }
+        const unlisten = await listen('audio_chunk', (event) => {
+            const binary = atob(event.payload);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+            transcriptionClientRef.current?.client?.sendAudio(bytes.buffer);
+        });
+        unlistenAudioRef.current = unlisten;
+    }, []);
+
+    // ── Transcription client factory ──────────────────────────────────────────
+    const getOrCreateTranscriptionClient = useCallback((serviceName) => {
+        const cached = transcriptionClientRef.current;
+        if (cached.name === serviceName && cached.client) return cached.client;
+        const service = transcriptionServices[serviceName];
+        if (!service?.createClient) {
+            throw new Error(`Unknown transcription service: ${serviceName}`);
+        }
+        const client = service.createClient();
+        transcriptionClientRef.current = { name: serviceName, client };
+        return client;
+    }, []);
+
+    // ── Start / Stop ──────────────────────────────────────────────────────────
+    const start = useCallback(async () => {
+        const serviceName = getServiceName(activeTranscriptionService);
+        const transcriptionConfig = (await store.get(activeTranscriptionService)) ?? {};
+
+        if (!transcriptionConfig.apiKey) {
+            setErrorMsg(t('monitor.no_api_key'));
+            return;
+        }
+
+        const client = getOrCreateTranscriptionClient(serviceName);
+        const batchInterval = transcriptionConfig.batchIntervalMs ?? 100;
+        batchIntervalRef.current = batchInterval;
+
+        // Attach callbacks
         client.onOriginal = (text, speaker) => {
             pendingOriginalRef.current = { text, speaker };
         };
-
         client.onTranslation = (text) => {
             const pending = pendingOriginalRef.current;
             pendingOriginalRef.current = null;
@@ -311,87 +366,44 @@ export default function Monitor() {
                 translation: text,
                 speaker: pending?.speaker ?? null,
             };
-
             setEntries(prev => {
                 const next = [...prev, entry];
                 return next.length > MAX_ENTRIES ? next.slice(-MAX_ENTRIES) : next;
             });
             setProvisional('');
-
-            // Queue for auto-save
             if (transcriptFileRef.current) {
                 saveQueueRef.current.push(entry);
                 flushSaveQueue();
             }
-
             getTTSQueue().enqueue(text);
         };
-
-        client.onProvisional = (text) => {
-            setProvisional(text || '');
-        };
-
+        client.onProvisional = (text) => setProvisional(text || '');
         client.onStatusChange = (s) => setStatus(s);
-
         client.onError = (msg) => {
             setErrorMsg(msg);
             setTimeout(() => setErrorMsg(''), 5000);
         };
-    }, [flushSaveQueue]);
-
-    const sourceAudioRef = useRef(sourceAudio);
-    useEffect(() => { sourceAudioRef.current = sourceAudio; }, [sourceAudio]);
-    const batchIntervalRef = useRef(sonioxBatchInterval);
-    useEffect(() => { batchIntervalRef.current = sonioxBatchInterval; }, [sonioxBatchInterval]);
-
-    const addAudioChunkListener = useCallback(async () => {
-        if (unlistenAudioRef.current) {
-            unlistenAudioRef.current();
-            unlistenAudioRef.current = null;
-        }
-        const client = getSonioxClient();
-        const unlisten = await listen('audio_chunk', (event) => {
-            const binary = atob(event.payload);
-            const bytes = new Uint8Array(binary.length);
-            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-            client.sendAudio(bytes.buffer);
-        });
-        unlistenAudioRef.current = unlisten;
-    }, []);
-
-    useEffect(() => {
-        const client = getSonioxClient();
         client.onReconnect = async () => {
-            console.log('[Monitor] Soniox reconnected — restarting audio capture');
+            console.log('[Monitor] Transcription reconnected — restarting audio capture');
             await addAudioChunkListener();
             try {
                 await invoke('start_audio_capture', {
                     source: sourceAudioRef.current,
-                    batchIntervalMs: batchIntervalRef.current ?? 100,
+                    batchIntervalMs: batchIntervalRef.current,
                 });
             } catch (err) {
                 setErrorMsg(String(err));
             }
         };
-    }, [addAudioChunkListener]);
 
-    // ── Start / Stop ──────────────────────────────────────────────────────────
-    const start = useCallback(async () => {
-        if (!apiKey) {
-            setErrorMsg(t('monitor.no_api_key'));
-            return;
-        }
-        const client = getSonioxClient();
         setIsRunning(true);
         setProvisional('');
 
         client.connect({
-            apiKey,
+            ...transcriptionConfig,
             sourceLanguage: sourceLang === 'auto' ? null : sourceLang,
             targetLanguage: targetLang,
             customContext: sonioxContext,
-            endpointDelayMs: sonioxEndpointDelay ?? 250,
-            speakerDiarization: sonioxSpeakerDiarization !== false,
         });
 
         await addAudioChunkListener();
@@ -414,7 +426,7 @@ export default function Monitor() {
         try {
             await invoke('start_audio_capture', {
                 source: sourceAudio,
-                batchIntervalMs: sonioxBatchInterval ?? 100,
+                batchIntervalMs: batchInterval,
             });
         } catch (err) {
             setErrorMsg(String(err));
@@ -426,12 +438,12 @@ export default function Monitor() {
             }
             transcriptFileRef.current = null;
         }
-    }, [apiKey, sourceLang, targetLang, sourceAudio, sonioxContext, sonioxEndpointDelay, sonioxSpeakerDiarization, sonioxBatchInterval, autosaveEnabled, addAudioChunkListener, t]);
+    }, [activeTranscriptionService, sourceLang, targetLang, sourceAudio, sonioxContext, autosaveEnabled, addAudioChunkListener, getOrCreateTranscriptionClient, flushSaveQueue, t]);
 
     const stop = useCallback(async (silent = false) => {
         setIsRunning(false);
         try { await invoke('stop_audio_capture'); } catch (_) {}
-        getSonioxClient().disconnect();
+        transcriptionClientRef.current?.client?.disconnect();
         if (unlistenAudioRef.current) {
             unlistenAudioRef.current();
             unlistenAudioRef.current = null;

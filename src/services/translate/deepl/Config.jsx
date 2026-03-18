@@ -55,14 +55,10 @@ export function Config(props) {
                 <div className='config-item'>
                     <Input
                         label={t('services.instance_name')}
-                        labelPlacement='outside-left'
+                        labelPlacement='outside'
                         value={deeplConfig[INSTANCE_NAME_CONFIG_KEY]}
                         variant='bordered'
-                        classNames={{
-                            base: 'justify-between',
-                            label: 'text-[length:--nextui-font-size-medium]',
-                            mainWrapper: 'max-w-[50%]',
-                        }}
+                        classNames={{ label: 'text-xs text-default-500 pb-1' }}
                         onValueChange={(value) => {
                             setDeeplConfig({
                                 ...deeplConfig,
@@ -110,15 +106,11 @@ export function Config(props) {
                 <div className={`config-item ${deeplConfig.type !== 'api' && 'hidden'}`}>
                     <Input
                         label={t('services.translate.deepl.auth_key')}
-                        labelPlacement='outside-left'
+                        labelPlacement='outside'
                         type='password'
                         value={deeplConfig['authKey']}
                         variant='bordered'
-                        classNames={{
-                            base: 'justify-between',
-                            label: 'text-[length:--nextui-font-size-medium]',
-                            mainWrapper: 'max-w-[50%]',
-                        }}
+                        classNames={{ label: 'text-xs text-default-500 pb-1' }}
                         onValueChange={(value) => {
                             setDeeplConfig({
                                 ...deeplConfig,
@@ -130,14 +122,10 @@ export function Config(props) {
                 <div className={`config-item ${deeplConfig.type !== 'deeplx' && 'hidden'}`}>
                     <Input
                         label={t('services.translate.deepl.custom_url')}
-                        labelPlacement='outside-left'
+                        labelPlacement='outside'
                         value={deeplConfig.customUrl}
                         variant='bordered'
-                        classNames={{
-                            base: 'justify-between',
-                            label: 'text-[length:--nextui-font-size-medium]',
-                            mainWrapper: 'max-w-[50%]',
-                        }}
+                        classNames={{ label: 'text-xs text-default-500 pb-1' }}
                         onValueChange={(value) => {
                             setDeeplConfig({
                                 ...deeplConfig,

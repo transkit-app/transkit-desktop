@@ -5,10 +5,7 @@
 
 /* ---------- Config Item Layout ---------- */
 .config-item {
-    margin: 12px 0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    margin: 2px 0;
 }
 
 /* ---------- Navigation Item Styles ---------- */

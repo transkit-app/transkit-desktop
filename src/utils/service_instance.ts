@@ -4,6 +4,7 @@ export enum ServiceType {
     TTS = 'tts',
     COLLECTION = 'collection',
     AI = 'ai',
+    TRANSCRIPTION = 'transcription',
 }
 
 export enum ServiceSourceType {
