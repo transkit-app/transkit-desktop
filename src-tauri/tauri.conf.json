@@ -120,7 +120,7 @@
         "additionalBrowserArgs": "--disable-web-security"
       },
       {
-        "title": "Audio Monitor",
+        "title": "Realtime Translate",
         "label": "monitor",
         "url": "index.html",
         "transparent": true,

@@ -146,8 +146,8 @@
         "hide_window": "Hide Recognition Window"
       },
       "audio_translate": {
-        "label": "Realtime Audio",
-        "title": "Realtime Audio Translation"
+        "label": "Realtime Translate",
+        "title": "Realtime Translate Settings"
       },
       "hotkey": {
         "label": "Hotkey",
@@ -156,7 +156,7 @@
         "input_translate": "Text Translation",
         "ocr_recognize": "Text Recognition",
         "ocr_translate": "Screenshot Translation",
-        "audio_monitor": "Audio Monitor",
+        "audio_monitor": "Realtime Translate",
         "is_register": "The hotkey is already registered",
         "success": "Hotkey register success",
         "set_hotkey": "Press to Set Hotkey"

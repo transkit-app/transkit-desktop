@@ -212,6 +212,7 @@ fn on_quit_click(app: &AppHandle) {
 
 fn tray_menu_en() -> tauri::SystemTrayMenu {
     let input_translate = CustomMenuItem::new("input_translate", "Input Translate");
+    let audio_monitor = CustomMenuItem::new("audio_monitor", "Realtime Translate");
     let copy_source = CustomMenuItem::new("copy_source", "Source");
     let copy_target = CustomMenuItem::new("copy_target", "Target");
     let clipboard_monitor = CustomMenuItem::new("clipboard_monitor", "Clipboard Monitor");
@@ -219,7 +220,6 @@ fn tray_menu_en() -> tauri::SystemTrayMenu {
     let copy_disable = CustomMenuItem::new("copy_disable", "Disable");
     let ocr_recognize = CustomMenuItem::new("ocr_recognize", "OCR Recognize");
     let ocr_translate = CustomMenuItem::new("ocr_translate", "OCR Translate");
-    let audio_monitor = CustomMenuItem::new("audio_monitor", "Audio Monitor");
     let config = CustomMenuItem::new("config", "Config");
     let check_update = CustomMenuItem::new("check_update", "Check Update");
     let view_log = CustomMenuItem::new("view_log", "View Log");
@@ -227,6 +227,7 @@ fn tray_menu_en() -> tauri::SystemTrayMenu {
     let quit = CustomMenuItem::new("quit", "Quit");
     SystemTrayMenu::new()
         .add_item(input_translate)
+        .add_item(audio_monitor)
         .add_item(clipboard_monitor)
         .add_submenu(SystemTraySubmenu::new(
             "Auto Copy",
@@ -240,7 +241,6 @@ fn tray_menu_en() -> tauri::SystemTrayMenu {
         .add_native_item(SystemTrayMenuItem::Separator)
         .add_item(ocr_recognize)
         .add_item(ocr_translate)
-        .add_item(audio_monitor)
         .add_native_item(SystemTrayMenuItem::Separator)
         .add_item(config)
         .add_item(check_update)
