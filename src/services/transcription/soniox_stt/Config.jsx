@@ -74,7 +74,7 @@ export function Config(props) {
                 </div>
 
                 {/* Endpoint delay */}
-                <div className='config-item flex-col gap-1'>
+                <div className='config-item-row flex-col gap-1'>
                     <p className='text-sm'>{t('services.transcription.soniox_stt.endpoint_delay')}</p>
                     <div className='flex items-center gap-3'>
                         <input
@@ -91,7 +91,7 @@ export function Config(props) {
                 </div>
 
                 {/* Batch interval */}
-                <div className='config-item flex-col gap-1'>
+                <div className='config-item-row flex-col gap-1'>
                     <p className='text-sm'>{t('services.transcription.soniox_stt.batch_interval')}</p>
                     <div className='flex items-center gap-3'>
                         <input
