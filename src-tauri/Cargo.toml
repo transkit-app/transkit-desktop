@@ -65,4 +65,4 @@ window-shadows = "0.2"
 # DO NOT REMOVE!!
 custom-protocol = ["tauri/custom-protocol"]
 [patch.crates-io]
-wry = { git = "https://github.com/tauri-apps/wry", tag = "wry-v0.54.4" }
+wry = { path = "../patches/wry" }
