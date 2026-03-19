@@ -1,9 +1,20 @@
 #!/bin/bash
 set -euo pipefail
 
-wget https://nodejs.org/dist/v19.8.1/node-v19.8.1-linux-x64.tar.xz
-tar -Jxvf ./node-v19.8.1-linux-x64.tar.xz
-export PATH=$(pwd)/node-v19.8.1-linux-x64/bin:$PATH
+NODE_VERSION="v19.8.1"
+case "$(uname -m)" in
+    x86_64) NODE_ARCH="x64" ;;
+    aarch64|arm64) NODE_ARCH="arm64" ;;
+    *)
+        echo "Unsupported container architecture: $(uname -m)"
+        exit 1
+        ;;
+esac
+
+NODE_TARBALL="node-${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz"
+wget "https://nodejs.org/dist/${NODE_VERSION}/${NODE_TARBALL}"
+tar -Jxvf "./${NODE_TARBALL}"
+export PATH="$(pwd)/node-${NODE_VERSION}-linux-${NODE_ARCH}/bin:$PATH"
 npm install pnpm -g
 
 rustup toolchain install "$INPUT_TOOLCHAIN"

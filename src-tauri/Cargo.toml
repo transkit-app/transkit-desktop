@@ -58,7 +58,13 @@ windows = {version="0.58.0",features= ["Win32_UI_WindowsAndMessaging", "Win32_Fo
 window-shadows = "0.2"
 
 [target.'cfg(target_os = "linux")'.dependencies]
-#openssl
+openssl= {version="0.10",features= ["vendored"] }
+
+[patch.crates-io]
+# wry 0.24.11 imports webkit2gtk::traits::* which is pub(crate) and not
+# accessible from outside the crate. This local copy fixes the import to
+# use explicit extension traits re-exported at the webkit2gtk crate root.
+wry = { path = "../patches/wry" }
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem
