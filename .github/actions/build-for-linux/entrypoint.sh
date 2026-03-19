@@ -25,6 +25,38 @@ echo "Using Rust toolchain:"
 rustc -Vv
 cargo -V
 
+# Helper: ensure alsa.pc exists in the given pkgconfig dir for cross targets.
+# On Debian Bullseye, libasound2-dev:<arch> sometimes places alsa.pc in
+# /usr/share/pkgconfig instead of the arch-specific lib pkgconfig dir.
+ensure_alsa_pc() {
+    local libdir="$1"   # e.g. /usr/lib/aarch64-linux-gnu
+    local pc_dir="$libdir/pkgconfig"
+    if [ ! -f "$pc_dir/alsa.pc" ]; then
+        echo "alsa.pc not found in $pc_dir — creating stub"
+        mkdir -p "$pc_dir"
+        cat > "$pc_dir/alsa.pc" << ALSA_PC
+prefix=/usr
+exec_prefix=\${prefix}
+libdir=$libdir
+includedir=\${prefix}/include
+
+Name: alsa
+Description: Advanced Linux Sound Architecture (libasound2)
+Version: 1.2
+Libs: -L\${libdir} -lasound
+Libs.private: -lm -lpthread -lrt -ldl
+Cflags: -I\${includedir}
+ALSA_PC
+        # libasound2-dev provides the .so symlink needed by the linker;
+        # create it if the dev package did not (runtime lib must exist).
+        if [ ! -f "$libdir/libasound.so" ]; then
+            local versioned
+            versioned="$(ls "$libdir"/libasound.so.* 2>/dev/null | head -1)"
+            [ -n "$versioned" ] && ln -sf "$(basename "$versioned")" "$libdir/libasound.so" || true
+        fi
+    fi
+}
+
 if [ "$INPUT_TARGET" = "x86_64-unknown-linux-gnu" ]; then
     apt-get update
     apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libayatana-appindicator3-dev librsvg2-dev patchelf libxdo-dev libxcb1 libxrandr2 libdbus-1-3 libasound2-dev
@@ -32,8 +64,11 @@ elif [ "$INPUT_TARGET" = "i686-unknown-linux-gnu" ]; then
     dpkg --add-architecture i386
     apt-get update
     apt-get install -y libstdc++6:i386 libgdk-pixbuf2.0-dev:i386 libatomic1:i386 gcc-multilib g++-multilib libwebkit2gtk-4.0-dev:i386 libssl-dev:i386 libgtk-3-dev:i386 librsvg2-dev:i386 patchelf:i386 libxdo-dev:i386 libxcb1:i386 libxrandr2:i386 libdbus-1-3:i386 libayatana-appindicator3-dev:i386 libasound2-dev:i386
-    export PKG_CONFIG_PATH=/usr/lib/i386-linux-gnu/pkgconfig/:$PKG_CONFIG_PATH
+    # PKG_CONFIG_PATH may be unset; use default-empty fallback to avoid
+    # bash -u (nounset) error before appending the i386 pkgconfig dir.
+    export PKG_CONFIG_PATH="/usr/lib/i386-linux-gnu/pkgconfig/:${PKG_CONFIG_PATH:-}"
     export PKG_CONFIG_SYSROOT_DIR=/
+    ensure_alsa_pc /usr/lib/i386-linux-gnu
 elif [ "$INPUT_TARGET" = "aarch64-unknown-linux-gnu" ]; then
     dpkg --add-architecture arm64
     apt-get update
@@ -44,6 +79,7 @@ elif [ "$INPUT_TARGET" = "aarch64-unknown-linux-gnu" ]; then
     export CXX_aarch64_unknown_linux_gnu=aarch64-linux-gnu-g++
     export PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig
     export PKG_CONFIG_ALLOW_CROSS=1
+    ensure_alsa_pc /usr/lib/aarch64-linux-gnu
 elif [ "$INPUT_TARGET" = "armv7-unknown-linux-gnueabihf" ]; then
     dpkg --add-architecture armhf
     apt-get update
@@ -54,6 +90,7 @@ elif [ "$INPUT_TARGET" = "armv7-unknown-linux-gnueabihf" ]; then
     export CXX_armv7_unknown_linux_gnueabihf=arm-linux-gnueabihf-g++
     export PKG_CONFIG_PATH=/usr/lib/arm-linux-gnueabihf/pkgconfig
     export PKG_CONFIG_ALLOW_CROSS=1
+    ensure_alsa_pc /usr/lib/arm-linux-gnueabihf
 else
     echo "Unknown target: $INPUT_TARGET" && exit 1
 fi
