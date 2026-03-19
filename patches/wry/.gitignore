@@ -1,0 +1,10 @@
+# Copyright 2020-2023 Tauri Programme within The Commons Conservancy
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: MIT
+
+target
+Cargo.lock
+gh-pages
+.DS_Store
+examples/test_video.mp4
+.vscode/
