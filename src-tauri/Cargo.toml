@@ -64,3 +64,5 @@ window-shadows = "0.2"
 # this feature is used for production builds or when `devPath` points to the filesystem
 # DO NOT REMOVE!!
 custom-protocol = ["tauri/custom-protocol"]
+[patch.crates-io]
+wry = { git = "https://github.com/tauri-apps/wry", tag = "wry-v0.54.4" }
