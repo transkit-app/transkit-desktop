@@ -93,8 +93,7 @@ fn main() {
             app.manage(StringWrapper(Mutex::new("".to_string())));
             app.manage(AudioState {
                 microphone: Mutex::new(crate::audio::microphone::MicCapture::new()),
-                #[cfg(target_os = "macos")]
-                system_audio: Mutex::new(crate::audio::system_audio::SystemAudioCapture::new()),
+                system_audio: Mutex::new(crate::audio::SystemAudioCapture::new()),
                 stop_flag: Mutex::new(None),
             });
             // Update Tray Menu

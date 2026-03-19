@@ -1,6 +1,5 @@
 use crate::audio::microphone::MicCapture;
-#[cfg(target_os = "macos")]
-use crate::audio::system_audio::SystemAudioCapture;
+use crate::audio::SystemAudioCapture;
 use base64::{engine::general_purpose::STANDARD, Engine};
 use once_cell::sync::Lazy;
 use serde::Serialize;
@@ -150,7 +149,6 @@ pub fn stop_audio_playback() {
 
 pub struct AudioState {
     pub microphone: Mutex<MicCapture>,
-    #[cfg(target_os = "macos")]
     pub system_audio: Mutex<SystemAudioCapture>,
     pub stop_flag: Mutex<Option<std::sync::Arc<std::sync::atomic::AtomicBool>>>,
 }
@@ -164,9 +162,11 @@ pub struct AudioCapabilities {
 #[tauri::command]
 pub fn get_audio_capabilities() -> AudioCapabilities {
     AudioCapabilities {
-        #[cfg(target_os = "macos")]
+        // Supported on macOS (ScreenCaptureKit), Windows (WASAPI loopback),
+        // and Linux (PulseAudio/PipeWire monitor source).
+        #[cfg(any(target_os = "macos", target_os = "windows", target_os = "linux"))]
         system_audio: true,
-        #[cfg(not(target_os = "macos"))]
+        #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
         system_audio: false,
         microphone: true,
     }
@@ -187,16 +187,12 @@ pub fn start_audio_capture(
             let mut mic = state.microphone.lock().map_err(|e| e.to_string())?;
             mic.start()?
         }
-        #[cfg(target_os = "macos")]
         "system" => {
             let sys = state.system_audio.lock().map_err(|e| e.to_string())?;
             sys.start()?
         }
         _ => {
-            return Err(format!(
-                "Unsupported audio source '{}'. System audio capture is only available on macOS.",
-                source
-            ))
+            return Err(format!("Unsupported audio source: '{}'", source))
         }
     };
 
@@ -261,7 +257,6 @@ fn stop_capture_inner(state: &AudioState) {
             f.store(true, std::sync::atomic::Ordering::SeqCst);
         }
     }
-    #[cfg(target_os = "macos")]
     if let Ok(sys) = state.system_audio.lock() {
         sys.stop();
     }
