@@ -30,9 +30,7 @@ async function resolveUpdater() {
             'windows-aarch64': { signature: windows_aarch64_sig, url: windows_aarch64 }
         },
     };
-    fs.writeFile('./update-fix-runtime.json', JSON.stringify(updateData), (e) => {
-        console.log(e);
-    });
+    fs.writeFileSync('./update-fix-runtime.json', JSON.stringify(updateData, null, 2));
 }
 
 async function getVersion(token, owner, repo) {

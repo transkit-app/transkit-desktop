@@ -37,15 +37,11 @@ async function resolveUpdater() {
             'windows-x86_64': { signature: windows_x86_64_sig, url: windows_x86_64 },
             'windows-i686': { signature: windows_i686_sig, url: windows_i686 },
             'windows-aarch64': { signature: windows_aarch64_sig, url: windows_aarch64 },
+            // Tauri updater bundle is currently provided for Linux x86_64 AppImage only.
             'linux-x86_64': { signature: linux_x86_64_sig, url: linux_x86_64 },
-            'linux-i686': { signature: darwin_aarch64_sig, url: darwin_aarch64 },
-            'linux-aarch64': { signature: darwin_aarch64_sig, url: darwin_aarch64 },
-            'linux-armv7': { signature: darwin_aarch64_sig, url: darwin_aarch64 },
         },
     };
-    fs.writeFile('./update.json', JSON.stringify(updateData), (e) => {
-        console.log(e);
-    });
+    fs.writeFileSync('./update.json', JSON.stringify(updateData, null, 2));
 }
 
 async function getVersion(token, owner, repo) {

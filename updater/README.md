@@ -2,267 +2,101 @@
 
 ## Overview
 
-This directory contains scripts that automatically generate `update.json` files from the latest GitHub releases of TransKit. These files enable the Tauri auto-updater to deliver seamless updates to users.
+This directory contains scripts that generate updater manifests for Tauri:
 
-## How It Works
+- `update.json` (standard builds)
+- `update-fix-runtime.json` (Windows fixed WebView2 runtime builds)
 
-```
-1. Build app with Tauri CLI
-   ↓
-2. Tauri automatically signs installer files with private key
-   ↓
-3. Upload files to GitHub Releases (including .sig signature files)
-   ↓
-4. Run updater scripts to generate update.json
-   ↓
-5. Upload update.json to server/GitHub
-   ↓
-6. App automatically checks and installs updates
-```
+These files are consumed by the auto-updater endpoints configured in `src-tauri/tauri.conf.json`.
+
+## Release Flow (CI)
+
+Main workflow: `.github/workflows/package.yml`
+
+1. Build and sign release artifacts (nsis/updater, dmg/app updater bundles, appimage updater bundle)
+2. Upload artifacts to the GitHub release tag
+3. Run updater scripts
+4. Upload `update.json` and `update-fix-runtime.json` to `updater` tag
 
 ## Prerequisites
 
-- Node.js 16+
-- GitHub Personal Access Token (with `repo` scope)
-- Tauri signing keypair (see setup instructions below)
+- Node.js 18+
+- `GITHUB_TOKEN` with repo access
+- Tauri updater signing keypair
 
-## Initial Setup: Generate Signing Keys
+Required CI secrets:
 
-Before using the updater system, you need to generate a keypair for signing releases.
+- `TAURI_PRIVATE_KEY`
+- `TAURI_KEY_PASSWORD`
 
-### Step 1: Generate Keypair
+## Setup Signing Keys
 
 ```bash
-# Install Tauri CLI if you haven't already
-pnpm add -D @tauri-apps/cli
-
-# Generate a new keypair
 pnpm tauri signer generate -w ~/.tauri/transkit.key
 ```
 
-This command will:
-- Generate a private key and save it to `~/.tauri/transkit.key`
-- Display a public key in the terminal
-- Optionally set a password for the private key
+Then:
 
-**Important**: Save both the private key file and the password securely!
+1. Put private key contents into GitHub secret `TAURI_PRIVATE_KEY`
+2. Put key password into `TAURI_KEY_PASSWORD`
+3. Put generated public key into `src-tauri/tauri.conf.json` -> `tauri.updater.pubkey`
 
-### Step 2: Add Keys to GitHub Secrets
+## Manual Script Usage
 
-Go to your repository settings → Secrets and variables → Actions, and add:
-
-1. **TAURI_PRIVATE_KEY**: The entire contents of `~/.tauri/transkit.key`
-   ```bash
-   # View the private key to copy it
-   cat ~/.tauri/transkit.key
-   ```
-
-2. **TAURI_KEY_PASSWORD**: The password you set when generating the key
-   - If you didn't set a password, leave this as an empty secret
-
-### Step 3: Add Public Key to tauri.conf.json
-
-Copy the public key displayed during generation and add it to `src-tauri/tauri.conf.json`:
-
-```json
-{
-  "tauri": {
-    "updater": {
-      "active": true,
-      "pubkey": "YOUR_PUBLIC_KEY_HERE"
-    }
-  }
-}
-```
-
-**Note**: The public key should be a base64-encoded string starting with `dW50cnVz...`
-
-## Usage
-
-The updater scripts are automatically run by GitHub Actions after each release. However, you can also run them manually.
-
-### Manual Usage
-
-#### Step 1: Install Dependencies
+You can run scripts manually without waiting for CI:
 
 ```bash
-cd updater
-pnpm install
-```
+export GITHUB_TOKEN="<token>"
+export REPO_OWNER="transkit-app"      # optional
+export REPO_NAME="transkit-desktop"   # optional
 
-#### Step 2: Set Environment Variables
-
-```bash
-# Required
-export GITHUB_TOKEN="your_github_personal_access_token"
-
-# Optional (defaults to transkit-app/transkit-desktop)
-export REPO_OWNER="transkit-app"
-export REPO_NAME="transkit-desktop"
-```
-
-#### Step 3: Run Scripts
-
-```bash
-# Generate update.json for standard builds
 pnpm run updater
-
-# Generate update-fix-runtime.json for Windows WebView2 fixed runtime builds
 pnpm run updater:fixRuntime
 ```
 
-The scripts will generate `update.json` and `update-fix-runtime.json` in the updater directory.
+Generated files:
 
-#### Step 4: Upload update.json
+- `update.json`
+- `update-fix-runtime.json`
 
-**Option A: Automatic with GitHub Actions (Recommended)**
-
-The scripts run automatically after each release. No manual action needed.
-
-**Option B: Manual Upload**
+Manual upload example:
 
 ```bash
-# Upload to GitHub releases
 gh release upload updater update.json update-fix-runtime.json --clobber
-
-# Or upload to your web server
-scp update.json user@transkit.app:/var/www/transkit-desktop/updater/
-scp update-fix-runtime.json user@transkit.app:/var/www/transkit-desktop/updater/
 ```
 
-## GitHub Actions Integration
+## Important Notes
 
-The workflow is already configured in `.github/workflows/package.yml`. When you push a tag, it will:
-
-1. Build the app for all platforms
-2. Sign all installers with `TAURI_PRIVATE_KEY`
-3. Upload signed files to GitHub Releases
-4. Run updater scripts to generate update.json files
-5. Upload update.json files to the `updater` release tag
-
-**To trigger a release:**
-
-```bash
-git tag v1.0.0
-git push origin v1.0.0
-```
-
-## Expected File Structure
-
-After running the scripts, your GitHub release should contain:
-
-```
-GitHub Release (v1.0.0):
-├── TransKit_1.0.0_aarch64.app.tar.gz
-├── TransKit_1.0.0_aarch64.app.tar.gz.sig
-├── TransKit_1.0.0_x64.app.tar.gz
-├── TransKit_1.0.0_x64.app.tar.gz.sig
-├── TransKit_1.0.0_x64-setup.nsis.zip
-├── TransKit_1.0.0_x64-setup.nsis.zip.sig
-├── TransKit_1.0.0_x86-setup.nsis.zip
-├── TransKit_1.0.0_x86-setup.nsis.zip.sig
-├── TransKit_1.0.0_arm64-setup.nsis.zip
-├── TransKit_1.0.0_arm64-setup.nsis.zip.sig
-├── TransKit_1.0.0_amd64.AppImage.tar.gz
-├── TransKit_1.0.0_amd64.AppImage.tar.gz.sig
-└── ... (DMG and other installers)
-
-GitHub Release (updater):
-├── update.json
-└── update-fix-runtime.json
-```
-
-## Generated update.json Format
-
-```json
-{
-  "name": "v1.0.0",
-  "notes": "Release notes from GitHub...",
-  "pub_date": "2024-01-28T10:00:00.000Z",
-  "platforms": {
-    "darwin-aarch64": {
-      "signature": "dW50cnVz...",
-      "url": "https://github.com/transkit-app/transkit-desktop/releases/download/v1.0.0/TransKit_1.0.0_aarch64.app.tar.gz"
-    },
-    "darwin-x86_64": { ... },
-    "windows-x86_64": { ... },
-    "windows-i686": { ... },
-    "windows-aarch64": { ... },
-    "linux-x86_64": { ... }
-  }
-}
-```
-
-## Updater Endpoints
-
-The app checks for updates at these endpoints (configured in `tauri.conf.json`):
-
-1. `https://transkit.app/transkit-desktop/updater/update.json` (primary)
-2. `https://github.com/transkit-app/transkit-desktop/releases/download/updater/update.json` (fallback)
+- This repository uses numeric tags like `3.1.0` (not `v3.1.0`).
+- `updater.mjs` reads release info from GitHub `releases/latest`.
+- Linux updater payload is currently provided for `linux-x86_64` AppImage updater bundle.
 
 ## Troubleshooting
 
-### Error: GITHUB_TOKEN is required
+### `GITHUB_TOKEN is required`
 
-You haven't set the `GITHUB_TOKEN` environment variable.
+Set token before running scripts:
 
 ```bash
-export GITHUB_TOKEN="ghp_your_token_here"
+export GITHUB_TOKEN="<token>"
 ```
 
-### Error: 404 Not Found
+### Empty signatures in output JSON
 
-- The GitHub release doesn't exist yet
-- File names don't match the expected format
-- Token doesn't have `repo` permission
+Usually caused by missing `.sig` files in release assets. Check:
 
-### Empty Signature
+- release job actually built updater bundles
+- `TAURI_PRIVATE_KEY` / `TAURI_KEY_PASSWORD` were present in CI
 
-- The `.sig` file doesn't exist in the release
-- Files weren't signed during build
-- `TAURI_PRIVATE_KEY` or `TAURI_KEY_PASSWORD` not set in GitHub Secrets
+### Signature verification fails in app
 
-### Signature Verification Failed
+- `pubkey` in `tauri.conf.json` does not match signing private key
+- asset/signature pair mismatch (wrong file naming or stale upload)
 
-- Public key in `tauri.conf.json` doesn't match the private key used to sign
-- `.sig` file is corrupted or from a different build
-
-### How to Rotate Keys
-
-If you need to change signing keys:
-
-1. Generate a new keypair: `pnpm tauri signer generate -w ~/.tauri/transkit-new.key`
-2. Update `TAURI_PRIVATE_KEY` and `TAURI_KEY_PASSWORD` in GitHub Secrets
-3. Update `pubkey` in `tauri.conf.json` with the new public key
-4. **Important**: Users on old versions won't be able to update. You may need to:
-   - Keep both old and new update endpoints temporarily
-   - Provide manual download instructions for one version
-
-## Scripts
-
-### `updater.mjs`
-
-Generates `update.json` for standard builds across all platforms:
-- macOS (Intel and Apple Silicon)
-- Windows (x64, x86, ARM64)
-- Linux (x64)
-
-### `updater-for-fix-runtime.mjs`
-
-Generates `update-fix-runtime.json` specifically for Windows builds that bundle a fixed version of the WebView2 runtime. These builds are larger but work on systems without WebView2 pre-installed.
-
-## Environment Variables
+## Script Inputs
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `GITHUB_TOKEN` | Yes | - | GitHub Personal Access Token with `repo` scope |
-| `REPO_OWNER` | No | `transkit-app` | GitHub repository owner |
-| `REPO_NAME` | No | `transkit-desktop` | GitHub repository name |
-
-## Security Notes
-
-- Never commit your private key or `.key` files to version control
-- Store `TAURI_PRIVATE_KEY` only in GitHub Secrets
-- The public key is safe to commit and should be in `tauri.conf.json`
-- Each signature (`.sig` file) is unique to its installer file
-- Users verify signatures automatically during updates using the public key
+| `GITHUB_TOKEN` | Yes | - | GitHub token for release API |
+| `REPO_OWNER` | No | `transkit-app` | Repo owner |
+| `REPO_NAME` | No | `transkit-desktop` | Repo name |
