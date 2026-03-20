@@ -1,10 +1,13 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod audio;
+mod audio_cmd;
 mod backup;
 mod clipboard;
 mod cmd;
 mod config;
+mod edge_tts;
 mod error;
 mod hotkey;
 mod lang_detect;
@@ -14,14 +17,13 @@ mod system_ocr;
 mod tray;
 mod updater;
 mod window;
-mod audio;
-mod audio_cmd;
-mod edge_tts;
 
+use audio_cmd::*;
 use backup::*;
 use clipboard::*;
 use cmd::*;
 use config::*;
+use edge_tts::synthesize_edge_tts;
 use hotkey::*;
 use lang_detect::*;
 use log::info;
@@ -35,8 +37,6 @@ use tauri::Manager;
 use tauri_plugin_log::LogTarget;
 use tray::*;
 use updater::check_update;
-use audio_cmd::*;
-use edge_tts::synthesize_edge_tts;
 use window::config_window;
 use window::open_config_window;
 use window::updater_window;
@@ -53,7 +53,7 @@ fn main() {
             Notification::new(&app.config().tauri.bundle.identifier)
                 .title("The program is already running. Please do not start it again!")
                 .body(cwd)
-                .icon("pot")
+                .icon("icon")
                 .show()
                 .unwrap();
         }))
@@ -106,13 +106,16 @@ fn main() {
                 Err(e) => Notification::new(app.config().tauri.bundle.identifier.clone())
                     .title("Failed to register global shortcut")
                     .body(&e)
-                    .icon("pot")
+                    .icon("icon")
                     .show()
                     .unwrap(),
             }
             match get("proxy_enable") {
                 Some(v) => {
-                    if v.as_bool().unwrap() && get("proxy_host").map_or(false, |host| !host.as_str().unwrap().is_empty()) {
+                    if v.as_bool().unwrap()
+                        && get("proxy_host")
+                            .map_or(false, |host| !host.as_str().unwrap().is_empty())
+                    {
                         let _ = set_proxy();
                     }
                 }

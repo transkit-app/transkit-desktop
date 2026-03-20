@@ -17,7 +17,7 @@ pub fn start_server() {
         let server = match Server::http(format!("127.0.0.1:{port}")) {
             Ok(v) => v,
             Err(e) => {
-                let _ = notification::Notification::new("com.pot-spp.com")
+                let _ = notification::Notification::new("com.transkit.desktop")
                     .title("Server start failed")
                     .body("Please Change Server Port and restart the application")
                     .show();

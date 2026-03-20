@@ -1,5 +1,24 @@
 use dirs::cache_dir;
 
+const SCREENSHOT_CUT_FILE_CURRENT: &str = "transkit_screenshot_cut.png";
+const SCREENSHOT_CUT_FILE_LEGACY: &str = "pot_screenshot_cut.png";
+
+fn resolve_screenshot_cut_path(app_handle: &tauri::AppHandle) -> std::path::PathBuf {
+    let mut app_cache_dir_path = cache_dir().expect("Get Cache Dir Failed");
+    app_cache_dir_path.push(&app_handle.config().tauri.bundle.identifier);
+    let mut current = app_cache_dir_path.clone();
+    current.push(SCREENSHOT_CUT_FILE_CURRENT);
+    if current.exists() {
+        return current;
+    }
+    let mut legacy = app_cache_dir_path;
+    legacy.push(SCREENSHOT_CUT_FILE_LEGACY);
+    if legacy.exists() {
+        return legacy;
+    }
+    current
+}
+
 #[tauri::command(async)]
 #[cfg(target_os = "windows")]
 pub fn system_ocr(app_handle: tauri::AppHandle, lang: &str) -> Result<String, String> {
@@ -9,10 +28,7 @@ pub fn system_ocr(app_handle: tauri::AppHandle, lang: &str) -> Result<String, St
     use windows::Media::Ocr::OcrEngine;
     use windows::Storage::{FileAccessMode, StorageFile};
 
-    let mut app_cache_dir_path = cache_dir().expect("Get Cache Dir Failed");
-    app_cache_dir_path.push(&app_handle.config().tauri.bundle.identifier);
-    app_cache_dir_path.push("pot_screenshot_cut.png");
-
+    let app_cache_dir_path = resolve_screenshot_cut_path(&app_handle);
     let path = app_cache_dir_path.to_string_lossy().replace("\\\\?\\", "");
 
     let file = StorageFile::GetFileFromPathAsync(&HSTRING::from(path))
@@ -63,9 +79,7 @@ pub fn system_ocr(app_handle: tauri::AppHandle, lang: &str) -> Result<String, St
 #[tauri::command(async)]
 #[cfg(target_os = "macos")]
 pub fn system_ocr(app_handle: tauri::AppHandle, lang: &str) -> Result<String, String> {
-    let mut app_cache_dir_path = cache_dir().expect("Get Cache Dir Failed");
-    app_cache_dir_path.push(&app_handle.config().tauri.bundle.identifier);
-    app_cache_dir_path.push("pot_screenshot_cut.png");
+    let app_cache_dir_path = resolve_screenshot_cut_path(&app_handle);
 
     let arch = std::env::consts::ARCH;
     let bin_path = match app_handle
@@ -106,9 +120,7 @@ pub fn system_ocr(app_handle: tauri::AppHandle, lang: &str) -> Result<String, St
 #[tauri::command(async)]
 #[cfg(target_os = "linux")]
 pub fn system_ocr(app_handle: tauri::AppHandle, lang: &str) -> Result<String, String> {
-    let mut app_cache_dir_path = cache_dir().expect("Get Cache Dir Failed");
-    app_cache_dir_path.push(&app_handle.config().tauri.bundle.identifier);
-    app_cache_dir_path.push("pot_screenshot_cut.png");
+    let app_cache_dir_path = resolve_screenshot_cut_path(&app_handle);
     let mut args = ["", ""];
     if lang != "auto" {
         args = ["-l", lang];

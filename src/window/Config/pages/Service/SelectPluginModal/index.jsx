@@ -35,7 +35,7 @@ export default function SelectPluginModal(props) {
                                     fullWidth
                                     variant='flat'
                                     onPress={() => {
-                                        openInBrowser('http://pot-app.com/plugin.html');
+                                        openInBrowser('https://transkit.app/plugin.html');
                                     }}
                                 >
                                     <div className='w-full'>{t('config.service.view_plugin_list')}</div>
@@ -104,8 +104,8 @@ export default function SelectPluginModal(props) {
                                             directory: false,
                                             filters: [
                                                 {
-                                                    name: '*.potext',
-                                                    extensions: ['potext'],
+                                                    name: '*.tkext, *.potext',
+                                                    extensions: ['tkext', 'potext'],
                                                 },
                                             ],
                                         });

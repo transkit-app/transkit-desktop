@@ -30,10 +30,10 @@
             "active": true,
             "dialog": false,
             "endpoints": [
-                "https://dl.pot-app.com/https://github.com/pot-app/pot-desktop/releases/download/updater/update-fix-runtime.json",
-                "https://github.com/pot-app/pot-desktop/releases/download/updater/update-fix-runtime.json"
+                "https://transkit.app/transkit-desktop/updater/update-fix-runtime.json",
+                "https://github.com/transkit-app/transkit-desktop/releases/download/updater/update-fix-runtime.json"
             ],
-            "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDVBRTQxQTNDQjM5QzQzM0EKUldRNlE1eXpQQnJrV21mM1Bram5LRlF6UDA3K0Jab2FYL2lZSWhXTE5McWs2NUdJS0dtYkd5VGMK"
+            "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEM0MDY3ODA3OEMzOTdBRUIKUldUcmVqbU1CM2dHeER2UGQ3YU42YlQ2cWRBVkdGbjB0UTUyL0tKRW5sbHNTa252YVg3THNNWVEK"
         }
     }
 }

@@ -8,6 +8,31 @@ use serde_json::{json, Value};
 use std::io::Read;
 use tauri::Manager;
 
+const SCREENSHOT_FILE_CURRENT: &str = "transkit_screenshot.png";
+const SCREENSHOT_FILE_LEGACY: &str = "pot_screenshot.png";
+const SCREENSHOT_CUT_FILE_CURRENT: &str = "transkit_screenshot_cut.png";
+const SCREENSHOT_CUT_FILE_LEGACY: &str = "pot_screenshot_cut.png";
+
+fn resolve_cache_file(
+    app_handle: &tauri::AppHandle,
+    current: &str,
+    legacy: &str,
+) -> std::path::PathBuf {
+    let mut base = dirs::cache_dir().expect("Get Cache Dir Failed");
+    base.push(&app_handle.config().tauri.bundle.identifier);
+    let mut current_path = base.clone();
+    current_path.push(current);
+    if current_path.exists() {
+        return current_path;
+    }
+    let mut legacy_path = base;
+    legacy_path.push(legacy);
+    if legacy_path.exists() {
+        return legacy_path;
+    }
+    current_path
+}
+
 #[tauri::command]
 pub fn get_text(state: tauri::State<StringWrapper>) -> String {
     return state.0.lock().unwrap().to_string();
@@ -22,12 +47,10 @@ pub fn reload_store() {
 
 #[tauri::command]
 pub fn cut_image(left: u32, top: u32, width: u32, height: u32, app_handle: tauri::AppHandle) {
-    use dirs::cache_dir;
     use image::GenericImage;
     info!("Cut image: {}x{}+{}+{}", width, height, left, top);
-    let mut app_cache_dir_path = cache_dir().expect("Get Cache Dir Failed");
-    app_cache_dir_path.push(&app_handle.config().tauri.bundle.identifier);
-    app_cache_dir_path.push("pot_screenshot.png");
+    let app_cache_dir_path =
+        resolve_cache_file(&app_handle, SCREENSHOT_FILE_CURRENT, SCREENSHOT_FILE_LEGACY);
     if !app_cache_dir_path.exists() {
         return;
     }
@@ -39,9 +62,10 @@ pub fn cut_image(left: u32, top: u32, width: u32, height: u32, app_handle: tauri
         }
     };
     let img2 = img.sub_image(left, top, width, height);
-    app_cache_dir_path.pop();
-    app_cache_dir_path.push("pot_screenshot_cut.png");
-    match img2.to_image().save(&app_cache_dir_path) {
+    let mut cut_path = app_cache_dir_path;
+    cut_path.pop();
+    cut_path.push(SCREENSHOT_CUT_FILE_CURRENT);
+    match img2.to_image().save(&cut_path) {
         Ok(_) => {}
         Err(e) => {
             error!("{:?}", e.to_string());
@@ -52,12 +76,13 @@ pub fn cut_image(left: u32, top: u32, width: u32, height: u32, app_handle: tauri
 #[tauri::command]
 pub fn get_base64(app_handle: tauri::AppHandle) -> String {
     use base64::{engine::general_purpose, Engine as _};
-    use dirs::cache_dir;
     use std::fs::File;
     use std::io::Read;
-    let mut app_cache_dir_path = cache_dir().expect("Get Cache Dir Failed");
-    app_cache_dir_path.push(&app_handle.config().tauri.bundle.identifier);
-    app_cache_dir_path.push("pot_screenshot_cut.png");
+    let app_cache_dir_path = resolve_cache_file(
+        &app_handle,
+        SCREENSHOT_CUT_FILE_CURRENT,
+        SCREENSHOT_CUT_FILE_LEGACY,
+    );
     if !app_cache_dir_path.exists() {
         return "".to_string();
     }
@@ -77,13 +102,14 @@ pub fn get_base64(app_handle: tauri::AppHandle) -> String {
 #[tauri::command]
 pub fn copy_img(app_handle: tauri::AppHandle, width: usize, height: usize) -> Result<(), Error> {
     use arboard::{Clipboard, ImageData};
-    use dirs::cache_dir;
     use image::ImageReader;
     use std::borrow::Cow;
 
-    let mut app_cache_dir_path = cache_dir().expect("Get Cache Dir Failed");
-    app_cache_dir_path.push(&app_handle.config().tauri.bundle.identifier);
-    app_cache_dir_path.push("pot_screenshot_cut.png");
+    let app_cache_dir_path = resolve_cache_file(
+        &app_handle,
+        SCREENSHOT_CUT_FILE_CURRENT,
+        SCREENSHOT_CUT_FILE_LEGACY,
+    );
     let data = ImageReader::open(app_cache_dir_path)?.decode()?;
 
     let img = ImageData {
@@ -132,12 +158,12 @@ pub fn install_plugin(path_list: Vec<String>) -> Result<i32, Error> {
     let mut success_count = 0;
 
     for path in path_list {
-        if !path.ends_with("potext") {
+        if !(path.ends_with(".tkext") || path.ends_with(".potext")) {
             continue;
         }
         let path = std::path::Path::new(&path);
         let file_name = path.file_name().unwrap().to_str().unwrap();
-        let file_name = file_name.replace(".potext", "");
+        let file_name = file_name.replace(".tkext", "").replace(".potext", "");
         if !file_name.starts_with("plugin") {
             return Err(Error::Error(
                 "Invalid Plugin: file name must start with plugin".into(),
@@ -230,8 +256,8 @@ pub fn open_devtools(window: tauri::Window) {
 pub fn set_window_buttons_hidden(window: tauri::Window, hidden: bool) {
     #[cfg(target_os = "macos")]
     unsafe {
-        use objc::{msg_send, sel, sel_impl};
         use objc::runtime::Object;
+        use objc::{msg_send, sel, sel_impl};
         let ns_window = match window.ns_window() {
             Ok(w) => w as *mut Object,
             Err(_) => return,

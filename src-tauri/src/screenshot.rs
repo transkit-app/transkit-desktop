@@ -19,7 +19,7 @@ pub fn screenshot(x: i32, y: i32) {
                 // 创建目录
                 fs::create_dir_all(&app_cache_dir_path).expect("Create Cache Dir Failed");
             }
-            app_cache_dir_path.push("pot_screenshot.png");
+            app_cache_dir_path.push("transkit_screenshot.png");
 
             let image = screen.capture().unwrap();
             let buffer = image.to_png(Compression::Fast).unwrap();

@@ -2,6 +2,9 @@ import { invoke } from '@tauri-apps/api';
 import { Body, fetch } from '@tauri-apps/api/http';
 import { appConfigDir, join } from '@tauri-apps/api/path';
 
+const APP_FOLDER_CURRENT = 'transkit-app';
+const APP_FOLDER_LEGACY = 'pot-app';
+
 export async function backup(token, name) {
     const appConfigDirPath = await appConfigDir();
     const filePath = await join(appConfigDirPath, name);
@@ -62,14 +65,14 @@ export async function list(token) {
 
 export async function get(token, name) {
     const drive_id = await driveId(token);
-    const file_id = await getFileByPath(token, drive_id, name);
+    const file_id = await getFileByPath(token, drive_id, name, [APP_FOLDER_CURRENT, APP_FOLDER_LEGACY]);
     const url = await getDownloadUrl(token, drive_id, file_id);
     await invoke('aliyun', { operate: 'get', path: '', url });
 }
 
 export async function remove(token, name) {
     const drive_id = await driveId(token);
-    const file_id = await getFileByPath(token, drive_id, name);
+    const file_id = await getFileByPath(token, drive_id, name, [APP_FOLDER_CURRENT, APP_FOLDER_LEGACY]);
     const res = await fetch('https://openapi.alipan.com/adrive/v1.0/openFile/delete', {
         method: 'POST',
         headers: {
@@ -161,28 +164,32 @@ export async function userInfo(token) {
 }
 
 export async function accessToken(code) {
-    const res = await fetch('https://pot-app.com/api/ali_access_token', {
-        method: 'POST',
-        body: Body.json({
-            code,
-            refresh_token: '',
-        }),
-    });
-    if (res.ok) {
-        const result = res.data;
-        if (result['access_token']) {
-            return result['access_token'];
+    const endpoints = ['https://transkit.app/api/ali_access_token', 'https://pot-app.com/api/ali_access_token'];
+    let lastError = null;
+    for (const endpoint of endpoints) {
+        const res = await fetch(endpoint, {
+            method: 'POST',
+            body: Body.json({
+                code,
+                refresh_token: '',
+            }),
+        });
+        if (res.ok) {
+            const result = res.data;
+            if (result['access_token']) {
+                return result['access_token'];
+            }
+            lastError = new Error(`Can not find access_token: ${JSON.stringify(result)}`);
         } else {
-            throw new Error(`Can not find access_token: ${JSON.stringify(result)}`);
-        }
-    } else {
-        const result = res.data;
-        if (result['message']) {
-            throw new Error(result['message']);
-        } else {
-            throw new Error(`Get accessToken Error: ${JSON.stringify(result)}`);
+            const result = res.data;
+            if (result['message']) {
+                lastError = new Error(result['message']);
+            } else {
+                lastError = new Error(`Get accessToken Error: ${JSON.stringify(result)}`);
+            }
         }
     }
+    throw lastError ?? new Error('Get accessToken Error');
 }
 
 async function driveId(token) {
@@ -209,7 +216,7 @@ async function driveId(token) {
     }
 }
 
-async function createDir(token, drive_id) {
+async function createDir(token, drive_id, folderName = APP_FOLDER_CURRENT) {
     const res = await fetch('https://openapi.alipan.com/adrive/v1.0/openFile/create', {
         method: 'POST',
         headers: {
@@ -218,7 +225,7 @@ async function createDir(token, drive_id) {
         body: Body.json({
             drive_id,
             parent_file_id: 'root',
-            name: 'pot-app',
+            name: folderName,
             type: 'folder',
             check_name_mode: 'refuse',
         }),
@@ -274,32 +281,35 @@ async function createFile(token, drive_id, dir_id, name) {
     }
 }
 
-async function getFileByPath(token, drive_id, name) {
-    const res = await fetch('https://openapi.alipan.com/adrive/v1.0/openFile/get_by_path', {
-        method: 'POST',
-        headers: {
-            Authorization: `Bearer ${token}`,
-        },
-        body: Body.json({
-            drive_id,
-            file_path: `/pot-app/${name}`,
-        }),
-    });
-    if (res.ok) {
-        const result = res.data;
-        if (result['file_id']) {
-            return result['file_id'];
-        } else {
-            throw new Error(`Can not find file_id: ${JSON.stringify(result)}`);
+async function getFileByPath(token, drive_id, name, folders = [APP_FOLDER_CURRENT]) {
+    let lastError = null;
+    for (const folder of folders) {
+        const res = await fetch('https://openapi.alipan.com/adrive/v1.0/openFile/get_by_path', {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            body: Body.json({
+                drive_id,
+                file_path: `/${folder}/${name}`,
+            }),
+        });
+        if (res.ok) {
+            const result = res.data;
+            if (result['file_id']) {
+                return result['file_id'];
+            }
+            lastError = new Error(`Can not find file_id: ${JSON.stringify(result)}`);
+            continue;
         }
-    } else {
         const result = res.data;
         if (result['message']) {
-            throw new Error(result['message']);
+            lastError = new Error(result['message']);
         } else {
-            throw new Error(`Get accessToken Error: ${JSON.stringify(result)}`);
+            lastError = new Error(`Get accessToken Error: ${JSON.stringify(result)}`);
         }
     }
+    throw lastError ?? new Error('Can not find file_id');
 }
 
 async function getDownloadUrl(token, drive_id, file_id) {

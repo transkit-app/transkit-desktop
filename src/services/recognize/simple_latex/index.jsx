@@ -8,7 +8,9 @@ export async function recognize(base64, language, options = {}) {
 
     const url = 'https://server.simpletex.cn/api/latex_ocr/v2';
 
-    let file = await readBinaryFile('pot_screenshot_cut.png', { dir: BaseDirectory.AppCache });
+    const file = await readBinaryFile('transkit_screenshot_cut.png', {
+        dir: BaseDirectory.AppCache,
+    }).catch(() => readBinaryFile('pot_screenshot_cut.png', { dir: BaseDirectory.AppCache }));
 
     const res = await fetch(url, {
         method: 'POST',
@@ -19,7 +21,7 @@ export async function recognize(base64, language, options = {}) {
         body: Body.form({
             file: {
                 file: file,
-                fileName: 'pot_screenshot_cut.png',
+                fileName: 'transkit_screenshot_cut.png',
             },
         }),
     });
