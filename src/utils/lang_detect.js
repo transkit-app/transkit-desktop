@@ -1,5 +1,4 @@
 import { fetch, Body } from '@tauri-apps/api/http';
-import { invoke } from '@tauri-apps/api';
 import { store } from './store';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -306,10 +305,6 @@ async function bing_detect(text) {
     return 'en';
 }
 
-async function local_detect(text) {
-    return await invoke('lang_detect', { text: text });
-}
-
 export default async function detect(text) {
     let langDetectEngine = (await store.get('translate_detect_engine')) ?? 'baidu';
 
@@ -318,8 +313,6 @@ export default async function detect(text) {
             return await baidu_detect(text);
         case 'google':
             return await google_detect(text);
-        case 'local':
-            return await local_detect(text);
         case 'tencent':
             return await tencent_detect(text);
         case 'niutrans':
@@ -329,6 +322,6 @@ export default async function detect(text) {
         case 'bing':
             return await bing_detect(text);
         default:
-            return await local_detect(text);
+            return await google_detect(text);
     }
 }

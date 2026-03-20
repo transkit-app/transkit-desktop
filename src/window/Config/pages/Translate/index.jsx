@@ -123,7 +123,6 @@ export default function Translate() {
                                     <DropdownItem key='google'>{t(`config.translate.google`)}</DropdownItem>
                                     <DropdownItem key='bing'>{t(`config.translate.bing`)}</DropdownItem>
                                     <DropdownItem key='yandex'>{t(`config.translate.yandex`)}</DropdownItem>
-                                    <DropdownItem key='local'>{t(`config.translate.local`)}</DropdownItem>
                                 </DropdownMenu>
                             </Dropdown>
                         )}

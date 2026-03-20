@@ -1,3 +1,11 @@
+## 3.1.1 (2026-03-20)
+
+### Changes:
+
+-   removed "Local" language detection engine (powered by `lingua`) to reduce installer size by ~15–20 MB
+-   users previously on "Local" detect will automatically fall back to Google detection
+-   the "Local" option has been removed from Settings → Translate → Detect Engine
+
 ## 3.1.0 (2026-03-18)
 
 ### New feature:

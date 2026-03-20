@@ -10,7 +10,6 @@ mod config;
 mod edge_tts;
 mod error;
 mod hotkey;
-mod lang_detect;
 mod screenshot;
 mod server;
 mod system_ocr;
@@ -25,7 +24,6 @@ use cmd::*;
 use config::*;
 use edge_tts::synthesize_edge_tts;
 use hotkey::*;
-use lang_detect::*;
 use log::info;
 use once_cell::sync::OnceCell;
 use screenshot::screenshot;
@@ -123,11 +121,6 @@ fn main() {
             }
             // Check Update
             check_update(app.handle());
-            if let Some(engine) = get("translate_detect_engine") {
-                if engine.as_str().unwrap() == "local" {
-                    init_lang_detect();
-                }
-            }
             let clipboard_monitor = match get("clipboard_monitor") {
                 Some(v) => v.as_bool().unwrap(),
                 None => {
@@ -157,7 +150,6 @@ fn main() {
             update_tray,
             updater_window,
             screenshot,
-            lang_detect,
             webdav,
             local,
             install_plugin,
