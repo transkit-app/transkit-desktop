@@ -157,7 +157,7 @@ export default function Monitor() {
     const [subHeight, setSubHeight] = useConfig('monitor_sub_height', SUB_MODE_HEIGHT);
     const [showContextPanel, setShowContextPanel] = useState(false);
 
-    const [isPinned, setIsPinned] = useState(false);
+    const [isPinned, setIsPinned] = useState(true); // mirrors alwaysOnTop:true in tauri.conf.json
     const [isTTSEnabled, setIsTTSEnabled] = useState(false);
     const [ttsPlayingText, setTtsPlayingText] = useState(null);
     const [isRunning, setIsRunning] = useState(false);
@@ -644,7 +644,6 @@ export default function Monitor() {
             <div
                 className='group w-screen h-screen flex flex-col overflow-hidden rounded-[10px]'
                 style={{ background: `rgba(18,18,20,${subBgAlpha.toFixed(2)})`, backdropFilter: bgAlpha < 1 ? 'blur(16px)' : undefined }}
-                data-tauri-drag-region='true'
             >
                 <div
                     className='absolute top-0 left-0 right-0 h-7 z-10 flex items-center justify-between px-2
@@ -815,7 +814,8 @@ export default function Monitor() {
                         size='sm'
                         variant='light'
                         className='h-[26px] w-[26px] min-w-0 bg-transparent'
-                        onPress={() => appWindow.hide()}
+                        onPress={() => osType === 'Windows_NT' ? appWindow.minimize() : appWindow.hide()}
+                        title={osType === 'Windows_NT' ? t('monitor.minimize') : t('monitor.close')}
                     >
                         <AiFillCloseCircle className='text-[16px] text-default-400' />
                     </Button>

@@ -432,6 +432,12 @@ pub fn monitor_window() {
                 win_clone.hide().unwrap_or_default();
             }
         });
+        // On Windows: show in taskbar so users can minimize/restore the session.
+        #[cfg(target_os = "windows")]
+        window.set_skip_taskbar(false).unwrap_or_default();
+
+        // On Windows a minimized window must be unminimized before show/focus work correctly.
+        window.unminimize().unwrap_or_default();
         window.center().unwrap_or_default();
         window.show().unwrap_or_default();
         window.set_focus().unwrap_or_default();

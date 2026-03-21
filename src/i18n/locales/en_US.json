@@ -312,6 +312,8 @@
       "open_audio_config": "Audio settings",
       "pin": "Pin window",
       "unpin": "Unpin window",
+      "minimize": "Minimize",
+      "close": "Hide window",
       "placeholder": "Press Start to begin listening...",
       "listening": "Listening...",
       "no_api_key": "Please set your Soniox API key in Settings > Service > Audio",

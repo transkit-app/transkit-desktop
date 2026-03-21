@@ -311,6 +311,8 @@
       "stop": "Dừng",
       "pin": "Ghim cửa sổ",
       "unpin": "Bỏ ghim cửa sổ",
+      "minimize": "Thu nhỏ",
+      "close": "Ẩn cửa sổ",
       "placeholder": "Nhấn Bắt đầu để bắt đầu nghe...",
       "listening": "Đang nghe...",
       "no_api_key": "Vui lòng đặt Soniox API key trong Cài đặt > Dịch vụ > Âm thanh",
