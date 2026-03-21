@@ -55,14 +55,14 @@
         "app_font": "Phông chữ",
         "app_fallback_font": "Phông chữ dự phòng",
         "font_size": {
-          "title": "Cỡ chữ",
           "10": "Cực nhỏ (10px)",
           "12": "Rất nhỏ (12px)",
           "14": "Nhỏ (14px)",
           "16": "Tiêu chuẩn (16px)",
           "18": "Lớn (18px)",
           "20": "Rất lớn (20px)",
-          "24": "Cực lớn (24px)"
+          "24": "Cực lớn (24px)",
+          "title": "Cỡ chữ"
         },
         "default_font": "Mặc định",
         "theme": {
@@ -108,14 +108,14 @@
         "delete_newline": "Xóa xuống dòng",
         "remember_language": "Ghi nhớ ngôn ngữ đích",
         "font_size": {
-          "title": "Cỡ chữ",
           "10": "Cực nhỏ (10px)",
           "12": "Rất nhỏ (12px)",
           "14": "Nhỏ (14px)",
           "16": "Tiêu chuẩn (16px)",
           "18": "Lớn (18px)",
           "20": "Rất lớn (20px)",
-          "24": "Cực lớn (24px)"
+          "24": "Cực lớn (24px)",
+          "title": "Cỡ chữ"
         },
         "window_position": "Vị trí cửa sổ",
         "mouse": "Theo vị trí chuột",
@@ -396,7 +396,10 @@
       "downloading": "Đang tải xuống…",
       "installing": "Đang cài đặt…",
       "cancel": "Hủy",
-      "installed": "Cài đặt hoàn tất, khởi động lại ứng dụng để áp dụng thay đổi"
+      "installed": "Cài đặt hoàn tất, khởi động lại ứng dụng để áp dụng thay đổi",
+      "install_complete": "Cài đặt hoàn tất",
+      "restart_now": "Khởi động lại ngay",
+      "restart_later": "Để sau"
     },
     "services": {
       "help": "Hướng dẫn cấu hình",

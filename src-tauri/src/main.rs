@@ -42,6 +42,11 @@ use window::updater_window;
 // Global AppHandle
 pub static APP: OnceCell<tauri::AppHandle> = OnceCell::new();
 
+#[tauri::command]
+fn restart_app(app: tauri::AppHandle) {
+    app.restart();
+}
+
 // Text to be translated
 pub struct StringWrapper(pub Mutex<String>);
 
@@ -161,7 +166,8 @@ fn main() {
             play_audio_bytes,
             stop_audio_playback,
             synthesize_edge_tts,
-            open_config_window
+            open_config_window,
+            restart_app
         ])
         .on_system_tray_event(tray_event_handler)
         .build(tauri::generate_context!())

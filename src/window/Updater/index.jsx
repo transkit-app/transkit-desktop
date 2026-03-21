@@ -1,8 +1,8 @@
-import { Code, Card, CardBody, Button, Progress, Skeleton } from '@nextui-org/react';
+import { Code, Card, CardBody, Button, Progress, Skeleton, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '@nextui-org/react';
 import { checkUpdate, installUpdate } from '@tauri-apps/api/updater';
 import React, { useEffect, useState } from 'react';
 import { appWindow } from '@tauri-apps/api/window';
-import { relaunch } from '@tauri-apps/api/process';
+import { invoke } from '@tauri-apps/api';
 import toast, { Toaster } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { listen } from '@tauri-apps/api/event';
@@ -19,6 +19,8 @@ export default function Updater() {
     const [downloaded, setDownloaded] = useState(0);
     const [total, setTotal] = useState(0);
     const [body, setBody] = useState('');
+    const [installing, setInstalling] = useState(false);
+    const [installed, setInstalled] = useState(false);
     const { t } = useTranslation();
     const toastStyle = useToastStyle();
 
@@ -53,6 +55,16 @@ export default function Updater() {
             });
         }
     }, []);
+
+    const isDownloading = installing && downloaded !== 0 && downloaded <= total;
+    const isInstallInProgress = installing && downloaded > total;
+    const isBusy = installing && !installed;
+
+    const getButtonLabel = () => {
+        if (isDownloading) return t('updater.downloading');
+        if (isInstallInProgress) return t('updater.installing');
+        return t('updater.update');
+    };
 
     return (
         <div
@@ -132,7 +144,7 @@ export default function Updater() {
                     )}
                 </CardBody>
             </Card>
-            {downloaded !== 0 && (
+            {isDownloading && (
                 <Progress
                     aria-label='Downloading...'
                     label={t('updater.progress')}
@@ -152,26 +164,23 @@ export default function Updater() {
             <div className='grid gap-4 grid-cols-2 h-[50px] my-[10px] mx-[80px]'>
                 <Button
                     variant='flat'
-                    isLoading={downloaded !== 0}
-                    isDisabled={downloaded !== 0}
+                    isLoading={isBusy}
+                    isDisabled={isBusy}
                     color='primary'
                     onPress={() => {
+                        setInstalling(true);
                         installUpdate().then(
                             () => {
-                                toast.success(t('updater.installed'), { style: toastStyle, duration: 10000 });
-                                relaunch();
+                                setInstalled(true);
                             },
                             (e) => {
+                                setInstalling(false);
                                 toast.error(e.toString(), { style: toastStyle });
                             }
                         );
                     }}
                 >
-                    {downloaded !== 0
-                        ? downloaded > total
-                            ? t('updater.installing')
-                            : t('updater.downloading')
-                        : t('updater.update')}
+                    {getButtonLabel()}
                 </Button>
                 <Button
                     variant='flat'
@@ -183,6 +192,40 @@ export default function Updater() {
                     {t('updater.cancel')}
                 </Button>
             </div>
+
+            <Modal
+                isOpen={installed}
+                hideCloseButton
+                isDismissable={false}
+            >
+                <ModalContent>
+                    <ModalHeader className='flex flex-col gap-1'>
+                        {t('updater.install_complete')}
+                    </ModalHeader>
+                    <ModalBody>
+                        <p className='text-default-600'>{t('updater.installed')}</p>
+                    </ModalBody>
+                    <ModalFooter>
+                        <Button
+                            variant='flat'
+                            color='default'
+                            onPress={() => {
+                                appWindow.close();
+                            }}
+                        >
+                            {t('updater.restart_later')}
+                        </Button>
+                        <Button
+                            color='primary'
+                            onPress={() => {
+                                invoke('restart_app');
+                            }}
+                        >
+                            {t('updater.restart_now')}
+                        </Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
         </div>
     );
 }

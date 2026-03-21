@@ -1,472 +1,475 @@
 {
-    "translation": {
-        "common": {
-            "cancel": "إلغاء",
-            "ok": "حسنا",
-            "plugin": "إضافة",
-            "coming": "قريبًا…",
-            "clear": "نظّف",
-            "save": "احفظ",
-            "write_clipboard": "أكتب إلى الحافظة"
+  "translation": {
+    "common": {
+      "cancel": "إلغاء",
+      "ok": "حسنا",
+      "plugin": "إضافة",
+      "coming": "قريبًا…",
+      "clear": "نظّف",
+      "save": "احفظ",
+      "write_clipboard": "أكتب إلى الحافظة"
+    },
+    "languages": {
+      "zh_cn": "الصينية المبسطة",
+      "auto": "الكشف التلقائي",
+      "zh_tw": "الصينية التقليدية",
+      "ja": "اليابانية",
+      "en": "الإنجليزية",
+      "ko": "الكورية",
+      "fr": "الفرنسية",
+      "es": "الإسبانية",
+      "ru": "الروسية",
+      "de": "الألمانية",
+      "it": "الإيطالية",
+      "tr": "التركية",
+      "pt_pt": "البرتغالية",
+      "pt_br": "البرتغالية (البرازيل)",
+      "vi": "الفيتنامية",
+      "id": "الإندونيسية",
+      "th": "التايلاندية",
+      "ar": "العربية",
+      "hi": "الهندية",
+      "mn_mo": "المنغولية",
+      "ms": "الملايو",
+      "mn_cy": "المنغولية(السريلية)",
+      "km": "الخميرية",
+      "nb_no": "النرويجية بوكمال",
+      "nn_no": "النرويجية نينورسك",
+      "sv": "السويدية",
+      "fa": "الفارسية",
+      "pl": "البولندية",
+      "nl": "الهولندية",
+      "uk": "الأوكرانية",
+      "he": "العبرية"
+    },
+    "config": {
+      "general": {
+        "label": "عام",
+        "title": "إعدادات عامة",
+        "auto_start": "بَدْء التشغيل التلقائي",
+        "check_update": "تحقق من التحديث",
+        "server_port": "منفذ الاستماع",
+        "server_port_change": "تغير منفذ الاستماع، يُرجى إعادة تشغيل التطبيق كي تنفذ التغييرات",
+        "app_language": "لغة العرض",
+        "app_theme": "السمة",
+        "app_font": "الخط",
+        "font_size": {
+          "10": "بالغ الصغر (١٠بكسل)",
+          "12": "صغير جدا (١٢بكسل)",
+          "14": "صغير (١٤بكسل)",
+          "16": "عادي (١٦بكسل)",
+          "18": "كبير (١٨بكسل)",
+          "20": "كبير جدا (٢٠بكسل)",
+          "24": "بالغ الكبر (٢٤بكسل)",
+          "title": "حجم الخط"
         },
-        "languages": {
-            "zh_cn": "الصينية المبسطة",
-            "auto": "الكشف التلقائي",
-            "zh_tw": "الصينية التقليدية",
-            "ja": "اليابانية",
-            "en": "الإنجليزية",
-            "ko": "الكورية",
-            "fr": "الفرنسية",
-            "es": "الإسبانية",
-            "ru": "الروسية",
-            "de": "الألمانية",
-            "it": "الإيطالية",
-            "tr": "التركية",
-            "pt_pt": "البرتغالية",
-            "pt_br": "البرتغالية (البرازيل)",
-            "vi": "الفيتنامية",
-            "id": "الإندونيسية",
-            "th": "التايلاندية",
-            "ar": "العربية",
-            "hi": "الهندية",
-            "mn_mo": "المنغولية",
-            "ms": "الملايو",
-            "mn_cy": "المنغولية(السريلية)",
-            "km": "الخميرية",
-            "nb_no": "النرويجية بوكمال",
-            "nn_no": "النرويجية نينورسك",
-            "sv": "السويدية",
-            "fa": "الفارسية",
-            "pl": "البولندية",
-            "nl": "الهولندية",
-            "uk": "الأوكرانية",
-            "he": "العبرية"
+        "default_font": "الافتراضي",
+        "theme": {
+          "light": "فاتح",
+          "dark": "غامق",
+          "system": "النظام"
         },
-        "config": {
-            "general": {
-                "label": "عام",
-                "title": "إعدادات عامة",
-                "auto_start": "بَدْء التشغيل التلقائي",
-                "check_update": "تحقق من التحديث",
-                "server_port": "منفذ الاستماع",
-                "server_port_change": "تغير منفذ الاستماع، يُرجى إعادة تشغيل التطبيق كي تنفذ التغييرات",
-                "app_language": "لغة العرض",
-                "app_theme": "السمة",
-                "app_font": "الخط",
-                "font_size": {
-                    "12": "صغير جدا (١٢بكسل)",
-                    "10": "بالغ الصغر (١٠بكسل)",
-                    "14": "صغير (١٤بكسل)",
-                    "16": "عادي (١٦بكسل)",
-                    "title": "حجم الخط",
-                    "20": "كبير جدا (٢٠بكسل)",
-                    "18": "كبير (١٨بكسل)",
-                    "24": "بالغ الكبر (٢٤بكسل)"
-                },
-                "default_font": "الافتراضي",
-                "theme": {
-                    "light": "فاتح",
-                    "dark": "غامق",
-                    "system": "النظام"
-                },
-                "transparent": "تأثير الشفافية",
-                "dev_mode": "وضع المطور",
-                "proxy": {
-                    "host": "المضيف",
-                    "port": "المنفذ",
-                    "username": "اسم المستخدم",
-                    "password": "كلمة المرور",
-                    "no_proxy": "بدون وكيل",
-                    "title": "وكيل"
-                },
-                "proxy_error": "فضلا املأ بيانات المضيف والمنفذ",
-                "app_fallback_font": "الخط الاحتياطي",
-                "proxy_change": "لقد تغير الوكيل، أعد تشغيل التطبيق كي تنفذ التغييرات",
-                "event": {
-                    "translate": "ترجمة",
-                    "disable": "عطّل",
-                    "ocr_translate": "ترجم لقطة الشاشة",
-                    "config": "تفضيل",
-                    "ocr_recognize": "التعرف على النص"
-                },
-                "tray_click_event": "حدث نقر دُرج النظام"
-            },
-            "translate": {
-                "label": "الترجمة",
-                "title": "إعدادات الترجمة",
-                "source_language": "لغة المصدر",
-                "auto_copy": "نسخ تلقائي",
-                "source": "المصدر",
-                "disable": "معطل",
-                "history_disable": "عطل السجل",
-                "target_language": "اللغة المستهدفة",
-                "second_language": "اللغة المستهدفة الثانوية",
-                "target": "المستهدف",
-                "delete_newline": "احذف السطر الجديد",
-                "remember_language": "تذكر اللغة المستهدفة",
-                "font_size": {
-                    "title": "حجم الخط",
-                    "10": "صغير جدا جدا (١٠بكسل)",
-                    "12": "صغير جدا (١٢بكسل)",
-                    "14": "صغير (١٤بكسل)",
-                    "16": "عادي (١٦بكسل)",
-                    "20": "كبير جدا (٢٠بكسل)",
-                    "18": "كبير (١٨بكسل)",
-                    "24": "كبير جدا جدا (٢٤بكسل)"
-                },
-                "source_target": "المصدر+المستهدف",
-                "remember_window_size": "تذكر حجم النافذة",
-                "always_on_top": "دائمًا في القمة",
-                "hide_source": "اخف منطقة المصدر",
-                "hide_language": "اخف منطقة اللغة",
-                "hide_window": "اخف نافذة الترجمة",
-                "detect_engine": "محرك اكتشاف اللغة",
-                "baidu": "محرك Baidu",
-                "tencent": "محرك Tencent",
-                "niutrans": "محرك NiuTrans",
-                "google": "جوجل",
-                "bing": "بينج",
-                "yandex": "محرك Yandex",
-                "local": "محلي",
-                "window_position": "موضع النافذة",
-                "mouse": "تتبع الفأرة",
-                "pre_state": "تذكر الموضع",
-                "incremental_translate": "ترجمة تزايدية",
-                "dynamic_translate": "ترجمة تلقائية",
-                "close_on_blur": "إغلاق النافذة عند فقدان التركيز"
-            },
-            "hotkey": {
-                "title": "إعدادات مفاتيح الاختصار",
-                "label": "الاختصارات",
-                "selection_translate": "تحديد الترجمة",
-                "input_translate": "تحديد النص",
-                "ocr_recognize": "التعرف على النص",
-                "ocr_translate": "أخذ لقطة للترجمة",
-                "is_register": "هذا الاختصار مستخدم",
-                "success": "سجل الاختصار بنجاح",
-                "set_hotkey": "اضغط لاختيار مفتاح اختصار"
-            },
-            "recognize": {
-                "title": "إعدادات التعرف",
-                "language": "التعرف على اللغة",
-                "delete_newline": "احذف السطر الجديد تلقائيًا",
-                "auto_copy": "نسخ تلقائي",
-                "close_on_blur": "أغلق النافذة عند فقدان التركيز",
-                "hide_window": "اخف نافذة التعرف",
-                "label": "التعرف"
-            },
-            "service": {
-                "label": "الخدمات",
-                "title": "إعدادات الخدمات",
-                "translate": "الترجمة",
-                "tts": "النص إلى كلام",
-                "recognize": "التعرف",
-                "least": "فضلا احتفظ بواحد على الأقل",
-                "collection": "المجموعة",
-                "add_builtin_service": "أضف خدمة مضمنة",
-                "add_external_service": "أضف امتداد",
-                "add_service": "أضف خدمة",
-                "test_failed": "فشل الاختبار",
-                "install_plugin": "ثبت الملحق",
-                "view_plugin_list": "اعرض قائمة الملحق",
-                "uninstall_success": "أزيل الملحق بنجاح",
-                "homepage": "الصفحة الرئيسية"
-            },
-            "backup": {
-                "username": "اسم المستخدم",
-                "password": "كلمة السر",
-                "label": "نسخة احتياطية",
-                "title": "اعدادات النسخ الاحتياطي",
-                "type": "نوع الخدمة",
-                "webdav": "ويب داف",
-                "local": "محلي",
-                "webdav_url": "عنوان ويب داف",
-                "logout": "تسجيل خروج",
-                "login_success": "نجح تسجيل الدخول",
-                "backup": "نسخة احتياطية",
-                "restore": "استعد",
-                "list": "قائمة النُسخ الاحتياطية",
-                "load_success": "حمل النسخ الإحتياطي بنجاح",
-                "backup_success": "نسخ احتياطي ناجح",
-                "aliyun": "Aliyun drive",
-                "aliyun_login_first": "يرجى مسح الرمز ضوئياً لتسجيل الدخول أولاً.",
-                "empty": "لم تنسخ نسخة احتياطية بعد"
-            },
-            "history": {
-                "label": "السجل",
-                "title": "السجل"
-            },
-            "about": {
-                "label": "حول",
-                "title": "عن التطبيق",
-                "website": "موقع الوب",
-                "github": "جِت‌هَب",
-                "feedback": "انطباع",
-                "email": "البريد الالكتروني",
-                "community": "المجتمع",
-                "check_update": "تحقق من التحديث",
-                "view_log": "اعرض السجل",
-                "telegram": "تيليجرام",
-                "view_config": "اعرض التكوين",
-                "qq_channel": "قناة QQ",
-                "qq_group": "مجموعة QQ",
-                "discussion": "مناقشة جيتهب",
-                "issue": "ابلاغ المشكلة"
-            }
+        "transparent": "تأثير الشفافية",
+        "dev_mode": "وضع المطور",
+        "proxy": {
+          "host": "المضيف",
+          "port": "المنفذ",
+          "username": "اسم المستخدم",
+          "password": "كلمة المرور",
+          "no_proxy": "بدون وكيل",
+          "title": "وكيل"
         },
-        "updater": {
-            "update": "حدث",
-            "title": "تحقق من التحديث",
-            "cancel": "إلغاء",
-            "latest": "## الإصدار الأحدث مثبت",
-            "progress": "تقدم التنزيل",
-            "downloading": "تنزيل…",
-            "installing": "تثبيت…",
-            "installed": "اكتمل التثبيت، أعد تشغيل التطبيق لتصبح التغييرات سارية المفعول"
+        "proxy_error": "فضلا املأ بيانات المضيف والمنفذ",
+        "app_fallback_font": "الخط الاحتياطي",
+        "proxy_change": "لقد تغير الوكيل، أعد تشغيل التطبيق كي تنفذ التغييرات",
+        "event": {
+          "translate": "ترجمة",
+          "disable": "عطّل",
+          "ocr_translate": "ترجم لقطة الشاشة",
+          "config": "تفضيل",
+          "ocr_recognize": "التعرف على النص"
         },
-        "recognize": {
-            "delete_space": "احذف المسافة",
-            "copy_text": "انسخ",
-            "delete_newline": "احذف السطر الجديد",
-            "copy_img": "انسخ الصورة",
-            "translate": "ترجمة",
-            "recognize": "جاري التعرف"
+        "tray_click_event": "حدث نقر دُرج النظام"
+      },
+      "translate": {
+        "label": "الترجمة",
+        "title": "إعدادات الترجمة",
+        "source_language": "لغة المصدر",
+        "auto_copy": "نسخ تلقائي",
+        "source": "المصدر",
+        "disable": "معطل",
+        "history_disable": "عطل السجل",
+        "target_language": "اللغة المستهدفة",
+        "second_language": "اللغة المستهدفة الثانوية",
+        "target": "المستهدف",
+        "delete_newline": "احذف السطر الجديد",
+        "remember_language": "تذكر اللغة المستهدفة",
+        "font_size": {
+          "10": "صغير جدا جدا (١٠بكسل)",
+          "12": "صغير جدا (١٢بكسل)",
+          "14": "صغير (١٤بكسل)",
+          "16": "عادي (١٦بكسل)",
+          "18": "كبير (١٨بكسل)",
+          "20": "كبير جدا (٢٠بكسل)",
+          "24": "كبير جدا جدا (٢٤بكسل)",
+          "title": "حجم الخط"
         },
-        "translate": {
-            "delete_newline": "احذف السطر الجديد",
-            "retry": "حاول مرة اخرى",
-            "copy": "انسخ",
-            "translate": "ترجمة",
-            "speak": "تكلم",
-            "add_collection_success": "تمت الإضافة إلى المجموعة بنجاح",
-            "recognizing": "جاري التعرف",
-            "translate_back": "إعادة الترجمة الى النص الاصلي"
+        "source_target": "المصدر+المستهدف",
+        "remember_window_size": "تذكر حجم النافذة",
+        "always_on_top": "دائمًا في القمة",
+        "hide_source": "اخف منطقة المصدر",
+        "hide_language": "اخف منطقة اللغة",
+        "hide_window": "اخف نافذة الترجمة",
+        "detect_engine": "محرك اكتشاف اللغة",
+        "baidu": "محرك Baidu",
+        "tencent": "محرك Tencent",
+        "niutrans": "محرك NiuTrans",
+        "google": "جوجل",
+        "bing": "بينج",
+        "yandex": "محرك Yandex",
+        "local": "محلي",
+        "window_position": "موضع النافذة",
+        "mouse": "تتبع الفأرة",
+        "pre_state": "تذكر الموضع",
+        "incremental_translate": "ترجمة تزايدية",
+        "dynamic_translate": "ترجمة تلقائية",
+        "close_on_blur": "إغلاق النافذة عند فقدان التركيز"
+      },
+      "hotkey": {
+        "title": "إعدادات مفاتيح الاختصار",
+        "label": "الاختصارات",
+        "selection_translate": "تحديد الترجمة",
+        "input_translate": "تحديد النص",
+        "ocr_recognize": "التعرف على النص",
+        "ocr_translate": "أخذ لقطة للترجمة",
+        "is_register": "هذا الاختصار مستخدم",
+        "success": "سجل الاختصار بنجاح",
+        "set_hotkey": "اضغط لاختيار مفتاح اختصار"
+      },
+      "recognize": {
+        "title": "إعدادات التعرف",
+        "language": "التعرف على اللغة",
+        "delete_newline": "احذف السطر الجديد تلقائيًا",
+        "auto_copy": "نسخ تلقائي",
+        "close_on_blur": "أغلق النافذة عند فقدان التركيز",
+        "hide_window": "اخف نافذة التعرف",
+        "label": "التعرف"
+      },
+      "service": {
+        "label": "الخدمات",
+        "title": "إعدادات الخدمات",
+        "translate": "الترجمة",
+        "tts": "النص إلى كلام",
+        "recognize": "التعرف",
+        "least": "فضلا احتفظ بواحد على الأقل",
+        "collection": "المجموعة",
+        "add_builtin_service": "أضف خدمة مضمنة",
+        "add_external_service": "أضف امتداد",
+        "add_service": "أضف خدمة",
+        "test_failed": "فشل الاختبار",
+        "install_plugin": "ثبت الملحق",
+        "view_plugin_list": "اعرض قائمة الملحق",
+        "uninstall_success": "أزيل الملحق بنجاح",
+        "homepage": "الصفحة الرئيسية"
+      },
+      "backup": {
+        "username": "اسم المستخدم",
+        "password": "كلمة السر",
+        "label": "نسخة احتياطية",
+        "title": "اعدادات النسخ الاحتياطي",
+        "type": "نوع الخدمة",
+        "webdav": "ويب داف",
+        "local": "محلي",
+        "webdav_url": "عنوان ويب داف",
+        "logout": "تسجيل خروج",
+        "login_success": "نجح تسجيل الدخول",
+        "backup": "نسخة احتياطية",
+        "restore": "استعد",
+        "list": "قائمة النُسخ الاحتياطية",
+        "load_success": "حمل النسخ الإحتياطي بنجاح",
+        "backup_success": "نسخ احتياطي ناجح",
+        "aliyun": "Aliyun drive",
+        "aliyun_login_first": "يرجى مسح الرمز ضوئياً لتسجيل الدخول أولاً.",
+        "empty": "لم تنسخ نسخة احتياطية بعد"
+      },
+      "history": {
+        "label": "السجل",
+        "title": "السجل"
+      },
+      "about": {
+        "label": "حول",
+        "title": "عن التطبيق",
+        "website": "موقع الوب",
+        "github": "جِت‌هَب",
+        "feedback": "انطباع",
+        "email": "البريد الالكتروني",
+        "community": "المجتمع",
+        "check_update": "تحقق من التحديث",
+        "view_log": "اعرض السجل",
+        "telegram": "تيليجرام",
+        "view_config": "اعرض التكوين",
+        "qq_channel": "قناة QQ",
+        "qq_group": "مجموعة QQ",
+        "discussion": "مناقشة جيتهب",
+        "issue": "ابلاغ المشكلة"
+      }
+    },
+    "updater": {
+      "update": "حدث",
+      "title": "تحقق من التحديث",
+      "cancel": "إلغاء",
+      "latest": "## الإصدار الأحدث مثبت",
+      "progress": "تقدم التنزيل",
+      "downloading": "تنزيل…",
+      "installing": "تثبيت…",
+      "installed": "اكتمل التثبيت، أعد تشغيل التطبيق لتصبح التغييرات سارية المفعول",
+      "install_complete": "اكتمل التثبيت",
+      "restart_now": "أعد التشغيل الآن",
+      "restart_later": "لاحقاً"
+    },
+    "recognize": {
+      "delete_space": "احذف المسافة",
+      "copy_text": "انسخ",
+      "delete_newline": "احذف السطر الجديد",
+      "copy_img": "انسخ الصورة",
+      "translate": "ترجمة",
+      "recognize": "جاري التعرف"
+    },
+    "translate": {
+      "delete_newline": "احذف السطر الجديد",
+      "retry": "حاول مرة اخرى",
+      "copy": "انسخ",
+      "translate": "ترجمة",
+      "speak": "تكلم",
+      "add_collection_success": "تمت الإضافة إلى المجموعة بنجاح",
+      "recognizing": "جاري التعرف",
+      "translate_back": "إعادة الترجمة الى النص الاصلي"
+    },
+    "services": {
+      "collection": {
+        "anki": {
+          "port": "منفذ",
+          "title": "أنكي"
         },
-        "services": {
-            "collection": {
-                "anki": {
-                    "port": "منفذ",
-                    "title": "أنكي"
-                },
-                "eudic": {
-                    "title": "يوديك",
-                    "name": "اسم المجموعة",
-                    "token": "رمز"
-                }
-            },
-            "help": "إرشاد التكوين",
-            "no_need": "لا يتطلب أي تكوين",
-            "translate": {
-                "lingva": {
-                    "title": "lingva"
-                },
-                "deepl": {
-                    "title": "DeepL",
-                    "custom_url": "عنوان DeepLX",
-                    "auth_key": "مفتاح المصادقة",
-                    "type": "نوع الخدمة",
-                    "free": "محاني",
-                    "api": "مفتاح المصادقة",
-                    "deeplx": "DeepLX"
-                },
-                "google": {
-                    "title": "Google",
-                    "custom_url": "عنوان مخصص"
-                },
-                "bing": {
-                    "title": "Bing"
-                },
-                "ollama": {
-                    "title": "ollama",
-                    "install_ollama": "غير قادر على الاتصال بـ ollama المحلي، يرجى تنزيل ollama وتثبيته وبدء تشغيله أولاً. إذا كنت تستخدم ollama غير موجود على هذا الجهاز، يرجى تغيير عنوان الطلب.",
-                    "install_ollama_link": "حمل Ollama",
-                    "request_path": "مسار الطلب",
-                    "stream": "وضع البث",
-                    "install_model": "ثبت",
-                    "model": "النموذج",
-                    "ready": "جاهز",
-                    "not_installed": "لم يتم تثبيت هذا النموذج بعد، انقر للتحميل والتثبيت الآن",
-                    "supported_models": "انقر للاطلاع على قائمة نماذج Ollama المتاحة",
-                    "add": "اضف موجه",
-                    "prompt_description": "من خلال تخصيص الموجه يمكنك تخصيص سلوك الذكاء الاصطناعي. $text $from $to $detect سيتم استبدالها بالنص المراد ترجمته واللغة المصدر واللغة الهدف واللغة المكتشفة."
-                },
-                "openai": {
-                    "request_path": "مسار الطلب",
-                    "stream": "وضع البث",
-                    "prompt_description": "من خلال تخصيص الموجه يمكنك تخصيص سلوك OpenAI. $text $from $to $detect سيتم استبدالها بالنص المراد ترجمته واللغة المصدر واللغة الهدف واللغة المكتشفة.",
-                    "service": "مزود خدمة",
-                    "openai": "OpenAI",
-                    "azure": "Azure",
-                    "api_key": "مفتاح Api",
-                    "model": "النموذج",
-                    "add": "اضف موجه",
-                    "title": "OpenAI"
-                },
-                "geminipro": {
-                    "request_path": "مسار الطلب",
-                    "stream": "وضع البث",
-                    "add": "اضف موجه",
-                    "api_key": "مفتاح Api",
-                    "title": "Gemini الاحترافية",
-                    "prompt_description": "من خلال تخصيص الموجه يمكنك تخصيص سلوك Gemini Pro. $text $from $to $detect سيتم استبدالها بالنص المراد ترجمته واللغة المصدر واللغة الهدف واللغة المكتشفة."
-                },
-                "chatglm": {
-                    "model": "النموذج",
-                    "title": "chatGLM",
-                    "chatglm_turbo": "ChatGLM فائق",
-                    "prompt_description": "من خلال تخصيص الموجه يمكنك تخصيص سلوك الذكاء الاصطناعي. $text $from $to $detect سيتم استبدالها بالنص المراد ترجمته واللغة المصدر واللغة الهدف واللغة المكتشفة.",
-                    "chatglm_pro": "ChatGLM احترافي",
-                    "add": "اضف موجه",
-                    "api_key": "مفتاح Api",
-                    "chatglm_std": "ChatGLM قياسي",
-                    "chatglm_lite": "ChatGLM خفيف"
-                },
-                "yandex": {
-                    "title": "yandex"
-                },
-                "ecdict": {
-                    "title": "ECDict (متصل)"
-                },
-                "transmart": {
-                    "username": "اسم المستخدم",
-                    "title": "Transmart",
-                    "token": "‌Ily679201@gmail.com"
-                },
-                "alibaba": {
-                    "accesskey_secret": "مفتاح الوصول السري",
-                    "title": "علي بابا",
-                    "accesskey_id": "معرّف مفتاح الوصول"
-                },
-                "niutrans": {
-                    "apikey": "مفتاح API",
-                    "title": "نيو ترانس",
-                    "https": "استخدام بروتوكول http"
-                },
-                "baidu": {
-                    "secret": "السري",
-                    "appid": "معرّف التطبيق",
-                    "title": "مئة مرة او مرات كثيرة"
-                },
-                "volcengine": {
-                    "secret": "السري",
-                    "appid": "معرّف التطبيق",
-                    "title": "فولك انجن"
-                },
-                "tencent": {
-                    "secret_id": "المعرف السري",
-                    "secret_key": "المفتاح السري",
-                    "title": "تينيست"
-                },
-                "youdao": {
-                    "appkey": "معرّف التطبيق",
-                    "key": "مفتاح",
-                    "title": "يوداو"
-                },
-                "baidu_field": {
-                    "it": "تقنية المعلومات",
-                    "title": "مجال او نطاق عمل بايدو",
-                    "finance": "التمويل والاقتصاد",
-                    "machinery": "صناعة الالات",
-                    "senimed": "الطب الحيوي",
-                    "novel": "الادب الرقمي",
-                    "academic": "بحث اكاديمي",
-                    "aerospace": "قطاع الطيران والفضاء",
-                    "wiki": "العلوم الانسانية والاجتماعية",
-                    "news": "اخبار ومعلومات",
-                    "law": "القوانين واللوائح",
-                    "contract": "عقد"
-                },
-                "bing_dict": {
-                    "title": "قاموس بينغ"
-                },
-                "cambridge_dict": {
-                    "title": "قاموس كامبريدج"
-                },
-                "caiyun": {
-                    "title": "سايون",
-                    "token": "رمز"
-                }
-            },
-            "instance_name": "اسم التكوين",
-            "tts": {
-                "lingva_tts": {
-                    "request_path": "مسار الطلب",
-                    "title": "مترجم النصوص لينجفا"
-                }
-            },
-            "recognize": {
-                "tencent_accurate_ocr": {
-                    "secret_id": "المعرف السري",
-                    "secret_key": "المفتاح السري",
-                    "title": "نظام التعرف على الحروف الدقيق من تينسينت"
-                },
-                "tencent_img_ocr": {
-                    "secret_id": "المعرف السري",
-                    "secret_key": "المفتاح السري",
-                    "title": "ترجمه الصور من تينسينت"
-                },
-                "iflytek_latex_ocr": {
-                    "apikey": "مفتاح API",
-                    "apisecret": "مفتاح API السري",
-                    "appid": "معرّف التطبيق",
-                    "title": "آي فلاي تيك لاتيك"
-                },
-                "baidu_ocr": {
-                    "client_id": "مفتاح API",
-                    "client_secret": "المفتاح السري",
-                    "title": "نظام التعرف على الحرةف من بايدو"
-                },
-                "baidu_accurate_ocr": {
-                    "client_id": "مفتاح API",
-                    "client_secret": "المفتاح السري",
-                    "title": "النسخه الدقيقه من نظام التعرف البصري على الحروف من بايدو"
-                },
-                "iflytek_intsig_ocr": {
-                    "apikey": "مفتاح API",
-                    "apisecret": "مفتاح API السري",
-                    "appid": "معرّف التطبيق",
-                    "title": "التعرف البصري على الحروف من آي فلاي تيك"
-                },
-                "tencent_ocr": {
-                    "secret_id": "المعرف السري",
-                    "secret_key": "المفتاح السري",
-                    "title": "نظام التعرف البصري على الحروف من تينسيت"
-                },
-                "volcengine_ocr": {
-                    "secret": "السري",
-                    "appid": "معرّف التطبيق",
-                    "title": "نظام التعرف البصري على الحروف من فولك إنجن"
-                },
-                "volcengine_multi_lang_ocr": {
-                    "secret": "السري",
-                    "appid": "معرّف التطبيق",
-                    "title": "نظام التعرف البصري على الحروف متعدد اللغات من فولك إنجن"
-                },
-                "iflytek_ocr": {
-                    "apikey": "مفتاح API",
-                    "apisecret": "مفتاح API السري",
-                    "appid": "معرّف التطبيق",
-                    "title": "التعرف البصري على الحروف من iFlyTek"
-                },
-                "baidu_img_ocr": {
-                    "secret": "السري",
-                    "appid": "معرّف التطبيق",
-                    "title": "ترجمة الصور من بايدو"
-                },
-                "qrcode": {
-                    "title": "رمز الاستجابة السريعة"
-                },
-                "system": {
-                    "title": "نظام التعرف البصري على الحروف"
-                },
-                "tesseract": {
-                    "title": "تيسيراكت دوت جي إس"
-                },
-                "simple_latex_ocr": {
-                    "title": "لاتيك البسيط",
-                    "token": "رمز"
-                }
-            }
+        "eudic": {
+          "title": "يوديك",
+          "name": "اسم المجموعة",
+          "token": "رمز"
         }
+      },
+      "help": "إرشاد التكوين",
+      "no_need": "لا يتطلب أي تكوين",
+      "translate": {
+        "lingva": {
+          "title": "lingva"
+        },
+        "deepl": {
+          "title": "DeepL",
+          "custom_url": "عنوان DeepLX",
+          "auth_key": "مفتاح المصادقة",
+          "type": "نوع الخدمة",
+          "free": "محاني",
+          "api": "مفتاح المصادقة",
+          "deeplx": "DeepLX"
+        },
+        "google": {
+          "title": "Google",
+          "custom_url": "عنوان مخصص"
+        },
+        "bing": {
+          "title": "Bing"
+        },
+        "ollama": {
+          "title": "ollama",
+          "install_ollama": "غير قادر على الاتصال بـ ollama المحلي، يرجى تنزيل ollama وتثبيته وبدء تشغيله أولاً. إذا كنت تستخدم ollama غير موجود على هذا الجهاز، يرجى تغيير عنوان الطلب.",
+          "install_ollama_link": "حمل Ollama",
+          "request_path": "مسار الطلب",
+          "stream": "وضع البث",
+          "install_model": "ثبت",
+          "model": "النموذج",
+          "ready": "جاهز",
+          "not_installed": "لم يتم تثبيت هذا النموذج بعد، انقر للتحميل والتثبيت الآن",
+          "supported_models": "انقر للاطلاع على قائمة نماذج Ollama المتاحة",
+          "add": "اضف موجه",
+          "prompt_description": "من خلال تخصيص الموجه يمكنك تخصيص سلوك الذكاء الاصطناعي. $text $from $to $detect سيتم استبدالها بالنص المراد ترجمته واللغة المصدر واللغة الهدف واللغة المكتشفة."
+        },
+        "openai": {
+          "request_path": "مسار الطلب",
+          "stream": "وضع البث",
+          "prompt_description": "من خلال تخصيص الموجه يمكنك تخصيص سلوك OpenAI. $text $from $to $detect سيتم استبدالها بالنص المراد ترجمته واللغة المصدر واللغة الهدف واللغة المكتشفة.",
+          "service": "مزود خدمة",
+          "openai": "OpenAI",
+          "azure": "Azure",
+          "api_key": "مفتاح Api",
+          "model": "النموذج",
+          "add": "اضف موجه",
+          "title": "OpenAI"
+        },
+        "geminipro": {
+          "request_path": "مسار الطلب",
+          "stream": "وضع البث",
+          "add": "اضف موجه",
+          "api_key": "مفتاح Api",
+          "title": "Gemini الاحترافية",
+          "prompt_description": "من خلال تخصيص الموجه يمكنك تخصيص سلوك Gemini Pro. $text $from $to $detect سيتم استبدالها بالنص المراد ترجمته واللغة المصدر واللغة الهدف واللغة المكتشفة."
+        },
+        "chatglm": {
+          "model": "النموذج",
+          "title": "chatGLM",
+          "chatglm_turbo": "ChatGLM فائق",
+          "prompt_description": "من خلال تخصيص الموجه يمكنك تخصيص سلوك الذكاء الاصطناعي. $text $from $to $detect سيتم استبدالها بالنص المراد ترجمته واللغة المصدر واللغة الهدف واللغة المكتشفة.",
+          "chatglm_pro": "ChatGLM احترافي",
+          "add": "اضف موجه",
+          "api_key": "مفتاح Api",
+          "chatglm_std": "ChatGLM قياسي",
+          "chatglm_lite": "ChatGLM خفيف"
+        },
+        "yandex": {
+          "title": "yandex"
+        },
+        "ecdict": {
+          "title": "ECDict (متصل)"
+        },
+        "transmart": {
+          "username": "اسم المستخدم",
+          "title": "Transmart",
+          "token": "‌Ily679201@gmail.com"
+        },
+        "alibaba": {
+          "accesskey_secret": "مفتاح الوصول السري",
+          "title": "علي بابا",
+          "accesskey_id": "معرّف مفتاح الوصول"
+        },
+        "niutrans": {
+          "apikey": "مفتاح API",
+          "title": "نيو ترانس",
+          "https": "استخدام بروتوكول http"
+        },
+        "baidu": {
+          "secret": "السري",
+          "appid": "معرّف التطبيق",
+          "title": "مئة مرة او مرات كثيرة"
+        },
+        "volcengine": {
+          "secret": "السري",
+          "appid": "معرّف التطبيق",
+          "title": "فولك انجن"
+        },
+        "tencent": {
+          "secret_id": "المعرف السري",
+          "secret_key": "المفتاح السري",
+          "title": "تينيست"
+        },
+        "youdao": {
+          "appkey": "معرّف التطبيق",
+          "key": "مفتاح",
+          "title": "يوداو"
+        },
+        "baidu_field": {
+          "it": "تقنية المعلومات",
+          "title": "مجال او نطاق عمل بايدو",
+          "finance": "التمويل والاقتصاد",
+          "machinery": "صناعة الالات",
+          "senimed": "الطب الحيوي",
+          "novel": "الادب الرقمي",
+          "academic": "بحث اكاديمي",
+          "aerospace": "قطاع الطيران والفضاء",
+          "wiki": "العلوم الانسانية والاجتماعية",
+          "news": "اخبار ومعلومات",
+          "law": "القوانين واللوائح",
+          "contract": "عقد"
+        },
+        "bing_dict": {
+          "title": "قاموس بينغ"
+        },
+        "cambridge_dict": {
+          "title": "قاموس كامبريدج"
+        },
+        "caiyun": {
+          "title": "سايون",
+          "token": "رمز"
+        }
+      },
+      "instance_name": "اسم التكوين",
+      "tts": {
+        "lingva_tts": {
+          "request_path": "مسار الطلب",
+          "title": "مترجم النصوص لينجفا"
+        }
+      },
+      "recognize": {
+        "tencent_accurate_ocr": {
+          "secret_id": "المعرف السري",
+          "secret_key": "المفتاح السري",
+          "title": "نظام التعرف على الحروف الدقيق من تينسينت"
+        },
+        "tencent_img_ocr": {
+          "secret_id": "المعرف السري",
+          "secret_key": "المفتاح السري",
+          "title": "ترجمه الصور من تينسينت"
+        },
+        "iflytek_latex_ocr": {
+          "apikey": "مفتاح API",
+          "apisecret": "مفتاح API السري",
+          "appid": "معرّف التطبيق",
+          "title": "آي فلاي تيك لاتيك"
+        },
+        "baidu_ocr": {
+          "client_id": "مفتاح API",
+          "client_secret": "المفتاح السري",
+          "title": "نظام التعرف على الحرةف من بايدو"
+        },
+        "baidu_accurate_ocr": {
+          "client_id": "مفتاح API",
+          "client_secret": "المفتاح السري",
+          "title": "النسخه الدقيقه من نظام التعرف البصري على الحروف من بايدو"
+        },
+        "iflytek_intsig_ocr": {
+          "apikey": "مفتاح API",
+          "apisecret": "مفتاح API السري",
+          "appid": "معرّف التطبيق",
+          "title": "التعرف البصري على الحروف من آي فلاي تيك"
+        },
+        "tencent_ocr": {
+          "secret_id": "المعرف السري",
+          "secret_key": "المفتاح السري",
+          "title": "نظام التعرف البصري على الحروف من تينسيت"
+        },
+        "volcengine_ocr": {
+          "secret": "السري",
+          "appid": "معرّف التطبيق",
+          "title": "نظام التعرف البصري على الحروف من فولك إنجن"
+        },
+        "volcengine_multi_lang_ocr": {
+          "secret": "السري",
+          "appid": "معرّف التطبيق",
+          "title": "نظام التعرف البصري على الحروف متعدد اللغات من فولك إنجن"
+        },
+        "iflytek_ocr": {
+          "apikey": "مفتاح API",
+          "apisecret": "مفتاح API السري",
+          "appid": "معرّف التطبيق",
+          "title": "التعرف البصري على الحروف من iFlyTek"
+        },
+        "baidu_img_ocr": {
+          "secret": "السري",
+          "appid": "معرّف التطبيق",
+          "title": "ترجمة الصور من بايدو"
+        },
+        "qrcode": {
+          "title": "رمز الاستجابة السريعة"
+        },
+        "system": {
+          "title": "نظام التعرف البصري على الحروف"
+        },
+        "tesseract": {
+          "title": "تيسيراكت دوت جي إس"
+        },
+        "simple_latex_ocr": {
+          "title": "لاتيك البسيط",
+          "token": "رمز"
+        }
+      }
     }
+  }
 }

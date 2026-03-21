@@ -55,14 +55,14 @@
         "app_font": "Font",
         "app_fallback_font": "Fallback Font",
         "font_size": {
-          "title": "Font Size",
           "10": "Extra Small (10px)",
           "12": "Very Small (12px)",
           "14": "Small (14px)",
           "16": "Standard (16px)",
           "18": "Large (18px)",
           "20": "Very Large (20px)",
-          "24": "Extra Large (24px)"
+          "24": "Extra Large (24px)",
+          "title": "Font Size"
         },
         "default_font": "Default",
         "theme": {
@@ -108,14 +108,14 @@
         "delete_newline": "Delete Newline",
         "remember_language": "Remember Target Language",
         "font_size": {
-          "title": "Font Size",
           "10": "Very Very Small (10px)",
           "12": "Very Small (12px)",
           "14": "Small (14px)",
           "16": "Standard (16px)",
           "18": "Large (18px)",
           "20": "Very Large (20px)",
-          "24": "Very Very Large (24px)"
+          "24": "Very Very Large (24px)",
+          "title": "Font Size"
         },
         "window_position": "Window Position",
         "mouse": "Follow the Mouse",
@@ -397,7 +397,10 @@
       "downloading": "Downloading…",
       "installing": "Installing…",
       "cancel": "Cancel",
-      "installed": "Install completed, Restart the application for the changes to take effect"
+      "installed": "Install completed, Restart the application for the changes to take effect",
+      "install_complete": "Installation Complete",
+      "restart_now": "Restart Now",
+      "restart_later": "Later"
     },
     "services": {
       "help": "Configuration Guide",
