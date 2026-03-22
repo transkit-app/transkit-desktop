@@ -128,6 +128,7 @@
         "hide_language": "Ẩn vùng ngôn ngữ",
         "hide_window": "Ẩn cửa sổ dịch",
         "detect_engine": "Công cụ phát hiện ngôn ngữ",
+        "bg_opacity": "Độ mờ cửa sổ",
         "baidu": "Baidu",
         "tencent": "Tencent",
         "niutrans": "NiuTrans",

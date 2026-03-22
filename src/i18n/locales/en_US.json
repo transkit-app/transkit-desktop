@@ -128,6 +128,7 @@
         "hide_language": "Hide Language Area",
         "hide_window": "Hide Translation Window",
         "detect_engine": "Language Detection Engine",
+        "bg_opacity": "Window Opacity",
         "baidu": "Baidu",
         "tencent": "Tencent",
         "niutrans": "NiuTrans",

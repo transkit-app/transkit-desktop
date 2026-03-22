@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 
 import WindowControl from '../../components/WindowControl';
 import SideBar from './components/SideBar';
-import { osType } from '../../utils/env';
+import { osType, appVersion } from '../../utils/env';
 import { useConfig } from '../../hooks';
 import routes from './routes';
 import './style.css';
@@ -15,29 +15,13 @@ import './style.css';
 function Logo() {
     return (
         <div className="flex items-center gap-3 px-4" data-tauri-drag-region="true">
-            <div className="relative">
-                {/* Logo Icon with gradient background */}
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-accent-cyan flex items-center justify-center shadow-glow-sm">
-                    <svg
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        className="text-white"
-                    >
-                        <path
-                            d="M12.87 15.07l-2.54-2.51.03-.03A17.52 17.52 0 0014.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"
-                            fill="currentColor"
-                        />
-                    </svg>
-                </div>
-            </div>
+            <img src="icon.png" alt="TransKit" className="w-10 h-10 rounded-xl" />
             <div className="flex flex-col">
                 <span className="text-base font-heading font-semibold text-gradient">
-                    Transkit
+                    TransKit
                 </span>
                 <span className="text-[10px] text-default-400 dark:text-default-500">
-                    Desktop
+                    Desktop {appVersion ? `- V${appVersion}` : ''}
                 </span>
             </div>
         </div>
@@ -62,7 +46,7 @@ export default function Config() {
             <aside
                 className={`
                     w-[240px] h-screen flex flex-col
-                    ${transparent ? 'bg-background/80 backdrop-blur-lg' : 'bg-content1'}
+                    ${transparent && osType !== 'Windows_NT' ? 'bg-background/80 backdrop-blur-lg' : 'bg-content1'}
                     border-r border-content3 dark:border-content3
                     ${osType === 'Linux' && 'rounded-l-[10px] border-l border-t border-b'}
                     select-none

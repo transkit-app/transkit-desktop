@@ -1,12 +1,5 @@
-import { DropdownTrigger } from '@nextui-org/react';
-import { DropdownMenu } from '@nextui-org/react';
-import { DropdownItem } from '@nextui-org/react';
+import { DropdownTrigger, DropdownMenu, DropdownItem, Dropdown, Switch, Button, Card, CardBody, Slider } from '@nextui-org/react';
 import { useTranslation } from 'react-i18next';
-import { CardBody } from '@nextui-org/react';
-import { Dropdown } from '@nextui-org/react';
-import { Switch } from '@nextui-org/react';
-import { Button } from '@nextui-org/react';
-import { Card } from '@nextui-org/react';
 import React from 'react';
 
 import { languageList } from '../../../../utils/language';
@@ -14,10 +7,11 @@ import { useConfig } from '../../../../hooks/useConfig';
 import { invoke } from '@tauri-apps/api';
 
 export default function Translate() {
-    const [sourceLanguage, setSourceLanguage] = useConfig('translate_source_language', 'auto');
-    const [targetLanguage, setTargetLanguage] = useConfig('translate_target_language', 'zh_cn');
+    const [sourceLanguage, setSourceLanguage] = useConfig('translate_source_language', 'en');
+    const [targetLanguage, setTargetLanguage] = useConfig('translate_target_language', 'vi');
     const [secondLanguage, setSecondLanguage] = useConfig('translate_second_language', 'en');
-    const [detectEngine, setDetectEngine] = useConfig('translate_detect_engine', 'baidu');
+    const [detectEngine, setDetectEngine] = useConfig('translate_detect_engine', 'google');
+    const [translateBgOpacity, setTranslateBgOpacity] = useConfig('translate_bg_opacity', 100);
     const [autoCopy, setAutoCopy] = useConfig('translate_auto_copy', 'disable');
     const [incrementalTranslate, setIncrementalTranslate] = useConfig('incremental_translate', false);
     const [historyDisable, setHistoryDisable] = useConfig('history_disable', false);
@@ -336,6 +330,25 @@ export default function Translate() {
                                     setHideWindow(v);
                                 }}
                             />
+                        )}
+                    </div>
+                    <div className='config-item'>
+                        <h3 className='my-auto mx-0'>{t('config.translate.bg_opacity')}</h3>
+                        {translateBgOpacity !== null && (
+                            <div className='flex items-center gap-2 w-[200px]'>
+                                <Slider
+                                    size='sm'
+                                    step={5}
+                                    minValue={20}
+                                    maxValue={100}
+                                    value={translateBgOpacity ?? 100}
+                                    onChange={(v) => setTranslateBgOpacity(v)}
+                                    className='flex-1'
+                                />
+                                <span className='text-sm text-default-500 w-[38px] text-right tabular-nums'>
+                                    {translateBgOpacity ?? 100}%
+                                </span>
+                            </div>
                         )}
                     </div>
                 </CardBody>

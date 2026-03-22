@@ -2,6 +2,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from 'next-themes';
 import { motion } from 'framer-motion';
+import Database from 'tauri-plugin-sql-api';
 import React from 'react';
 
 // Icons
@@ -28,7 +29,7 @@ const navigationConfig = [
     {
         section: 'SERVICES',
         items: [
-            { id: 'service', path: '/service', icon: MdExtension, labelKey: 'config.service.label', hasBadge: true },
+            { id: 'service', path: '/service', icon: MdExtension, labelKey: 'config.service.label' },
             { id: 'history', path: '/history', icon: FaHistory, labelKey: 'config.history.label', hasBadge: true },
         ],
     },
@@ -58,8 +59,9 @@ const itemVariants = {
 };
 
 // Navigation Item Component
-function NavItem({ item, isActive, onClick, t }) {
+function NavItem({ item, isActive, onClick, t, badgeCount }) {
     const Icon = item.icon;
+    const displayBadge = item.hasBadge && badgeCount > 0;
 
     return (
         <motion.button
@@ -96,10 +98,10 @@ function NavItem({ item, isActive, onClick, t }) {
                 {t(item.labelKey)}
             </span>
 
-            {/* Badge (placeholder) */}
-            {item.hasBadge && (
+            {/* Badge */}
+            {displayBadge && (
                 <span className="badge-count text-xs px-2 py-0.5 rounded-full">
-                    {item.id === 'service' ? '12' : '99+'}
+                    {badgeCount > 99 ? '99+' : badgeCount}
                 </span>
             )}
         </motion.button>
@@ -171,8 +173,23 @@ export default function SideBar() {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
+    const [historyCount, setHistoryCount] = React.useState(0);
+
+    React.useEffect(() => {
+        Database.load('sqlite:history.db')
+            .then(db => db.select('SELECT COUNT(*) as cnt FROM history'))
+            .then(result => {
+                if (result[0]?.cnt != null) setHistoryCount(result[0].cnt);
+            })
+            .catch(() => {});
+    }, []);
 
     const isActive = (path) => location.pathname === path;
+
+    const getBadgeCount = (id) => {
+        if (id === 'history') return historyCount;
+        return 0;
+    };
 
     return (
         <div className="flex flex-col h-full">
@@ -189,6 +206,7 @@ export default function SideBar() {
                                     isActive={isActive(item.path)}
                                     onClick={() => navigate(item.path)}
                                     t={t}
+                                    badgeCount={getBadgeCount(item.id)}
                                 />
                             ))}
                         </div>

@@ -54,6 +54,8 @@ export default function Recognize() {
     const [pluginList, setPluginList] = useAtom(pluginListAtom);
     const [closeOnBlur] = useConfig('recognize_close_on_blur', false);
     const [pined, setPined] = useState(false);
+    const [translateBgOpacity, setTranslateBgOpacity] = useConfig('translate_bg_opacity', 100);
+    const bgAlpha = (translateBgOpacity ?? 100) / 100;
     const [serviceInstanceList] = useConfig('recognize_service_list', ['system', 'tesseract']);
     const [serviceInstanceConfigMap, setServiceInstanceConfigMap] = useState(null);
 
@@ -106,9 +108,13 @@ export default function Recognize() {
         pluginList &&
         serviceInstanceConfigMap !== null && (
             <div
-                className={`bg-background h-screen ${
-                    osType === 'Linux' && 'rounded-[10px] border-1 border-default-100'
-                }`}
+                className={`h-screen ${osType === 'Linux' && 'rounded-[10px] border-1 border-default-100'}`}
+                style={{
+                    background: bgAlpha >= 1
+                        ? 'hsl(var(--nextui-background))'
+                        : `hsl(var(--nextui-background) / ${bgAlpha.toFixed(2)})`,
+                    backdropFilter: bgAlpha < 1 ? 'blur(24px) saturate(1.6)' : undefined,
+                }}
             >
                 <div
                     data-tauri-drag-region='true'

@@ -74,12 +74,8 @@ export default function Translate() {
     const [rememberWindowSize] = useConfig('translate_remember_window_size', false);
     const [fixedProviders] = useConfig('selection_translate_fixed_providers', false);
     const [translateServiceInstanceList, setTranslateServiceInstanceList] = useConfig('translate_service_list', [
-        'deepl',
-        'bing',
-        'lingva',
-        'yandex',
         'google',
-        'ecdict',
+        'bing',
     ]);
     const [recognizeServiceInstanceList] = useConfig('recognize_service_list', ['system', 'tesseract']);
     const [ttsServiceInstanceList] = useConfig('tts_service_list', ['lingva_tts']);
@@ -92,6 +88,8 @@ export default function Translate() {
     const [selectedProviderIndex, setSelectedProviderIndex] = useState(0);
     const contentRef = useRef(null);
     const windowType = useAtomValue(windowTypeAtom);
+    const [translateBgOpacity, setTranslateBgOpacity] = useConfig('translate_bg_opacity', 100);
+    const bgAlpha = (translateBgOpacity ?? 100) / 100;
     const reorder = (list, startIndex, endIndex) => {
         const result = Array.from(list);
         const [removed] = result.splice(startIndex, 1);
@@ -451,7 +449,13 @@ export default function Translate() {
                 </div>
                 <div
                     ref={contentRef}
-                    className='px-[6px] pb-[6px] text-[12px] flex flex-col bg-background/80 backdrop-blur-xl rounded-xl border border-content3 shadow-2xl overflow-hidden'
+                    className='px-[6px] pb-[6px] text-[12px] flex flex-col rounded-xl border border-content3 shadow-2xl overflow-hidden'
+                    style={{
+                        background: bgAlpha >= 1
+                            ? 'hsl(var(--nextui-background))'
+                            : `hsl(var(--nextui-background) / ${bgAlpha.toFixed(2)})`,
+                        backdropFilter: bgAlpha < 1 ? 'blur(24px) saturate(1.6)' : undefined,
+                    }}
                 >
                     {/* Source Area */}
                     <div>

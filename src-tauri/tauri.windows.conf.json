@@ -15,7 +15,7 @@
                 },
                 "nsis": {
                     "displayLanguageSelector": true,
-                    "installerIcon": "icons/icon.ico",
+                    "installerIcon": "icons/icon_mac.ico",
                     "license": "../LICENSE",
                     "installMode": "perMachine",
                     "languages": ["SimpChinese", "TradChinese", "English"]
