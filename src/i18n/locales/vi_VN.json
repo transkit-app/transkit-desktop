@@ -315,6 +315,7 @@
       "minimize": "Thu nhỏ",
       "close": "Ẩn cửa sổ",
       "placeholder": "Nhấn Bắt đầu để bắt đầu nghe...",
+      "placeholder_context_hint": "Với nội dung chuyên ngành, hãy nhấn nút Ngữ cảnh (⚙) để cài đặt bối cảnh dịch cho phù hợp.",
       "listening": "Đang nghe...",
       "no_api_key": "Vui lòng đặt Soniox API key trong Cài đặt > Dịch vụ > Âm thanh",
       "status_connecting": "Đang kết nối...",

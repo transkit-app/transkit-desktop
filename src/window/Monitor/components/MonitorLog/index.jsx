@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback, useLayoutEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MdMicNone, MdVolumeUp, MdAutoAwesome, MdClose, MdKeyboardArrowDown, MdBookmark, MdBookmarkBorder } from 'react-icons/md';
+import { MdMicNone, MdVolumeUp, MdAutoAwesome, MdClose, MdKeyboardArrowDown, MdBookmark, MdBookmarkBorder, MdPlayCircle, MdTune } from 'react-icons/md';
 import { motion, AnimatePresence } from 'framer-motion';
 import { writeTextFile } from '@tauri-apps/api/fs';
 import { generateAiSuggestion } from '../../../../utils/generateAiSuggestion';
@@ -154,21 +154,23 @@ function AiSuggestionCard({ state, onDismiss, fontSize, t }) {
 
 // ── Bookmark sidebar ──────────────────────────────────────────────────────────
 
-const BOOKMARK_DOT_SIZE = 22;   // px — 2× original ~11px
-const BOOKMARK_MIN_GAP = 6;      // min gap between dots
-const BOOKMARK_MARGIN_TOP = 48;  // px from top of sidebar to clear toolbar
+const BOOKMARK_MARKER_W = 14;   // px wide — thin horizontal dash
+const BOOKMARK_MARKER_H = 3;    // px tall
+const BOOKMARK_MIN_GAP = 6;     // min gap between markers
+const BOOKMARK_MARGIN_TOP = 48; // px from top to clear toolbar
+const BOOKMARK_SIDEBAR_W = 20;  // total sidebar width
 
-function BookmarkSidebar({ entries, bookmarks, suggestions, entryRefs, scrollContainerRef, t }) {
+function BookmarkSidebar({ entries, bookmarks, suggestions, entryRefs, scrollContainerRef }) {
     const sidebarRef = useRef(null);
-    const [dotPositions, setDotPositions] = useState([]);
+    const [markerPositions, setMarkerPositions] = useState([]);
+    const [hoveredId, setHoveredId] = useState(null);
 
     const bookmarkedIds = entries
         .map((e, i) => ({ entry: e, index: i }))
         .filter(({ entry }) => bookmarks.has(entry.id));
 
-    // Recompute dot positions after DOM settles (entries, bookmarks, or suggestions change layout)
     useEffect(() => {
-        if (bookmarkedIds.length === 0) { setDotPositions([]); return; }
+        if (bookmarkedIds.length === 0) { setMarkerPositions([]); return; }
 
         const container = scrollContainerRef.current;
         const sidebar = sidebarRef.current;
@@ -178,10 +180,9 @@ function BookmarkSidebar({ entries, bookmarks, suggestions, entryRefs, scrollCon
         const sidebarH = sidebar.clientHeight;
         if (scrollH === 0 || sidebarH === 0) return;
 
-        const usableH = sidebarH - BOOKMARK_MARGIN_TOP;
-        const MIN_SPACING = BOOKMARK_DOT_SIZE + BOOKMARK_MIN_GAP;
+        const usableH = sidebarH - BOOKMARK_MARGIN_TOP - 8;
+        const MIN_SPACING = BOOKMARK_MARKER_H + BOOKMARK_MIN_GAP;
 
-        // Map each bookmarked entry to a pixel position in the sidebar
         let positions = bookmarkedIds.map(({ entry }) => {
             const el = entryRefs.current[entry.id];
             const entryTop = el ? el.offsetTop : 0;
@@ -189,24 +190,21 @@ function BookmarkSidebar({ entries, bookmarks, suggestions, entryRefs, scrollCon
             return {
                 id: entry.id,
                 entry,
-                // Map ratio to usable sidebar range, offset by MARGIN_TOP
                 pos: Math.round(BOOKMARK_MARGIN_TOP + ratio * usableH),
             };
         });
 
-        // Sort top-to-bottom and enforce minimum spacing (prevent overlaps)
         positions.sort((a, b) => a.pos - b.pos);
         for (let i = 1; i < positions.length; i++) {
             const minPos = positions[i - 1].pos + MIN_SPACING;
             if (positions[i].pos < minPos) positions[i].pos = minPos;
         }
-        // Clamp to sidebar bounds
-        const maxPos = sidebarH - BOOKMARK_DOT_SIZE;
+        const maxPos = sidebarH - BOOKMARK_MARKER_H - 8;
         for (let i = positions.length - 1; i >= 0; i--) {
             if (positions[i].pos > maxPos) positions[i].pos = maxPos;
         }
 
-        setDotPositions(positions);
+        setMarkerPositions(positions);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [bookmarks, entries.length, suggestions]);
 
@@ -216,36 +214,74 @@ function BookmarkSidebar({ entries, bookmarks, suggestions, entryRefs, scrollCon
         const el = entryRefs.current[entryId];
         const container = scrollContainerRef.current;
         if (!el || !container) return;
-        const top = el.offsetTop - 40;
-        container.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+        container.scrollTo({ top: Math.max(0, el.offsetTop - 40), behavior: 'smooth' });
     };
 
     return (
         <div
             ref={sidebarRef}
             className='absolute right-0 top-0 bottom-0 pointer-events-none z-20'
-            style={{ width: BOOKMARK_DOT_SIZE + 8 }}
+            style={{ width: BOOKMARK_SIDEBAR_W }}
         >
-            {dotPositions.map(({ id, entry, pos }) => {
-                const snippet = (entry.translation || entry.original || '').slice(0, 48);
+            {/* Subtle background track */}
+            <div
+                className='absolute rounded-full'
+                style={{
+                    top: BOOKMARK_MARGIN_TOP,
+                    bottom: 8,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    width: 2,
+                    background: 'rgba(168,85,247,0.08)',
+                }}
+            />
+
+            {markerPositions.map(({ id, entry, pos }) => {
+                const snippet = (entry.translation || entry.original || '').slice(0, 72);
+                const isHovered = hoveredId === id;
                 return (
-                    <Tooltip key={id} label={snippet || 'Bookmark'} placement='bottom'>
-                        <button
-                            className='absolute pointer-events-auto flex items-center justify-center rounded-md transition-all hover:scale-110 active:scale-95'
+                    <div
+                        key={id}
+                        className='absolute pointer-events-auto'
+                        style={{ top: pos - 6, right: 0, left: 0, height: BOOKMARK_MARKER_H + 12 }}
+                        onMouseEnter={() => setHoveredId(id)}
+                        onMouseLeave={() => setHoveredId(null)}
+                        onClick={() => scrollToEntry(id)}
+                    >
+                        {/* Floating snippet tooltip */}
+                        {isHovered && snippet && (
+                            <div
+                                className='absolute right-full mr-3 px-2.5 py-2 rounded-lg text-[11px] leading-relaxed pointer-events-none z-50 shadow-2xl max-w-[210px]'
+                                style={{
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    background: 'hsl(var(--nextui-content1))',
+                                    color: 'hsl(var(--nextui-foreground))',
+                                    border: '1px solid rgba(168,85,247,0.2)',
+                                    wordBreak: 'break-word',
+                                    whiteSpace: 'normal',
+                                    boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+                                }}
+                            >
+                                {snippet}{snippet.length >= 72 ? '…' : ''}
+                            </div>
+                        )}
+                        {/* Thin marker dash */}
+                        <div
+                            className='absolute cursor-pointer'
                             style={{
-                                top: pos,
-                                right: 4,
-                                width: BOOKMARK_DOT_SIZE,
-                                height: BOOKMARK_DOT_SIZE,
-                                color: '#a855f7',
-                                background: 'rgba(168,85,247,0.15)',
-                                border: '1px solid rgba(168,85,247,0.3)',
+                                right: 3,
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                width: isHovered ? BOOKMARK_MARKER_W + 2 : BOOKMARK_MARKER_W,
+                                height: isHovered ? BOOKMARK_MARKER_H + 1 : BOOKMARK_MARKER_H,
+                                borderRadius: 2,
+                                background: isHovered ? 'rgba(168,85,247,0.9)' : 'rgba(168,85,247,0.5)',
+                                boxShadow: isHovered ? '0 0 6px rgba(168,85,247,0.5)' : 'none',
+                                transition: 'all 0.15s ease',
                             }}
-                            onClick={() => scrollToEntry(id)}
-                        >
-                            <MdBookmark style={{ fontSize: BOOKMARK_DOT_SIZE - 4 }} />
-                        </button>
-                    </Tooltip>
+                        />
+                    </div>
                 );
             })}
         </div>
@@ -437,7 +473,7 @@ export default function MonitorLog({
                 ref={scrollRef}
                 onScroll={handleScroll}
                 className='h-full overflow-y-auto py-2 space-y-2'
-                style={{ paddingLeft: '12px', paddingRight: hasSidebar ? '36px' : '12px' }}
+                style={{ paddingLeft: '12px', paddingRight: hasSidebar ? '24px' : '12px' }}
             >
                 {isEmpty ? (
                     status === 'connected' ? (
@@ -454,9 +490,15 @@ export default function MonitorLog({
                             </div>
                         </>
                     ) : (
-                        <div className='flex flex-col items-center justify-center h-full text-default-300 gap-2 select-none'>
-                            <MdMicNone className='text-[40px]' />
-                            <p className='text-xs'>{t('monitor.placeholder')}</p>
+                        <div className='flex flex-col items-center justify-center h-full gap-3 select-none px-6 text-center'>
+                            <MdPlayCircle className='text-[44px] text-default-200' />
+                            <p className='text-sm font-medium text-default-400'>{t('monitor.placeholder')}</p>
+                            <div className='flex items-center gap-1.5 mt-1 px-3 py-2 rounded-lg bg-content2/60 max-w-[280px]'>
+                                <MdTune className='text-[14px] text-default-400 flex-shrink-0' />
+                                <p className='text-[11px] text-default-400 leading-relaxed'>
+                                    {t('monitor.placeholder_context_hint')}
+                                </p>
+                            </div>
                         </div>
                     )
                 ) : (
@@ -598,7 +640,6 @@ export default function MonitorLog({
                 suggestions={suggestions}
                 entryRefs={entryRefs}
                 scrollContainerRef={scrollRef}
-                t={t}
             />
 
             {/* Go to Latest */}

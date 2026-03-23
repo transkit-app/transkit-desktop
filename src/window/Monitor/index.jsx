@@ -606,7 +606,7 @@ export default function Monitor() {
     const saveStatusLabel = () => {
         if (!autosaveEnabled) {
             return (
-                <span className='text-[11px] font-medium text-danger flex items-center gap-0.5'>
+                <span className='text-[11px] font-medium text-default-400 flex items-center gap-0.5'>
                     <MdSaveAlt className='text-[12px]' />
                     {t('monitor.autosave_disabled_warning')}
                 </span>
