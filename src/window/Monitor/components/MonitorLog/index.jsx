@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback, useLayoutEffect } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MdMicNone, MdVolumeUp, MdAutoAwesome, MdClose, MdKeyboardArrowDown, MdBookmark, MdBookmarkBorder, MdPlayCircle, MdTune } from 'react-icons/md';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -152,63 +152,28 @@ function AiSuggestionCard({ state, onDismiss, fontSize, t }) {
     );
 }
 
-// ── Bookmark sidebar ──────────────────────────────────────────────────────────
+// ── Bookmark minimap widget ───────────────────────────────────────────────────
 
-const BOOKMARK_MARKER_W = 14;   // px wide — thin horizontal dash
-const BOOKMARK_MARKER_H = 3;    // px tall
-const BOOKMARK_MIN_GAP = 6;     // min gap between markers
-const BOOKMARK_MARGIN_TOP = 48; // px from top to clear toolbar
-const BOOKMARK_SIDEBAR_W = 20;  // total sidebar width
+const BOOKMARK_WIDGET_W = 22;
 
-function BookmarkSidebar({ entries, bookmarks, suggestions, entryRefs, scrollContainerRef }) {
-    const sidebarRef = useRef(null);
-    const [markerPositions, setMarkerPositions] = useState([]);
+function BookmarkSidebar({ entries, bookmarks, entryRefs, scrollContainerRef }) {
+    const [showPanel, setShowPanel] = useState(false);
     const [hoveredId, setHoveredId] = useState(null);
+    const hideTimer = useRef(null);
 
-    const bookmarkedIds = entries
-        .map((e, i) => ({ entry: e, index: i }))
-        .filter(({ entry }) => bookmarks.has(entry.id));
+    const bookmarkedEntries = entries.filter(e => bookmarks.has(e.id));
+    if (bookmarkedEntries.length === 0) return null;
 
-    useEffect(() => {
-        if (bookmarkedIds.length === 0) { setMarkerPositions([]); return; }
-
-        const container = scrollContainerRef.current;
-        const sidebar = sidebarRef.current;
-        if (!container || !sidebar) return;
-
-        const scrollH = container.scrollHeight;
-        const sidebarH = sidebar.clientHeight;
-        if (scrollH === 0 || sidebarH === 0) return;
-
-        const usableH = sidebarH - BOOKMARK_MARGIN_TOP - 8;
-        const MIN_SPACING = BOOKMARK_MARKER_H + BOOKMARK_MIN_GAP;
-
-        let positions = bookmarkedIds.map(({ entry }) => {
-            const el = entryRefs.current[entry.id];
-            const entryTop = el ? el.offsetTop : 0;
-            const ratio = entryTop / scrollH;
-            return {
-                id: entry.id,
-                entry,
-                pos: Math.round(BOOKMARK_MARGIN_TOP + ratio * usableH),
-            };
-        });
-
-        positions.sort((a, b) => a.pos - b.pos);
-        for (let i = 1; i < positions.length; i++) {
-            const minPos = positions[i - 1].pos + MIN_SPACING;
-            if (positions[i].pos < minPos) positions[i].pos = minPos;
-        }
-        const maxPos = sidebarH - BOOKMARK_MARKER_H - 8;
-        for (let i = positions.length - 1; i >= 0; i--) {
-            if (positions[i].pos > maxPos) positions[i].pos = maxPos;
-        }
-
-        setMarkerPositions(positions);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [bookmarks, entries.length, suggestions]);
-
-    if (bookmarkedIds.length === 0) return null;
+    const cancelHide = () => {
+        clearTimeout(hideTimer.current);
+        setShowPanel(true);
+    };
+    const scheduleHide = () => {
+        hideTimer.current = setTimeout(() => {
+            setShowPanel(false);
+            setHoveredId(null);
+        }, 120);
+    };
 
     const scrollToEntry = (entryId) => {
         const el = entryRefs.current[entryId];
@@ -219,71 +184,98 @@ function BookmarkSidebar({ entries, bookmarks, suggestions, entryRefs, scrollCon
 
     return (
         <div
-            ref={sidebarRef}
-            className='absolute right-0 top-0 bottom-0 pointer-events-none z-20'
-            style={{ width: BOOKMARK_SIDEBAR_W }}
+            className='absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center'
+            style={{ width: BOOKMARK_WIDGET_W }}
+            onMouseEnter={cancelHide}
+            onMouseLeave={scheduleHide}
         >
-            {/* Subtle background track */}
-            <div
-                className='absolute rounded-full'
-                style={{
-                    top: BOOKMARK_MARGIN_TOP,
-                    bottom: 8,
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    width: 2,
-                    background: 'rgba(168,85,247,0.08)',
-                }}
-            />
-
-            {markerPositions.map(({ id, entry, pos }) => {
-                const snippet = (entry.translation || entry.original || '').slice(0, 72);
-                const isHovered = hoveredId === id;
-                return (
-                    <div
-                        key={id}
-                        className='absolute pointer-events-auto'
-                        style={{ top: pos - 6, right: 0, left: 0, height: BOOKMARK_MARKER_H + 12 }}
-                        onMouseEnter={() => setHoveredId(id)}
-                        onMouseLeave={() => setHoveredId(null)}
-                        onClick={() => scrollToEntry(id)}
-                    >
-                        {/* Floating snippet tooltip */}
-                        {isHovered && snippet && (
-                            <div
-                                className='absolute right-full mr-3 px-2.5 py-2 rounded-lg text-[11px] leading-relaxed pointer-events-none z-50 shadow-2xl max-w-[210px]'
-                                style={{
-                                    top: '50%',
-                                    transform: 'translateY(-50%)',
-                                    background: 'hsl(var(--nextui-content1))',
-                                    color: 'hsl(var(--nextui-foreground))',
-                                    border: '1px solid rgba(168,85,247,0.2)',
-                                    wordBreak: 'break-word',
-                                    whiteSpace: 'normal',
-                                    boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
-                                }}
-                            >
-                                {snippet}{snippet.length >= 72 ? '…' : ''}
-                            </div>
-                        )}
-                        {/* Thin marker dash */}
-                        <div
-                            className='absolute cursor-pointer'
-                            style={{
-                                right: 3,
-                                top: '50%',
-                                transform: 'translateY(-50%)',
-                                width: isHovered ? BOOKMARK_MARKER_W + 2 : BOOKMARK_MARKER_W,
-                                height: isHovered ? BOOKMARK_MARKER_H + 1 : BOOKMARK_MARKER_H,
-                                borderRadius: 2,
-                                background: isHovered ? 'rgba(168,85,247,0.9)' : 'rgba(168,85,247,0.5)',
-                                boxShadow: isHovered ? '0 0 6px rgba(168,85,247,0.5)' : 'none',
-                                transition: 'all 0.15s ease',
-                            }}
-                        />
+            {/* Bookmark list panel */}
+            {showPanel && (
+                <div
+                    className='absolute right-full mr-2 w-[420px] rounded-xl shadow-2xl border border-content3/40 overflow-hidden'
+                    onMouseEnter={cancelHide}
+                    onMouseLeave={scheduleHide}
+                    style={{
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        maxHeight: '480px',
+                        background: 'hsl(var(--nextui-content1))',
+                        boxShadow: '0 12px 40px rgba(0,0,0,0.35)',
+                    }}
+                >
+                    {/* Panel header */}
+                    <div className='px-3 py-2 border-b border-content3/40 flex items-center gap-1.5'>
+                        <MdBookmark className='text-secondary text-[13px]' />
+                        <span className='text-[10px] font-semibold text-default-400 uppercase tracking-wider'>
+                            Bookmarks
+                        </span>
+                        <span className='ml-auto text-[10px] font-medium text-default-300'>
+                            {bookmarkedEntries.length}
+                        </span>
                     </div>
-                );
-            })}
+
+                    {/* Bookmark list */}
+                    <div className='overflow-y-auto' style={{ maxHeight: '436px' }}>
+                        {bookmarkedEntries.map((entry, i) => {
+                            const isActive = hoveredId === entry.id;
+                            const original = (entry.original || '').slice(0, 100);
+                            const translation = (entry.translation || '').slice(0, 100);
+                            return (
+                                <button
+                                    key={entry.id}
+                                    className='w-full text-left flex items-start gap-2.5 px-3 py-2.5 transition-colors border-b border-content3/20 last:border-0'
+                                    style={{ background: isActive ? 'rgba(168,85,247,0.08)' : undefined }}
+                                    onMouseEnter={() => setHoveredId(entry.id)}
+                                    onMouseLeave={() => setHoveredId(null)}
+                                    onClick={() => { scrollToEntry(entry.id); setShowPanel(false); }}
+                                >
+                                    <span className='text-[10px] text-default-300 font-mono mt-0.5 flex-shrink-0 w-4 text-right select-none'>
+                                        {i + 1}
+                                    </span>
+                                    <div className='flex flex-col gap-0.5 min-w-0'>
+                                        {original && (
+                                            <p className='text-[11px] leading-snug text-default-400 line-clamp-2'>
+                                                {original}{original.length >= 100 ? '…' : ''}
+                                            </p>
+                                        )}
+                                        {translation && (
+                                            <p className='text-[12px] leading-snug text-foreground/85 font-medium line-clamp-2'>
+                                                {translation}{translation.length >= 100 ? '…' : ''}
+                                            </p>
+                                        )}
+                                    </div>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {/* Minimap bars — stacked in center */}
+            <div className='flex flex-col items-center gap-[4px] py-2.5 px-1 cursor-pointer'>
+                {bookmarkedEntries.map(entry => {
+                    const isActive = hoveredId === entry.id;
+                    return (
+                        <div
+                            key={entry.id}
+                            className='rounded-full'
+                            style={{
+                                width: isActive ? 16 : 13,
+                                height: 3,
+                                background: isActive
+                                    ? 'rgba(168,85,247,0.95)'
+                                    : showPanel
+                                        ? 'rgba(168,85,247,0.45)'
+                                        : 'rgba(168,85,247,0.28)',
+                                boxShadow: isActive ? '0 0 7px rgba(168,85,247,0.6)' : 'none',
+                                transition: 'all 0.13s ease',
+                            }}
+                            onMouseEnter={() => setHoveredId(entry.id)}
+                            onMouseLeave={() => setHoveredId(null)}
+                        />
+                    );
+                })}
+            </div>
         </div>
     );
 }
@@ -311,7 +303,6 @@ export default function MonitorLog({
     const { t } = useTranslation();
     const scrollRef = useRef(null);
     const bottomRef = useRef(null);
-    const prevScrollHeightRef = useRef(0);
     const isUserScrolledRef = useRef(false);
     const entryRefs = useRef({});
 
@@ -319,29 +310,15 @@ export default function MonitorLog({
     const [suggestions, setSuggestions] = useState({});
     const [bookmarks, setBookmarks] = useState(new Set());
 
-    // ── Scroll anchor: preserve viewport position on ANY content height change ─
-    // Runs synchronously after DOM update (before paint) to prevent any visual shift.
-    // Handles both new entries added at bottom AND suggestion cards expanding inline.
-    useLayoutEffect(() => {
-        const el = scrollRef.current;
-        if (!el) return;
-
-        const newH = el.scrollHeight;
-        const prevH = prevScrollHeightRef.current;
-
-        // Always update the ref so next diff is correct
-        prevScrollHeightRef.current = newH;
-
-        if (!isUserScrolledRef.current || prevH === 0 || newH <= prevH) return;
-
-        // Content grew — push scrollTop down by the same amount so viewport stays fixed
-        el.scrollTop += newH - prevH;
-    }, [entries, suggestions]); // Both new entries AND card expansions trigger this
-
-    // ── Auto-scroll to bottom when user is NOT manually scrolled ─────────────
+    // ── Auto-scroll to bottom — only when user has NOT manually scrolled.
+    //    Uses instant scroll (no animation) to avoid the "drift" jitter caused
+    //    by smooth scroll animation fighting with new incoming content.
+    //    Native overflow-anchor: auto handles keeping viewport stable when
+    //    content grows above the current scroll position.
     useEffect(() => {
         if (!isUserScrolledRef.current) {
-            bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+            const el = scrollRef.current;
+            if (el) el.scrollTop = el.scrollHeight;
         }
     }, [entries, provisional]);
 
@@ -374,6 +351,10 @@ export default function MonitorLog({
     // ── AI Suggestion ─────────────────────────────────────────────────────────
     const handleAiSuggest = useCallback(async (entry) => {
         if (!aiSuggestionService) return;
+
+        // Lock viewport at current position — prevent auto-scroll to latest
+        isUserScrolledRef.current = true;
+        setIsUserScrolled(true);
 
         // Auto-bookmark the entry when requesting a suggestion
         setBookmarks(prev => new Set([...prev, entry.id]));
@@ -546,28 +527,34 @@ export default function MonitorLog({
                                                 </span>
                                             )}
 
-                                            {/* Text + inline ✨ AI button (wraps after text) */}
-                                            <div className='flex-1 flex flex-wrap items-baseline gap-x-1.5 gap-y-0'>
+                                            {/* Text + inline AI button */}
+                                            <div className='flex-1 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5'>
                                                 <p className='text-foreground font-medium leading-relaxed' style={{ fontSize }}>
                                                     {entry.translation}
                                                 </p>
                                                 {aiSuggestionService && (
-                                                    <Tooltip label={hasSuggestion ? t('monitor.ai_suggestion_dismiss') : t('monitor.ai_suggestion_hint')}>
-                                                        <button
-                                                            className={`rounded p-0.5 transition-all self-center flex-shrink-0
-                                                                ${hasSuggestion
-                                                                    ? 'opacity-100 text-secondary'
-                                                                    : 'opacity-0 group-hover/entry:opacity-50 hover:!opacity-100 text-default-400 hover:text-secondary'
-                                                                } ${suggestion?.status === 'loading' ? 'cursor-wait' : ''}`}
-                                                            onClick={() => hasSuggestion ? dismissSuggestion(entry.id) : handleAiSuggest(entry)}
-                                                            disabled={suggestion?.status === 'loading'}
-                                                        >
-                                                            <MdAutoAwesome
-                                                                className={suggestion?.status === 'loading' ? 'animate-spin' : ''}
-                                                                style={{ fontSize: Math.max(11, fontSize - 2) }}
-                                                            />
-                                                        </button>
-                                                    </Tooltip>
+                                                    <button
+                                                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border transition-all self-center flex-shrink-0
+                                                            ${hasSuggestion
+                                                                ? 'border-secondary/40 text-secondary bg-secondary/8'
+                                                                : 'border-transparent opacity-0 group-hover/entry:opacity-60 hover:!opacity-100 text-default-400 hover:text-secondary hover:border-secondary/30 hover:bg-secondary/5'
+                                                            } ${suggestion?.status === 'loading' ? 'cursor-wait' : 'cursor-pointer'}`}
+                                                        style={{ fontSize: 10 }}
+                                                        onClick={() => hasSuggestion ? dismissSuggestion(entry.id) : handleAiSuggest(entry)}
+                                                        disabled={suggestion?.status === 'loading'}
+                                                    >
+                                                        <MdAutoAwesome
+                                                            className={suggestion?.status === 'loading' ? 'animate-spin' : ''}
+                                                            style={{ fontSize: 11 }}
+                                                        />
+                                                        <span className='font-semibold'>
+                                                            {suggestion?.status === 'loading'
+                                                                ? t('monitor.ai_suggestion_loading')
+                                                                : hasSuggestion
+                                                                    ? t('monitor.ai_suggestion_dismiss')
+                                                                    : 'AI Suggest'}
+                                                        </span>
+                                                    </button>
                                                 )}
                                             </div>
 
@@ -633,11 +620,10 @@ export default function MonitorLog({
                 <div ref={bottomRef} />
             </div>
 
-            {/* Bookmark sidebar — proportional to scroll content height */}
+            {/* Bookmark sidebar */}
             <BookmarkSidebar
                 entries={entries}
                 bookmarks={bookmarks}
-                suggestions={suggestions}
                 entryRefs={entryRefs}
                 scrollContainerRef={scrollRef}
             />
