@@ -677,6 +677,7 @@ fn tray_menu_vi() -> tauri::SystemTrayMenu {
     let quit = CustomMenuItem::new("quit", "Thoát");
     SystemTrayMenu::new()
         .add_item(input_translate)
+        .add_item(audio_monitor)
         .add_item(clipboard_monitor)
         .add_submenu(SystemTraySubmenu::new(
             "Tự động sao chép",
@@ -690,7 +691,6 @@ fn tray_menu_vi() -> tauri::SystemTrayMenu {
         .add_native_item(SystemTrayMenuItem::Separator)
         .add_item(ocr_recognize)
         .add_item(ocr_translate)
-        .add_item(audio_monitor)
         .add_native_item(SystemTrayMenuItem::Separator)
         .add_item(config)
         .add_item(check_update)
