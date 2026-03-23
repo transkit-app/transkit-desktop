@@ -1,8 +1,9 @@
 import { Card, CardBody, CardHeader } from '@nextui-org/react';
 import { useTranslation } from 'react-i18next';
-import { MdPerson } from 'react-icons/md';
+import { MdPerson, MdSync } from 'react-icons/md';
 import React from 'react';
 import { useConfig } from '../../../../hooks';
+import { getUser, onAuthStateChange } from '../../../../lib/transkit-cloud';
 
 const EXPERIENCE_LEVELS = ['Junior', 'Mid', 'Senior', 'Lead', 'Expert'];
 
@@ -47,6 +48,13 @@ function TagInput({ tags, onChange, placeholder }) {
 export default function Profile() {
     const { t } = useTranslation();
     const [profile, setProfile] = useConfig('user_profile', {});
+    const [authUser, setAuthUser] = React.useState(null);
+
+    React.useEffect(() => {
+        getUser().then(setAuthUser);
+        const unsub = onAuthStateChange(setAuthUser);
+        return unsub;
+    }, []);
 
     const update = (patch) => setProfile({ ...(profile ?? {}), ...patch });
     const p = profile ?? {};
@@ -60,6 +68,34 @@ export default function Profile() {
                 </CardHeader>
                 <CardBody className='flex flex-col gap-4'>
                     <p className='text-xs text-default-400'>{t('config.profile.hint')}</p>
+
+                    {/* Sync from account — only shown when logged in */}
+                    {authUser && (
+                        <div className='flex items-center justify-between p-3 rounded-lg bg-brand-500/5 border border-brand-500/20'>
+                            <div className='flex items-center gap-2 min-w-0'>
+                                {authUser.user_metadata?.avatar_url && (
+                                    <img
+                                        src={authUser.user_metadata.avatar_url}
+                                        alt=''
+                                        className='w-6 h-6 rounded-full flex-shrink-0'
+                                    />
+                                )}
+                                <span className='text-xs text-default-600 truncate'>
+                                    {authUser.user_metadata?.full_name || authUser.email}
+                                </span>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    const name = authUser.user_metadata?.full_name;
+                                    if (name && !p.name) update({ name });
+                                }}
+                                className='flex items-center gap-1.5 text-xs font-medium text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 flex-shrink-0 ml-2 transition-colors'
+                            >
+                                <MdSync className='text-base' />
+                                Sync name
+                            </button>
+                        </div>
+                    )}
 
                     <div className='grid grid-cols-2 gap-3'>
                         {/* Name */}

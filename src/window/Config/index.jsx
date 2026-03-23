@@ -5,7 +5,9 @@ import { checkUpdate } from '@tauri-apps/api/updater';
 import { invoke } from '@tauri-apps/api';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from 'next-themes';
 import { MdSystemUpdate } from 'react-icons/md';
+import { HiSun, HiMoon } from 'react-icons/hi';
 
 import WindowControl from '../../components/WindowControl';
 import SideBar from './components/SideBar';
@@ -13,6 +15,41 @@ import { osType, appVersion } from '../../utils/env';
 import { useConfig } from '../../hooks';
 import routes from './routes';
 import './style.css';
+
+// Compact theme toggle for the header
+function HeaderThemeToggle() {
+    const { resolvedTheme, setTheme } = useTheme();
+    const [mounted, setMounted] = React.useState(false);
+    React.useEffect(() => { setMounted(true); }, []);
+    if (!mounted) return null;
+    const isDark = resolvedTheme === 'dark';
+    return (
+        <div className="flex items-center bg-content2 dark:bg-content2 rounded-lg p-0.5 gap-0.5">
+            <button
+                onClick={() => setTheme('light')}
+                title="Light"
+                className={`p-1.5 rounded-md transition-all duration-200 ${
+                    !isDark
+                        ? 'bg-white dark:bg-content3 text-brand-600 shadow-sm'
+                        : 'text-default-400 hover:text-default-600 dark:hover:text-default-300'
+                }`}
+            >
+                <HiSun className="text-[15px]" />
+            </button>
+            <button
+                onClick={() => setTheme('dark')}
+                title="Dark"
+                className={`p-1.5 rounded-md transition-all duration-200 ${
+                    isDark
+                        ? 'bg-content3 text-brand-400 shadow-sm'
+                        : 'text-default-400 hover:text-default-600 dark:hover:text-default-300'
+                }`}
+            >
+                <HiMoon className="text-[15px]" />
+            </button>
+        </div>
+    );
+}
 
 // Logo Component
 function Logo() {
@@ -54,7 +91,7 @@ export default function Config() {
             {/* Sidebar */}
             <aside
                 className={`
-                    w-[240px] h-screen flex flex-col
+                    w-[210px] h-screen flex flex-col
                     ${transparent && osType !== 'Windows_NT' ? 'bg-background/80 backdrop-blur-lg' : 'bg-content1'}
                     border-r border-content3 dark:border-content3
                     ${osType === 'Linux' && 'rounded-l-[10px] border-l border-t border-b'}
@@ -109,7 +146,7 @@ export default function Config() {
                     {/* Drag region for header */}
                     <div
                         data-tauri-drag-region="true"
-                        className="absolute top-0 left-[240px] right-0 h-[12px]"
+                        className="absolute top-0 left-[210px] right-0 h-[12px]"
                     />
 
                     {/* Page Title */}
@@ -119,12 +156,11 @@ export default function Config() {
                         </h1>
                     </div>
 
-                    {/* Window Controls (non-macOS) */}
-                    {osType !== 'Darwin' && (
-                        <div className="flex items-center">
-                            <WindowControl />
-                        </div>
-                    )}
+                    {/* Right side: theme toggle + window controls */}
+                    <div className="flex items-center gap-2">
+                        <HeaderThemeToggle />
+                        {osType !== 'Darwin' && <WindowControl />}
+                    </div>
                 </header>
 
                 {/* Page Content */}

@@ -11,8 +11,6 @@ import { invoke } from '@tauri-apps/api/tauri'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string
-const FUNCTIONS_BASE = `${SUPABASE_URL}/functions/v1`
-
 // Local port used for OAuth callback — must match Supabase allowed redirect URLs
 const OAUTH_CALLBACK_PORT = 54321
 
@@ -118,34 +116,34 @@ export interface SonioxKeyResult {
   api_key: string
   expires_at: string
   remaining_seconds: number
+  debited_seconds: number  // seconds pre-debited; countdown shows this, not remaining
   session_id: string
 }
 
 export async function getSonioxKey(): Promise<SonioxKeyResult> {
-  const session = await getSession()
-  if (!session) throw new Error('not_logged_in')
+  // supabase.functions.invoke() sends both Authorization + apikey headers,
+  // which is required for the Supabase Edge Function gateway to verify the JWT.
+  const { data, error } = await supabase.functions.invoke<SonioxKeyResult>('get-soniox-key')
 
-  const res = await fetch(`${FUNCTIONS_BASE}/get-soniox-key`, {
-    headers: { Authorization: `Bearer ${session.access_token}` },
-  })
+  if (error) {
+    // FunctionsHttpError carries the response body; extract our error field
+    const msg: string = (error as any)?.context?.error
+      ?? (error as any)?.message
+      ?? 'server_error'
+    throw new Error(msg)
+  }
 
-  const data = await res.json()
-  if (!res.ok) throw new Error(data.error ?? 'unknown_error')
-  return data as SonioxKeyResult
+  if (!data) throw new Error('server_error')
+  return data
 }
 
 export async function reportUsage(sessionId: string, durationSeconds: number): Promise<void> {
-  const session = await getSession()
-  if (!session) return // not logged in — nothing to report
+  const user = await getUser()
+  if (!user) return // not logged in — nothing to report
 
   try {
-    await fetch(`${FUNCTIONS_BASE}/report-usage`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ session_id: sessionId, duration_seconds: durationSeconds }),
+    await supabase.functions.invoke('report-usage', {
+      body: { session_id: sessionId, duration_seconds: durationSeconds },
     })
   } catch (e) {
     console.warn('[transkit-cloud] reportUsage failed (non-blocking):', e)
@@ -156,7 +154,13 @@ export async function reportUsage(sessionId: string, durationSeconds: number): P
 
 export interface UserProfile {
   email: string | null
+  full_name: string | null
   avatar_url: string | null
+  role: string | null
+  company: string | null
+  experience_level: string | null
+  expertise: string[] | null
+  notes: string | null
   trial_seconds_used: number
   trial_limit_seconds: number
 }
@@ -167,12 +171,24 @@ export async function getUserProfile(): Promise<UserProfile | null> {
 
   const { data, error } = await supabase
     .from('profiles')
-    .select('email, avatar_url, trial_seconds_used, trial_limit_seconds')
+    .select('email, full_name, avatar_url, role, company, experience_level, expertise, notes, trial_seconds_used, trial_limit_seconds')
     .eq('id', user.id)
     .single()
 
   if (error || !data) return null
   return data as UserProfile
+}
+
+export type ProfilePatch = Partial<Pick<UserProfile, 'full_name' | 'role' | 'company' | 'experience_level' | 'expertise' | 'notes'>>
+
+export async function updateUserProfile(patch: ProfilePatch): Promise<void> {
+  const user = await getUser()
+  if (!user) return
+
+  await supabase
+    .from('profiles')
+    .update(patch)
+    .eq('id', user.id)
 }
 
 // ─── Internal helpers ─────────────────────────────────────────────────────────
@@ -182,6 +198,7 @@ async function _ensureProfile(user: User): Promise<void> {
     {
       id: user.id,
       email: user.email,
+      full_name: user.user_metadata?.full_name ?? null,
       avatar_url: user.user_metadata?.avatar_url ?? null,
     },
     { onConflict: 'id', ignoreDuplicates: true }

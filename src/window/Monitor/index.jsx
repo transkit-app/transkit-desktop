@@ -168,6 +168,7 @@ export default function Monitor() {
     const [provisional, setProvisional] = useState('');
     const [audioCapabilities, setAudioCapabilities] = useState({ system_audio: false, microphone: true });
     const [errorMsg, setErrorMsg] = useState('');
+    const [trialNotice, setTrialNotice] = useState(null); // { remainingSeconds } — shown on trial start
 
     // Auto-save state
     const [saveStatus, setSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
@@ -372,10 +373,13 @@ export default function Monitor() {
                 cloudSessionRef.current = {
                     id: result.session_id,
                     startTime: Date.now(),
-                    remainingSeconds: result.remaining_seconds,
+                    debitedSeconds: result.debited_seconds,
                 };
-                // Start countdown timer
-                setCloudCountdown(result.remaining_seconds);
+                // Show trial notice banner, auto-dismiss after 4s
+                setTrialNotice({ remainingSeconds: result.remaining_seconds });
+                setTimeout(() => setTrialNotice(null), 4000);
+                // Countdown based on debited window for this session
+                setCloudCountdown(result.debited_seconds);
                 countdownTimerRef.current = setInterval(() => {
                     setCloudCountdown((prev) => {
                         if (prev <= 1) {
@@ -387,9 +391,11 @@ export default function Monitor() {
                 }, 1000);
             } catch (err) {
                 if (err.message === 'trial_expired') {
-                    setErrorMsg('Your 10-minute trial has been used. Add your own Soniox API key in Settings to continue.');
+                    setErrorMsg('Your 5-minute trial has been used. Add your own Soniox API key in Settings to continue.');
                 } else if (err.message === 'not_logged_in') {
                     setErrorMsg('Sign in to your Transkit account to use the free trial.');
+                } else if (err.message === 'profile_not_found') {
+                    setErrorMsg('Account profile not found. Please sign out and sign in again to fix this.');
                 } else {
                     setErrorMsg(`Could not get trial key: ${err.message}`);
                 }
@@ -494,10 +500,13 @@ export default function Monitor() {
     const stop = useCallback(async (silent = false) => {
         setIsRunning(false);
 
-        // Report cloud usage if this was a cloud-keyed session
+        // Reconcile cloud usage: report actual duration so server refunds unused debited seconds
         if (cloudSessionRef.current) {
-            const { id, startTime } = cloudSessionRef.current;
-            const durationSeconds = Math.floor((Date.now() - startTime) / 1000);
+            const { id, startTime, debitedSeconds } = cloudSessionRef.current;
+            const durationSeconds = Math.min(
+                Math.floor((Date.now() - startTime) / 1000),
+                debitedSeconds,
+            );
             cloudSessionRef.current = null;
             clearInterval(countdownTimerRef.current);
             setCloudCountdown(null);
@@ -953,6 +962,16 @@ export default function Monitor() {
                     <span className='text-xs'>⏱</span>
                     <p className={`text-xs font-mono ${cloudCountdown <= 60 ? 'text-danger' : 'text-warning-600 dark:text-warning-400'}`}>
                         Trial: {Math.floor(cloudCountdown / 60)}:{String(cloudCountdown % 60).padStart(2, '0')} remaining
+                    </p>
+                </div>
+            )}
+
+            {/* Trial notice — shown briefly on trial start */}
+            {trialNotice && (
+                <div className='mx-2 mt-1 px-2 py-1.5 bg-brand-500/10 border border-brand-500/20 rounded-lg flex items-center gap-1.5'>
+                    <span className='text-xs'>☁️</span>
+                    <p className='text-xs text-brand-600 dark:text-brand-400 font-medium'>
+                        Using Transkit Cloud trial — {Math.floor(trialNotice.remainingSeconds / 60)}:{String(trialNotice.remainingSeconds % 60).padStart(2, '0')} remaining
                     </p>
                 </div>
             )}

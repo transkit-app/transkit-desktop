@@ -2,6 +2,10 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const SONIOX_API_URL = 'https://soniox.com/v1/auth/temporary-api-key'
 
+// Maximum seconds to pre-debit per session (30 minutes).
+// Limits blast radius if client never calls report-usage.
+const MAX_SESSION_CAP = 1800
+
 Deno.serve(async (req: Request) => {
   // CORS preflight
   if (req.method === 'OPTIONS') {
@@ -37,7 +41,10 @@ Deno.serve(async (req: Request) => {
 
   if (profileError || !profile) {
     // Profile may not exist yet (race on first login), create it
-    await admin.from('profiles').insert({ id: user.id, email: user.email }).onConflict('id').ignore()
+    await admin.from('profiles').upsert(
+      { id: user.id, email: user.email },
+      { onConflict: 'id', ignoreDuplicates: true }
+    )
     return json({ error: 'profile_not_found' }, 404)
   }
 
@@ -50,7 +57,20 @@ Deno.serve(async (req: Request) => {
     }, 403)
   }
 
-  // 3. Create session record to get a session_id
+  // 3. Calculate how many seconds to debit (cap per session)
+  const debitSeconds = Math.min(remaining, MAX_SESSION_CAP)
+
+  // 4. Pre-debit immediately — prevents abuse even if client never calls report-usage
+  const { error: debitError } = await admin.rpc('debit_trial_usage', {
+    p_user_id: user.id,
+    p_seconds: debitSeconds,
+  })
+  if (debitError) {
+    console.error('Debit error:', debitError)
+    return json({ error: 'server_error' }, 500)
+  }
+
+  // 5. Create session record with debited_seconds so report-usage can reconcile
   const sessionId = crypto.randomUUID()
   const referenceId = `${user.id}:${sessionId}`
 
@@ -58,10 +78,11 @@ Deno.serve(async (req: Request) => {
     id: sessionId,
     user_id: user.id,
     duration_seconds: 0,
+    debited_seconds: debitSeconds,
     soniox_reference_id: referenceId,
   })
 
-  // 4. Request temporary key from Soniox
+  // 6. Request temporary key from Soniox (expires after debited window)
   const masterKey = Deno.env.get('SONIOX_MASTER_API_KEY')
   if (!masterKey) return json({ error: 'server_misconfigured' }, 500)
 
@@ -73,12 +94,18 @@ Deno.serve(async (req: Request) => {
     },
     body: JSON.stringify({
       usage_type: 'transcribe_websocket',
-      expires_in_seconds: Math.min(remaining, 3600), // Soniox max = 3600s
+      expires_in_seconds: debitSeconds,
       client_reference_id: referenceId,
     }),
   })
 
   if (!sonioxRes.ok) {
+    // Soniox call failed — refund the pre-debit so the user isn't charged
+    await admin.rpc('reconcile_trial_usage', {
+      p_user_id: user.id,
+      p_refund_seconds: debitSeconds,
+    })
+    await admin.from('usage_sessions').delete().eq('id', sessionId)
     const detail = await sonioxRes.text()
     console.error('Soniox API error:', sonioxRes.status, detail)
     return json({ error: 'soniox_error' }, 502)
@@ -90,6 +117,7 @@ Deno.serve(async (req: Request) => {
     api_key,
     expires_at,
     remaining_seconds: remaining,
+    debited_seconds: debitSeconds,
     session_id: sessionId,
   })
 })
@@ -106,7 +134,7 @@ function json(data: unknown, status = 200) {
 function corsHeaders() {
   return {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, content-type',
+    'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info, x-supabase-api-version',
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
   }
 }

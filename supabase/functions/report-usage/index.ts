@@ -33,14 +33,32 @@ Deno.serve(async (req: Request) => {
     return json({ error: 'invalid_body' }, 400)
   }
 
-  if (!session_id || duration_seconds <= 0) {
-    return json({ ok: true }) // nothing to record
+  if (!session_id) return json({ error: 'missing_session_id' }, 400)
+
+  // 3. Fetch session to get debited_seconds (verify ownership via user_id)
+  const { data: session, error: sessionFetchError } = await admin
+    .from('usage_sessions')
+    .select('debited_seconds, duration_seconds')
+    .eq('id', session_id)
+    .eq('user_id', user.id)
+    .single()
+
+  if (sessionFetchError || !session) {
+    return json({ error: 'session_not_found' }, 404)
   }
 
-  // 3. Update session duration (verify ownership via user_id check)
+  // Ignore duplicate reconcile calls (duration already set)
+  if (session.duration_seconds > 0) {
+    return json({ ok: true, note: 'already_reconciled' })
+  }
+
+  const actual = Math.min(duration_seconds, session.debited_seconds)
+  const refund = session.debited_seconds - actual
+
+  // 4. Update session with actual duration
   const { error: sessionError } = await admin
     .from('usage_sessions')
-    .update({ duration_seconds })
+    .update({ duration_seconds: actual })
     .eq('id', session_id)
     .eq('user_id', user.id)
 
@@ -49,18 +67,19 @@ Deno.serve(async (req: Request) => {
     return json({ error: 'update_failed' }, 500)
   }
 
-  // 4. Atomically add to profile total
-  const { error: rpcError } = await admin.rpc('increment_trial_usage', {
-    p_user_id: user.id,
-    p_seconds: duration_seconds,
-  })
-
-  if (rpcError) {
-    console.error('RPC error:', rpcError)
-    return json({ error: 'increment_failed' }, 500)
+  // 5. Refund unused seconds back to profile
+  if (refund > 0) {
+    const { error: refundError } = await admin.rpc('reconcile_trial_usage', {
+      p_user_id: user.id,
+      p_refund_seconds: refund,
+    })
+    if (refundError) {
+      console.error('Refund RPC error:', refundError)
+      // Non-fatal: session is recorded, refund can be retried manually
+    }
   }
 
-  return json({ ok: true })
+  return json({ ok: true, actual_seconds: actual, refunded_seconds: refund })
 })
 
 function json(data: unknown, status = 200) {
@@ -73,7 +92,7 @@ function json(data: unknown, status = 200) {
 function corsHeaders() {
   return {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, content-type',
+    'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info, x-supabase-api-version',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
   }
 }
