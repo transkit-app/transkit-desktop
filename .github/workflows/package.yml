@@ -470,7 +470,7 @@ jobs:
               run: |
                   brew tap transkit-app/tap
                   brew update
-                  brew bump-cask-pr --tap transkit-app/tap transkit --version ${{ env.VERSION }} --no-browse
+                  brew bump-cask-pr transkit-app/tap/transkit --version ${{ env.VERSION }} --no-browse --no-fork
 
     # winget:
     #     name: Update WinGet Package
