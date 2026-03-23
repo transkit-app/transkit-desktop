@@ -457,7 +457,7 @@
           "add": "Thêm Prompt"
         },
         "geminipro": {
-          "title": "Gemini Pro",
+          "title": "Gemini",
           "request_path": "Đường dẫn yêu cầu",
           "api_key": "Api Key",
           "stream": "Chế độ Stream",

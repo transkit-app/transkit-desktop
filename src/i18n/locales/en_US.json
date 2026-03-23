@@ -458,7 +458,7 @@
           "add": "Add Prompt"
         },
         "geminipro": {
-          "title": "Gemini Pro",
+          "title": "Gemini",
           "request_path": "Request Path",
           "api_key": "Api Key",
           "stream": "Stream Mode",

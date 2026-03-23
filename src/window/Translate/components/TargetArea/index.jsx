@@ -85,8 +85,13 @@ export default function TargetArea(props) {
     const { t } = useTranslation();
     const textAreaRef = useRef();
     const toastStyle = useToastStyle();
+    const toastStyleRef = useRef(toastStyle);
     const speak = useVoice();
     const theme = useTheme();
+
+    useEffect(() => {
+        toastStyleRef.current = toastStyle;
+    }, [toastStyle]);
 
     useEffect(() => {
         if (error) {
@@ -373,6 +378,7 @@ export default function TargetArea(props) {
 
     const [boundRef, bounds] = useMeasure({ scroll: true });
     const previousHide = useRef(hide);
+    const collectionServiceListKey = (collectionServiceList ?? []).join('|');
     
     useEffect(() => {
         previousHide.current = hide;
@@ -396,7 +402,7 @@ export default function TargetArea(props) {
                     className='h-[26px] w-[26px] min-w-0 bg-transparent'
                     onPress={() => {
                         handleSpeak().catch((e) => {
-                            toast.error(e.toString(), { style: toastStyle });
+                            toast.error(e.toString(), { style: toastStyleRef.current });
                         });
                     }}
                 >
@@ -587,11 +593,11 @@ export default function TargetArea(props) {
                                     }).then(
                                         (_) => {
                                             toast.success(t('translate.add_collection_success'), {
-                                                style: toastStyle,
+                                                style: toastStyleRef.current,
                                             });
                                         },
                                         (e) => {
-                                            toast.error(e.toString(), { style: toastStyle });
+                                            toast.error(e.toString(), { style: toastStyleRef.current });
                                         }
                                     );
                                 } else {
@@ -606,11 +612,11 @@ export default function TargetArea(props) {
                                         .then(
                                             (_) => {
                                                 toast.success(t('translate.add_collection_success'), {
-                                                    style: toastStyle,
+                                                    style: toastStyleRef.current,
                                                 });
                                             },
                                             (e) => {
-                                                toast.error(e.toString(), { style: toastStyle });
+                                                toast.error(e.toString(), { style: toastStyleRef.current });
                                             }
                                         );
                                 }
@@ -633,7 +639,17 @@ export default function TargetArea(props) {
                     );
                 })}
         </div>
-    ), [result, error, isLoading, currentTranslateServiceInstanceKey, sourceLanguage, targetLanguage, detectLanguage, collectionServiceList, t, toastStyle]);
+    ), [
+        result,
+        error,
+        isLoading,
+        currentTranslateServiceInstanceKey,
+        sourceLanguage,
+        targetLanguage,
+        detectLanguage,
+        collectionServiceListKey,
+        t,
+    ]);
 
     useEffect(() => {
         setHeaderButtons(headerButtonsContent);
