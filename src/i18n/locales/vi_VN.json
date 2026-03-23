@@ -147,8 +147,8 @@
         "hide_window": "Ẩn cửa sổ nhận diện"
       },
       "audio_translate": {
-        "label": "Dịch Audio Realtime",
-        "title": "Dịch Audio Thời Gian Thực"
+        "label": "Dịch âm thanh realtime",
+        "title": "Dịch âm thanh thời gian thực"
       },
       "hotkey": {
         "label": "Phím tắt",
@@ -397,6 +397,7 @@
       "latest": "## Đã cài đặt phiên bản mới nhất",
       "progress": "Tiến độ tải xuống",
       "update": "Cập nhật",
+      "update_available": "Có phiên bản mới",
       "downloading": "Đang tải xuống…",
       "installing": "Đang cài đặt…",
       "cancel": "Hủy",

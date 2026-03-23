@@ -398,6 +398,7 @@
       "latest": "## The latest version is installed",
       "progress": "Download Progress",
       "update": "Update",
+      "update_available": "Update Available",
       "downloading": "Downloading…",
       "installing": "Installing…",
       "cancel": "Cancel",

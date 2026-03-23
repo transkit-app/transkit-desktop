@@ -663,6 +663,7 @@ fn tray_menu_uk() -> tauri::SystemTrayMenu {
 
 fn tray_menu_vi() -> tauri::SystemTrayMenu {
     let input_translate = CustomMenuItem::new("input_translate", "Mở hộp thoại dịch");
+    let audio_monitor = CustomMenuItem::new("audio_monitor", "Dịch âm thanh realtime");
     let clipboard_monitor = CustomMenuItem::new("clipboard_monitor", "Dịch từ clipboard");
     let copy_source = CustomMenuItem::new("copy_source", "Ngôn ngữ nguồn");
     let copy_target = CustomMenuItem::new("copy_target", "Ngôn ngữ đích");
@@ -670,7 +671,6 @@ fn tray_menu_vi() -> tauri::SystemTrayMenu {
     let copy_disable = CustomMenuItem::new("copy_disable", "Tắt");
     let ocr_recognize = CustomMenuItem::new("ocr_recognize", "OCR - Nhận dạng văn bản");
     let ocr_translate = CustomMenuItem::new("ocr_translate", "OCR - Dịch ảnh chụp màn hình");
-    let audio_monitor = CustomMenuItem::new("audio_monitor", "Dịch âm thanh realtime");
     let config = CustomMenuItem::new("config", "Cài đặt");
     let check_update = CustomMenuItem::new("check_update", "Kiểm tra cập nhật");
     let restart = CustomMenuItem::new("restart", "Khởi động lại");

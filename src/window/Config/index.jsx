@@ -1,8 +1,11 @@
 import { useLocation, useRoutes } from 'react-router-dom';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { appWindow } from '@tauri-apps/api/window';
+import { checkUpdate } from '@tauri-apps/api/updater';
+import { invoke } from '@tauri-apps/api';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { MdSystemUpdate } from 'react-icons/md';
 
 import WindowControl from '../../components/WindowControl';
 import SideBar from './components/SideBar';
@@ -33,11 +36,17 @@ export default function Config() {
     const { t } = useTranslation();
     const location = useLocation();
     const page = useRoutes(routes);
+    const [updateAvailable, setUpdateAvailable] = useState(false);
 
     useEffect(() => {
         if (appWindow.label === 'config') {
             appWindow.show();
         }
+        checkUpdate().then((update) => {
+            if (update.shouldUpdate) {
+                setUpdateAvailable(true);
+            }
+        }).catch(() => {});
     }, []);
 
     return (
@@ -61,6 +70,24 @@ export default function Config() {
                 {/* Logo Area */}
                 <div className="py-4 shrink-0">
                     <Logo />
+                    {updateAvailable && (
+                        <div className="px-4 pt-2">
+                            <button
+                                onClick={() => invoke('updater_window')}
+                                className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold
+                                    bg-amber-500/10 text-amber-600 dark:bg-amber-400/10 dark:text-amber-400
+                                    hover:bg-amber-500/20 dark:hover:bg-amber-400/20 transition-colors duration-200
+                                    border border-amber-500/20 dark:border-amber-400/20"
+                            >
+                                <span className="relative flex h-2 w-2 shrink-0">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
+                                </span>
+                                {t('updater.update_available')}
+                                <MdSystemUpdate className="text-sm shrink-0" />
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 {/* Navigation */}

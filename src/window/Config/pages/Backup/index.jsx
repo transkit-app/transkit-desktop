@@ -25,7 +25,7 @@ import * as aliyun from './utils/aliyun';
 let refreshTimer = null;
 
 export default function Backup() {
-    const [backupType, setBackupType] = useConfig('backup_type', 'webdav');
+    const [backupType, setBackupType] = useConfig('backup_type', 'local');
     const [davUserName, setDavUserName] = useConfig('webdav_username', '');
     const [davPassword, setDavPassword] = useConfig('webdav_password', '');
     const [davUrl, setDavUrl] = useConfig('webdav_url', '');
