@@ -172,6 +172,10 @@
         "uninstall_success": "أزيل الملحق بنجاح",
         "homepage": "الصفحة الرئيسية"
       },
+      "account": {
+        "label": "Account",
+        "title": "Account"
+      },
       "backup": {
         "username": "اسم المستخدم",
         "password": "كلمة السر",

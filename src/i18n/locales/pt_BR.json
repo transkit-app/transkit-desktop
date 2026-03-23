@@ -176,6 +176,10 @@
         "label": "Histórico",
         "title": "Histórico"
       },
+      "account": {
+        "label": "Account",
+        "title": "Account"
+      },
       "backup": {
         "label": "Backup",
         "title": "Configurações de Backup",

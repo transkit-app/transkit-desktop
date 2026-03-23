@@ -167,6 +167,10 @@
         "label": "வரலாறு",
         "title": "வரலாறு"
       },
+      "account": {
+        "label": "Account",
+        "title": "Account"
+      },
       "backup": {
         "label": "காப்புப்பிரதி",
         "title": "காப்பு அமைப்புகள்",

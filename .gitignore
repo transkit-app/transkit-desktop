@@ -26,3 +26,6 @@ node-*/*
 .claude
 .pnpm-store/*
 .vscode/*
+.env
+.env.local
+supabase/.temp

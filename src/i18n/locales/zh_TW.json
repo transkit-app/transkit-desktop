@@ -177,6 +177,10 @@
         "label": "歷史記錄",
         "title": "歷史記錄"
       },
+      "account": {
+        "label": "Account",
+        "title": "Account"
+      },
       "backup": {
         "label": "備份設定",
         "title": "備份設定",

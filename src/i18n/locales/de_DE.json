@@ -175,6 +175,10 @@
         "label": "Verlauf",
         "title": "Verlauf"
       },
+      "account": {
+        "label": "Account",
+        "title": "Account"
+      },
       "backup": {
         "label": "Backup",
         "title": "Backup-Einstellungen",

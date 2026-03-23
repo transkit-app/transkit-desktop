@@ -245,6 +245,10 @@
         "label": "History",
         "title": "History"
       },
+      "account": {
+        "label": "Account",
+        "title": "Account"
+      },
       "backup": {
         "label": "Backup",
         "title": "Backup Settings",

@@ -361,6 +361,10 @@
         "incremental_translate": "Tradução Incremental",
         "target_language": "Idioma de Destino"
       },
+      "account": {
+        "label": "Account",
+        "title": "Account"
+      },
       "backup": {
         "local": "Local",
         "empty": "Ainda não fez backup",

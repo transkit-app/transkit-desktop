@@ -10,6 +10,7 @@ import Backup from '../pages/Backup';
 import About from '../pages/About';
 import AudioTranslate from '../pages/AudioTranslate';
 import Profile from '../pages/Profile';
+import Account from '../pages/Account';
 
 const routes = [
     {
@@ -51,6 +52,10 @@ const routes = [
     {
         path: '/about',
         element: <About />,
+    },
+    {
+        path: '/account',
+        element: <Account />,
     },
     {
         path: '/',

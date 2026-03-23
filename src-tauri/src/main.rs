@@ -3,6 +3,7 @@
 
 mod audio;
 mod audio_cmd;
+mod auth;
 mod backup;
 mod clipboard;
 mod cmd;
@@ -18,6 +19,7 @@ mod updater;
 mod window;
 
 use audio_cmd::*;
+use auth::start_oauth_server;
 use backup::*;
 use clipboard::*;
 use cmd::*;
@@ -167,7 +169,8 @@ fn main() {
             stop_audio_playback,
             synthesize_edge_tts,
             open_config_window,
-            restart_app
+            restart_app,
+            start_oauth_server
         ])
         .on_system_tray_event(tray_event_handler)
         .build(tauri::generate_context!())

@@ -164,6 +164,10 @@
         "title": "Historial",
         "label": "Historial"
       },
+      "account": {
+        "label": "Account",
+        "title": "Account"
+      },
       "backup": {
         "label": "Copia de seguridad",
         "username": "Nombre de usuario",

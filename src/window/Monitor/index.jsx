@@ -19,6 +19,7 @@ import MonitorLog from './components/MonitorLog';
 import ContextPanel from './components/ContextPanel';
 import * as transcriptionServices from '../../services/transcription';
 import { getTTSQueue } from './tts';
+import { getSonioxKey, reportUsage, getUser } from '../../lib/transkit-cloud';
 
 const MAX_ENTRIES = 100;
 const SUB_MODE_HEIGHT = 190;
@@ -179,6 +180,11 @@ export default function Monitor() {
     const transcriptionClientRef = useRef({ name: null, client: null });
     const pendingOriginalRef = useRef(null);
     const unlistenAudioRef = useRef(null);
+
+    // Cloud session tracking (used when BYO key is absent)
+    const cloudSessionRef = useRef(null); // { id, startTime, remainingSeconds }
+    const [cloudCountdown, setCloudCountdown] = useState(null); // seconds remaining
+    const countdownTimerRef = useRef(null);
 
     // ── Backward migration: old context keys → new format ────────────────────
     useEffect(() => {
@@ -353,7 +359,43 @@ export default function Monitor() {
         const serviceName = getServiceName(activeTranscriptionService);
         const transcriptionConfig = (await store.get(activeTranscriptionService)) ?? {};
 
-        if (!transcriptionConfig.apiKey) {
+        // If no BYO key and service is Soniox, try fetching a cloud trial key
+        if (!transcriptionConfig.apiKey && serviceName === 'soniox_stt') {
+            const user = await getUser();
+            if (!user) {
+                setErrorMsg('Sign in to your Transkit account to use the free trial, or add your own Soniox API key in Settings.');
+                return;
+            }
+            try {
+                const result = await getSonioxKey();
+                transcriptionConfig.apiKey = result.api_key;
+                cloudSessionRef.current = {
+                    id: result.session_id,
+                    startTime: Date.now(),
+                    remainingSeconds: result.remaining_seconds,
+                };
+                // Start countdown timer
+                setCloudCountdown(result.remaining_seconds);
+                countdownTimerRef.current = setInterval(() => {
+                    setCloudCountdown((prev) => {
+                        if (prev <= 1) {
+                            clearInterval(countdownTimerRef.current);
+                            return 0;
+                        }
+                        return prev - 1;
+                    });
+                }, 1000);
+            } catch (err) {
+                if (err.message === 'trial_expired') {
+                    setErrorMsg('Your 10-minute trial has been used. Add your own Soniox API key in Settings to continue.');
+                } else if (err.message === 'not_logged_in') {
+                    setErrorMsg('Sign in to your Transkit account to use the free trial.');
+                } else {
+                    setErrorMsg(`Could not get trial key: ${err.message}`);
+                }
+                return;
+            }
+        } else if (!transcriptionConfig.apiKey) {
             setErrorMsg(t('monitor.no_api_key'));
             return;
         }
@@ -451,6 +493,17 @@ export default function Monitor() {
 
     const stop = useCallback(async (silent = false) => {
         setIsRunning(false);
+
+        // Report cloud usage if this was a cloud-keyed session
+        if (cloudSessionRef.current) {
+            const { id, startTime } = cloudSessionRef.current;
+            const durationSeconds = Math.floor((Date.now() - startTime) / 1000);
+            cloudSessionRef.current = null;
+            clearInterval(countdownTimerRef.current);
+            setCloudCountdown(null);
+            reportUsage(id, durationSeconds); // fire-and-forget
+        }
+
         try { await invoke('stop_audio_capture'); } catch (_) {}
         transcriptionClientRef.current?.client?.disconnect();
         if (unlistenAudioRef.current) {
@@ -891,6 +944,16 @@ export default function Monitor() {
                     >
                         <MdClose className='text-[14px]' />
                     </button>
+                </div>
+            )}
+
+            {/* Cloud trial countdown */}
+            {cloudCountdown !== null && isRunning && (
+                <div className={`mx-2 mt-1 px-2 py-1 rounded-lg flex items-center gap-1.5 ${cloudCountdown <= 60 ? 'bg-danger/10 border border-danger/20' : 'bg-warning/10 border border-warning/20'}`}>
+                    <span className='text-xs'>⏱</span>
+                    <p className={`text-xs font-mono ${cloudCountdown <= 60 ? 'text-danger' : 'text-warning-600 dark:text-warning-400'}`}>
+                        Trial: {Math.floor(cloudCountdown / 60)}:{String(cloudCountdown % 60).padStart(2, '0')} remaining
+                    </p>
                 </div>
             )}
 

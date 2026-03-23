@@ -178,6 +178,10 @@
         "label": "历史记录",
         "title": "历史记录"
       },
+      "account": {
+        "label": "Account",
+        "title": "Account"
+      },
       "backup": {
         "label": "备份设置",
         "title": "备份设置",

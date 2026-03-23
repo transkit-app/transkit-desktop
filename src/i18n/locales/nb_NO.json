@@ -72,6 +72,10 @@
       "translate": {
         "font_size": {}
       },
+      "account": {
+        "label": "Account",
+        "title": "Account"
+      },
       "backup": {},
       "recognize": {},
       "hotkey": {},

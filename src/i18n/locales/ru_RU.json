@@ -176,6 +176,10 @@
         "label": "История",
         "title": "История"
       },
+      "account": {
+        "label": "Account",
+        "title": "Account"
+      },
       "backup": {
         "label": "Бэкап",
         "title": "Настройки бэкапа",

@@ -160,6 +160,10 @@
         "bing": "Bing",
         "incremental_translate": "תרגום מצטבר"
       },
+      "account": {
+        "label": "Account",
+        "title": "Account"
+      },
       "backup": {
         "password": "סיסמא",
         "label": "גיבוי",

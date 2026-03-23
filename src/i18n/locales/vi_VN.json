@@ -245,6 +245,10 @@
         "label": "Lịch sử",
         "title": "Lịch sử"
       },
+      "account": {
+        "label": "Account",
+        "title": "Account"
+      },
       "backup": {
         "label": "Sao lưu",
         "title": "Cài đặt sao lưu",

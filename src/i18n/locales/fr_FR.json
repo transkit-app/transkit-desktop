@@ -361,6 +361,10 @@
         },
         "history_disable": "Désactiver l'historique"
       },
+      "account": {
+        "label": "Account",
+        "title": "Account"
+      },
       "backup": {
         "local": "Local",
         "empty": "Vous n'avez encore rien sauvegardé",

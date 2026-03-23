@@ -9,7 +9,7 @@ import React from 'react';
 import { BsInfoSquareFill } from 'react-icons/bs';
 import { PiTranslateFill, PiTextboxFill } from 'react-icons/pi';
 import { AiFillAppstore, AiFillCloud } from 'react-icons/ai';
-import { MdKeyboardAlt, MdExtension, MdHeadset, MdPerson } from 'react-icons/md';
+import { MdKeyboardAlt, MdExtension, MdHeadset, MdPerson, MdAccountCircle } from 'react-icons/md';
 import { FaHistory } from 'react-icons/fa';
 import { HiSun, HiMoon } from 'react-icons/hi';
 
@@ -36,6 +36,7 @@ const navigationConfig = [
     {
         section: 'SYSTEM',
         items: [
+            { id: 'account', path: '/account', icon: MdAccountCircle, labelKey: 'config.account.label' },
             { id: 'backup', path: '/backup', icon: AiFillCloud, labelKey: 'config.backup.label' },
             { id: 'about', path: '/about', icon: BsInfoSquareFill, labelKey: 'config.about.label' },
         ],

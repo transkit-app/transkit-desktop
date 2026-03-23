@@ -221,6 +221,10 @@
         "label": "기록",
         "title": "기록"
       },
+      "account": {
+        "label": "Account",
+        "title": "Account"
+      },
       "backup": {
         "label": "백업",
         "title": "백업 설정",
