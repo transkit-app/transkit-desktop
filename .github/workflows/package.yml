@@ -444,34 +444,33 @@ jobs:
                       update.json
                       update-fix-runtime.json
 
-    # TransKit: Homebrew and WinGet disabled until package names are registered
-    # homebrew:
-    #     name: Update Homebrew cask
-    #     needs: build-for-macos
-    #     runs-on: macos-latest
-    #     if: startsWith(github.ref, 'refs/tags')
-    #     steps:
-    #         - name: Checkout repository
-    #           uses: actions/checkout@v4
-    #           with:
-    #               fetch-depth: 0
-    #         - name: Get Tag Name
-    #           run: |
-    #               echo "VERSION=$(git describe --tags | sed 's/-[0-9]*-.*//g')" >> $GITHUB_ENV
-    #               echo "VERSION=$(git describe --tags | sed 's/-[0-9]*-.*//g')"
-    #         - name: Set up Homebrew
-    #           uses: Homebrew/actions/setup-homebrew@master
-    #         - name: Set up Git
-    #           run: |
-    #               git config --global user.email support@transkit.app
-    #               git config --global user.name transkit-app
-    #         - name: Update Homebrew cask
-    #           env:
-    #               HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.TOKEN }}
-    #           run: |
-    #               brew tap transkit-app/homebrew-tap
-    #               brew update
-    #               brew bump-cask-pr transkit --version ${{ env.VERSION }} --no-browse
+    homebrew:
+        name: Update Homebrew cask
+        needs: build-for-macos
+        runs-on: macos-latest
+        if: startsWith(github.ref, 'refs/tags')
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+            - name: Get Tag Name
+              run: |
+                  echo "VERSION=$(git describe --tags | sed 's/-[0-9]*-.*//g')" >> $GITHUB_ENV
+                  echo "VERSION=$(git describe --tags | sed 's/-[0-9]*-.*//g')"
+            - name: Set up Homebrew
+              uses: Homebrew/actions/setup-homebrew@master
+            - name: Set up Git
+              run: |
+                  git config --global user.email support@transkit.app
+                  git config --global user.name transkit-app
+            - name: Update Homebrew cask
+              env:
+                  HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+              run: |
+                  brew tap transkit-app/tap
+                  brew update
+                  brew bump-cask-pr --tap transkit-app/tap transkit --version ${{ env.VERSION }} --no-browse
 
     # winget:
     #     name: Update WinGet Package
