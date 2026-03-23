@@ -15,7 +15,7 @@ import './style.css';
 function Logo() {
     return (
         <div className="flex items-center gap-3 px-4" data-tauri-drag-region="true">
-            <img src="icon.png" alt="TransKit" className="w-10 h-10 rounded-xl" />
+            <img src="icon.png" alt="TransKit" className="w-10 h-10" />
             <div className="flex flex-col">
                 <span className="text-base font-heading font-semibold text-gradient">
                     TransKit

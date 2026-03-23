@@ -21,5 +21,8 @@ dist-ssr
 *.sln
 *.sw?
 .serena/*
-.planning/
+.planning/*
 node-*/*
+.claude
+.pnpm-store/*
+.vscode/*
