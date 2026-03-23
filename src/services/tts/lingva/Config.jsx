@@ -18,7 +18,7 @@ export function Config(props) {
         instanceKey,
         {
             [INSTANCE_NAME_CONFIG_KEY]: t('services.tts.lingva_tts.title'),
-            requestPath: 'lingva.pot-app.com',
+            requestPath: 'lingva.transkit.app',
         },
         { sync: false }
     );
@@ -48,7 +48,7 @@ export function Config(props) {
                     <h3 className='my-auto'>{t('services.help')}</h3>
                     <Button
                         onPress={() => {
-                            open('https://pot-app.com/docs/api/tts/lingva.html');
+                            open('https://transkit.app/docs/api/tts/lingva.html');
                         }}
                     >
                         {t('services.help')}

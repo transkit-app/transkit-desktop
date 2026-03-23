@@ -3,7 +3,7 @@ import { fetch, Body } from '@tauri-apps/api/http';
 export async function translate(text, from, to) {
     let plain_text = text.replaceAll('/', '@@');
     let encode_text = encodeURIComponent(plain_text);
-    const res = await fetch(`https://lingva.pot-app.com/api/v1/${from}/${to}/${encode_text}`, {
+    const res = await fetch(`https://lingva.transkit.app/api/v1/${from}/${to}/${encode_text}`, {
         method: 'GET',
     });
 

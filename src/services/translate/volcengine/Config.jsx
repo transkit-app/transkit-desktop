@@ -66,7 +66,7 @@ export function Config(props) {
                     <h3 className='my-auto'>{t('services.help')}</h3>
                     <Button
                         onPress={() => {
-                            open('https://pot-app.com/docs/api/translate/volcengine.html');
+                            open('https://transkit.app/docs/api/translate/volcengine.html');
                         }}
                     >
                         {t('services.help')}

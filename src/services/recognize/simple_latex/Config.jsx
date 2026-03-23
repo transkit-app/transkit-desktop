@@ -69,7 +69,7 @@ export function Config(props) {
                     <h3 className='my-auto'>{t('services.help')}</h3>
                     <Button
                         onPress={() => {
-                            open('https://pot-app.com/docs/api/recognize/simple_latex.html');
+                            open('https://transkit.app/docs/api/recognize/simple_latex.html');
                         }}
                     >
                         {t('services.help')}

@@ -164,7 +164,7 @@ export async function userInfo(token) {
 }
 
 export async function accessToken(code) {
-    const endpoints = ['https://transkit.app/api/ali_access_token', 'https://pot-app.com/api/ali_access_token'];
+    const endpoints = ['https://transkit.app/api/ali_access_token'];
     let lastError = null;
     for (const endpoint of endpoints) {
         const res = await fetch(endpoint, {
