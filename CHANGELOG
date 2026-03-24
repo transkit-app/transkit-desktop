@@ -1,3 +1,23 @@
+## 3.1.6 (2026-03-24)
+
+### New providers:
+
+-   **Gladia STT** — real-time speech-to-text via Gladia API with WebSocket live streaming, speaker diarization, and code-switching support
+-   **Deepgram STT** — real-time speech-to-text via Deepgram API with Nova-3 model, built-in translation to any target language via Google Cloud, and speaker diarization
+
+### Monitor improvements:
+
+-   log entries can now be sorted newest-first or oldest-first via the toolbar
+-   placeholder screen redesigned: the play button is now clickable to start a session directly
+-   active transcription provider is highlighted in the placeholder; configured providers can be switched without going to Settings
+-   TTS active provider is also shown and switchable from the placeholder screen
+
+### Account & cloud:
+
+-   user authentication and account management added (sign in / sign out via Config sidebar)
+-   trial usage display with live countdown when using Transkit Cloud transcription
+-   pre-debit usage model implemented for cloud sessions
+
 ## 3.1.1 (2026-03-20)
 
 ### Changes:
