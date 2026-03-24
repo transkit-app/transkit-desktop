@@ -247,7 +247,10 @@
       },
       "account": {
         "label": "Account",
-        "title": "Account"
+        "title": "Account",
+        "profile_title": "Hồ sơ",
+        "not_signed_in": "Chưa đăng nhập",
+        "sign_in_description": "Đăng nhập để đồng bộ hồ sơ và dữ liệu của bạn trên nhiều thiết bị."
       },
       "backup": {
         "label": "Sao lưu",

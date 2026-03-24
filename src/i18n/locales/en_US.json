@@ -247,7 +247,10 @@
       },
       "account": {
         "label": "Account",
-        "title": "Account"
+        "title": "Account",
+        "profile_title": "Profile",
+        "not_signed_in": "Not signed in",
+        "sign_in_description": "Sign in to sync your profile and data across devices."
       },
       "backup": {
         "label": "Backup",

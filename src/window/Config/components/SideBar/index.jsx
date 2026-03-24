@@ -121,6 +121,7 @@ function SectionHeader({ title }) {
 
 // Account Widget — fixed at the bottom of the sidebar
 function AccountWidget({ navigate }) {
+    const { t } = useTranslation();
     const [user, setUser] = React.useState(undefined); // undefined = loading
     const [localProfile] = useConfig('user_profile', {});
 
@@ -144,13 +145,13 @@ function AccountWidget({ navigate }) {
             >
                 {/* Icon sized like an avatar */}
                 <span className="flex items-center justify-center w-8 h-8 rounded-full bg-content2 dark:bg-content2 text-default-500 flex-shrink-0">
-                    <MdPerson className="text-[20px]" />
+                    <MdPerson className="text-[26px]" />
                 </span>
                 <div className="flex-1 min-w-0 text-left">
                     <p className="text-[13px] font-medium truncate text-foreground">
-                        {localName || 'Hồ Sơ'}
+                        {localName || t('config.account.profile_title')}
                     </p>
-                    <p className="text-[11px] text-default-400 truncate">Chưa đăng nhập</p>
+                    <p className="text-[11px] text-default-400 truncate">{t('config.account.not_signed_in')}</p>
                 </div>
             </button>
         );

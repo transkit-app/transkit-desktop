@@ -274,6 +274,7 @@ function TrialBar({ used, limit }) {
 // ─── Guest view (not logged in) ───────────────────────────────────────────────
 
 function GuestView() {
+  const { t } = useTranslation()
   const [loading, setLoading] = useState(null)
 
   const handleLogin = async (provider) => {
@@ -303,7 +304,7 @@ function GuestView() {
           <div>
             <h2 className='text-sm font-semibold mb-1'>Sign in to Transkit</h2>
             <p className='text-xs text-default-500'>
-              Sync your profile across devices and get 5 minutes of free Soniox real-time transcription.
+              {t('config.account.sign_in_description')}
             </p>
           </div>
 
@@ -394,8 +395,8 @@ function AccountDashboard({ user, cloudProfile, onSignOut }) {
         </CardBody>
       </Card>
 
-      {/* Trial usage */}
-      {cloudProfile && (
+      {/* Trial usage — temporarily hidden */}
+      {/* {cloudProfile && (
         <Card>
           <CardBody className='flex flex-col gap-3'>
             <p className='text-xs font-semibold text-default-500 uppercase tracking-wider'>
@@ -407,7 +408,7 @@ function AccountDashboard({ user, cloudProfile, onSignOut }) {
             />
           </CardBody>
         </Card>
-      )}
+      )} */}
 
       {/* Profile form — auto-saves to cloud */}
       <Card>
