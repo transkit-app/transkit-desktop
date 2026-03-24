@@ -737,6 +737,17 @@
           "chunk_interval": "Chunk interval (seconds)",
           "chunk_interval_hint": "Audio is buffered and sent to Whisper every N seconds. Lower = more responsive, higher = more accurate.",
           "batch_note": "Whisper is a batch API. Audio is sent in chunks, so there will be latency between speech and transcript."
+        },
+        "gladia_stt": {
+          "title": "Gladia",
+          "api_key": "API Key",
+          "api_key_hint": "Get your API key at",
+          "endpointing": "Endpointing (seconds)",
+          "endpointing_hint": "Silence duration that triggers end of an utterance. Lower = faster response, higher = more complete sentences. Recommended: 0.1s for live captions.",
+          "speech_threshold": "Speech threshold",
+          "speech_threshold_hint": "Minimum confidence to consider audio as speech (0–1). Lower = more sensitive, higher = less noise pickup.",
+          "batch_interval": "Audio batch interval (ms)",
+          "batch_interval_hint": "How often audio chunks are sent to Gladia. Lower = lower latency, higher = fewer network calls."
         }
       }
     },

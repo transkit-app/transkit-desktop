@@ -736,6 +736,17 @@
           "chunk_interval": "Chu kỳ gửi chunk (giây)",
           "chunk_interval_hint": "Audio được tích lũy và gửi lên Whisper mỗi N giây. Thấp hơn = phản hồi nhanh hơn, cao hơn = chính xác hơn.",
           "batch_note": "Whisper là API batch. Âm thanh được gửi theo từng đoạn nên sẽ có độ trễ giữa lời nói và bản ghi."
+        },
+        "gladia_stt": {
+          "title": "Gladia",
+          "api_key": "API Key",
+          "api_key_hint": "Lấy API key tại",
+          "endpointing": "Endpointing (giây)",
+          "endpointing_hint": "Khoảng lặng tối thiểu để xác nhận kết thúc câu. Thấp hơn = phản hồi nhanh hơn, cao hơn = câu đầy đủ hơn. Khuyến nghị: 0.1s cho phụ đề trực tiếp.",
+          "speech_threshold": "Ngưỡng phát hiện giọng nói",
+          "speech_threshold_hint": "Độ tin cậy tối thiểu để nhận diện âm thanh là giọng nói (0–1). Thấp hơn = nhạy hơn, cao hơn = ít bắt tiếng ồn hơn.",
+          "batch_interval": "Chu kỳ gửi audio (ms)",
+          "batch_interval_hint": "Tần suất gửi dữ liệu âm thanh lên Gladia. Thấp hơn = độ trễ thấp hơn, cao hơn = ít cuộc gọi mạng hơn."
         }
       }
     },

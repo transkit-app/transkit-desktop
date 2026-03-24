@@ -139,8 +139,8 @@ export default function Monitor() {
     // User profile (for AI suggestion context)
     const [userProfile] = useConfig('user_profile', {});
 
-    // Context — full Soniox context object
-    const [sonioxContext, setSonioxContext] = useConfig('monitor_context', EMPTY_CONTEXT);
+    // Context — passed to the active transcription provider (providers use what they support)
+    const [transcriptionContext, setTranscriptionContext] = useConfig('monitor_context', EMPTY_CONTEXT);
     // User-defined context templates (presets)
     const [contextTemplates, setContextTemplates] = useConfig('monitor_context_templates', []);
 
@@ -203,7 +203,7 @@ export default function Monitor() {
                         : [],
                     translation_terms: [],
                 };
-                setSonioxContext(migrated);
+                setTranscriptionContext(migrated);
                 await store.delete('monitor_context_domain');
                 await store.delete('monitor_context_terms');
                 await store.save();
@@ -460,7 +460,7 @@ export default function Monitor() {
             ...transcriptionConfig,
             sourceLanguage: sourceLang === 'auto' ? null : sourceLang,
             targetLanguage: targetLang,
-            customContext: sonioxContext,
+            customContext: transcriptionContext,
         });
 
         await addAudioChunkListener();
@@ -495,7 +495,7 @@ export default function Monitor() {
             }
             transcriptFileRef.current = null;
         }
-    }, [activeTranscriptionService, sourceLang, targetLang, sourceAudio, sonioxContext, autosaveEnabled, addAudioChunkListener, getOrCreateTranscriptionClient, flushSaveQueue, t]);
+    }, [activeTranscriptionService, sourceLang, targetLang, sourceAudio, transcriptionContext, autosaveEnabled, addAudioChunkListener, getOrCreateTranscriptionClient, flushSaveQueue, t]);
 
     const stop = useCallback(async (silent = false) => {
         setIsRunning(false);
@@ -921,10 +921,10 @@ export default function Monitor() {
                 >
                     <div className='p-3'>
                         <ContextPanel
-                            context={sonioxContext ?? EMPTY_CONTEXT}
+                            context={transcriptionContext ?? EMPTY_CONTEXT}
                             templates={contextTemplates ?? []}
                             aiServiceList={aiServiceList ?? []}
-                            onContextChange={setSonioxContext}
+                            onContextChange={setTranscriptionContext}
                             onSaveTemplate={handleSaveTemplate}
                             onDeleteTemplate={handleDeleteTemplate}
                             onOpenAiSettings={openAudioConfig}
