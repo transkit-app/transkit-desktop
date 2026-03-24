@@ -10,8 +10,11 @@ export async function initStore() {
     const appConfigPath = await join(appConfigDirPath, 'config.json');
     store = new Store(appConfigPath);
     try { await store.load(); } catch (_) { /* first run — config.json doesn't exist yet */ }
-    const _ = await watch(appConfigPath, async () => {
+    // Do NOT await watch() — on Windows, watching a non-existent file can hang the promise
+    // indefinitely, blocking React from rendering. Fire-and-forget is safe here since the
+    // callback only fires on subsequent file changes, not during initial load.
+    watch(appConfigPath, async () => {
         await store.load();
         await invoke('reload_store');
-    });
+    }).catch(() => {});
 }
