@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MdMicNone, MdVolumeUp, MdAutoAwesome, MdClose, MdKeyboardArrowDown, MdBookmark, MdBookmarkBorder, MdPlayCircle, MdTune } from 'react-icons/md';
+import { MdMicNone, MdVolumeUp, MdVolumeOff, MdAutoAwesome, MdClose, MdKeyboardArrowDown, MdBookmark, MdBookmarkBorder, MdPlayCircle, MdTune } from 'react-icons/md';
 import { motion, AnimatePresence } from 'framer-motion';
 import { writeTextFile } from '@tauri-apps/api/fs';
 import { generateAiSuggestion } from '../../../../utils/generateAiSuggestion';
+import { getServiceName } from '../../../../utils/service_instance';
 
 // ── Speaker helpers ───────────────────────────────────────────────────────────
 
@@ -24,6 +25,14 @@ function getSpeakerColor(speaker) {
     const idx = m ? (parseInt(m[1], 10) - 1) : Math.abs(speaker.charCodeAt(0));
     return SPEAKER_COLORS[idx % SPEAKER_COLORS.length];
 }
+
+const TTS_DISPLAY_NAMES = {
+    edge_tts:       'Edge TTS',
+    google_tts:     'Google TTS',
+    elevenlabs_tts: 'ElevenLabs',
+    vieneu_tts:     'VieNeu TTS',
+    openai_tts:     'OpenAI TTS',
+};
 
 // ── Tooltip wrapper ───────────────────────────────────────────────────────────
 
@@ -280,6 +289,48 @@ function BookmarkSidebar({ entries, bookmarks, entryRefs, scrollContainerRef }) 
     );
 }
 
+// ── Service chip group ────────────────────────────────────────────────────────
+
+function ServiceChipGroup({ label, icon, items, activeKey, onSelect, getLabel, activeColor = 'primary' }) {
+    // Compare by full key first, fall back to service-name-only match
+    // (handles cases where active key lacks @id suffix)
+    const isKeyActive = (instanceKey) =>
+        instanceKey === activeKey ||
+        (activeKey && getServiceName(instanceKey) === getServiceName(activeKey));
+
+    return (
+        <div className='flex flex-col items-center gap-2 w-full'>
+            <div className='flex items-center gap-1.5' style={{ color: 'hsl(var(--nextui-default-400))' }}>
+                {icon}
+                <p className='text-[10px] uppercase tracking-widest font-semibold'>{label}</p>
+            </div>
+            <div className='flex flex-wrap justify-center gap-1.5'>
+                {items.map(instanceKey => {
+                    const isActive = isKeyActive(instanceKey);
+                    return (
+                        <button
+                            key={instanceKey}
+                            onClick={() => onSelect?.(instanceKey)}
+                            className='px-3 py-1 rounded-full text-[11px] font-semibold border transition-all'
+                            style={isActive ? {
+                                borderColor: `hsl(var(--nextui-${activeColor}) / 0.7)`,
+                                color: `hsl(var(--nextui-${activeColor}))`,
+                                background: `hsl(var(--nextui-${activeColor}) / 0.12)`,
+                            } : {
+                                borderColor: 'hsl(var(--nextui-default-200))',
+                                color: 'hsl(var(--nextui-default-400))',
+                                background: 'transparent',
+                            }}
+                        >
+                            {getLabel(instanceKey)}
+                        </button>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function MonitorLog({
@@ -300,6 +351,14 @@ export default function MonitorLog({
     sourceLang = 'auto',
     targetLang = 'vi',
     transcriptFileRef = null,
+    onToggleRun,
+    activeTranscriptionService = '',
+    onSetTranscriptionService,
+    transcriptionServiceList = [],
+    activeTtsService = '',
+    onSetTtsService,
+    ttsServiceList = [],
+    isTTSEnabled = false,
 }) {
     const { t } = useTranslation();
     const scrollRef = useRef(null);
@@ -492,12 +551,51 @@ export default function MonitorLog({
                             </div>
                         </>
                     ) : (
-                        <div className='flex flex-col items-center justify-center h-full gap-3 select-none px-6 text-center'>
-                            <MdPlayCircle className='text-[44px] text-default-200' />
-                            <p className='text-sm font-medium text-default-400'>{t('monitor.placeholder')}</p>
-                            <div className='flex items-center gap-1.5 mt-1 px-3 py-2 rounded-lg bg-content2/60 max-w-[280px]'>
+                        <div className='flex flex-col items-center justify-center h-full gap-5 select-none px-4 text-center w-full'>
+                            {/* Clickable play button */}
+                            <button
+                                onClick={onToggleRun}
+                                className='group flex flex-col items-center gap-1.5 focus:outline-none'
+                                title={t('monitor.start')}
+                            >
+                                <MdPlayCircle className='text-[52px] text-default-300 group-hover:text-primary transition-colors duration-150' />
+                                <p className='text-sm font-medium text-default-400 group-hover:text-primary transition-colors duration-150'>
+                                    {t('monitor.placeholder')}
+                                </p>
+                            </button>
+
+                            {/* STT quick-switch — configured providers only */}
+                            {transcriptionServiceList.length > 0 && (
+                                <ServiceChipGroup
+                                    label='Transcription'
+                                    icon={<MdMicNone className='text-[13px]' />}
+                                    items={transcriptionServiceList}
+                                    activeKey={activeTranscriptionService}
+                                    onSelect={onSetTranscriptionService}
+                                    getLabel={k => t(`services.transcription.${getServiceName(k)}.title`, { defaultValue: getServiceName(k) })}
+                                    activeColor='primary'
+                                />
+                            )}
+
+                            {/* TTS quick-switch — configured providers only */}
+                            {ttsServiceList.length > 0 && (
+                                <ServiceChipGroup
+                                    label='TTS'
+                                    icon={isTTSEnabled
+                                        ? <MdVolumeUp className='text-[13px] text-secondary' />
+                                        : <MdVolumeOff className='text-[13px]' />}
+                                    items={ttsServiceList}
+                                    activeKey={activeTtsService}
+                                    onSelect={onSetTtsService}
+                                    getLabel={k => t(`services.tts.${getServiceName(k)}.title`, { defaultValue: TTS_DISPLAY_NAMES[getServiceName(k)] ?? getServiceName(k) })}
+                                    activeColor='secondary'
+                                />
+                            )}
+
+                            {/* Context hint */}
+                            <div className='flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-content2/60 w-full'>
                                 <MdTune className='text-[14px] text-default-400 flex-shrink-0' />
-                                <p className='text-[11px] text-default-400 leading-relaxed'>
+                                <p className='text-[11px] text-default-400 leading-relaxed text-center'>
                                     {t('monitor.placeholder_context_hint')}
                                 </p>
                             </div>

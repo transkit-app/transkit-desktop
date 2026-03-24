@@ -749,6 +749,23 @@
           "speech_threshold_hint": "Độ tin cậy tối thiểu để nhận diện âm thanh là giọng nói (0–1). Thấp hơn = nhạy hơn, cao hơn = ít bắt tiếng ồn hơn.",
           "batch_interval": "Chu kỳ gửi audio (ms)",
           "batch_interval_hint": "Tần suất gửi dữ liệu âm thanh lên Gladia. Thấp hơn = độ trễ thấp hơn, cao hơn = ít cuộc gọi mạng hơn."
+        },
+        "deepgram_stt": {
+          "title": "Deepgram",
+          "api_key": "Deepgram API Key",
+          "api_key_hint": "Lấy API key tại",
+          "google_api_key": "Google Cloud Translation API Key",
+          "google_api_key_hint": "Bật Cloud Translation API và tạo key tại",
+          "google_api_key_optional": "Để trống để chỉ nhận bản ghi (không dịch).",
+          "model": "Model",
+          "endpointing": "Endpointing (ms)",
+          "endpointing_hint": "Khoảng lặng (ms) để xác nhận kết thúc câu. Thấp hơn = ngắt câu nhanh hơn, cao hơn = câu đầy đủ hơn. Khuyến nghị: 100ms.",
+          "batch_interval": "Chu kỳ gửi audio (ms)",
+          "batch_interval_hint": "Tần suất gửi dữ liệu âm thanh lên Deepgram. Thấp hơn = độ trễ thấp hơn, cao hơn = ít cuộc gọi mạng hơn.",
+          "provisional_timeout": "Timeout xả provisional (ms)",
+          "provisional_timeout_hint": "Nếu không nhận được transcript mới trong khoảng thời gian này, văn bản provisional sẽ tự động được commit. Tránh văn bản bị treo ở cuối câu.",
+          "speaker_diarization": "Nhận diện người nói",
+          "speaker_diarization_hint": "Phân biệt và gán nhãn từng người nói. Tắt để giảm độ trễ."
         }
       }
     },

@@ -750,6 +750,23 @@
           "speech_threshold_hint": "Minimum confidence to consider audio as speech (0–1). Lower = more sensitive, higher = less noise pickup.",
           "batch_interval": "Audio batch interval (ms)",
           "batch_interval_hint": "How often audio chunks are sent to Gladia. Lower = lower latency, higher = fewer network calls."
+        },
+        "deepgram_stt": {
+          "title": "Deepgram",
+          "api_key": "Deepgram API Key",
+          "api_key_hint": "Get your API key at",
+          "google_api_key": "Google Cloud Translation API Key",
+          "google_api_key_hint": "Enable the Cloud Translation API and create a key at",
+          "google_api_key_optional": "Leave blank to skip translation (transcript only).",
+          "model": "Model",
+          "endpointing": "Endpointing (ms)",
+          "endpointing_hint": "Silence duration (ms) that triggers end of an utterance. Lower = faster splits, higher = more complete sentences. Recommended: 100ms.",
+          "batch_interval": "Audio batch interval (ms)",
+          "batch_interval_hint": "How often audio chunks are sent to Deepgram. Lower = lower latency, higher = fewer network calls.",
+          "provisional_timeout": "Silence flush timeout (ms)",
+          "provisional_timeout_hint": "If no new transcript arrives within this duration, the pending text is committed automatically. Prevents text getting stuck at end of speech.",
+          "speaker_diarization": "Speaker diarization",
+          "speaker_diarization_hint": "Identify and label different speakers. Disable to reduce latency."
         }
       }
     },

@@ -12,6 +12,7 @@
         "updater:fixRuntime": "node updater/updater-for-fix-runtime.mjs"
     },
     "dependencies": {
+        "@deepgram/sdk": "^5.0.0",
         "@hello-pangea/dnd": "^18.0.1",
         "@nextui-org/react": "^2.4.8",
         "@nextui-org/theme": "^2.2.11",

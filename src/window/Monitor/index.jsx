@@ -116,14 +116,16 @@ async function buildTranscriptPath() {
 export default function Monitor() {
     const { t } = useTranslation();
 
-    const [activeTranscriptionService] = useConfig('transcription_active_service', 'soniox_stt');
+    const [activeTranscriptionService, setActiveTranscriptionService] = useConfig('transcription_active_service', 'soniox_stt');
+    const [transcriptionServiceList] = useConfig('transcription_service_list', ['soniox_stt']);
     const [sourceLang, setSourceLang] = useConfig('audio_source_lang', 'auto');
     const [targetLang, setTargetLang] = useConfig('audio_target_lang', 'vi');
     const [sourceAudio, setSourceAudio] = useConfig('audio_source', 'microphone');
     const [fontSize, setFontSize] = useConfig('monitor_font_size', 14);
 
     // TTS config
-    const [activeTtsService] = useConfig('tts_active_service', 'edge_tts');
+    const [activeTtsService, setActiveTtsService] = useConfig('tts_active_service', 'edge_tts');
+    const [ttsServiceList] = useConfig('tts_service_list', ['google_tts', 'edge_tts']);
     const [ttsPlaybackRate] = useConfig('tts_playback_rate', 1);
     const [ttsVolume, setTtsVolume] = useConfig('tts_volume', 1.0);
 
@@ -1005,6 +1007,14 @@ export default function Monitor() {
                 targetLang={targetLang ?? 'vi'}
                 transcriptFileRef={transcriptFileRef}
                 sortOrder={sortOrder}
+                onToggleRun={toggleRun}
+                activeTranscriptionService={activeTranscriptionService ?? 'soniox_stt'}
+                onSetTranscriptionService={setActiveTranscriptionService}
+                transcriptionServiceList={transcriptionServiceList ?? []}
+                activeTtsService={activeTtsService ?? 'edge_tts'}
+                onSetTtsService={setActiveTtsService}
+                ttsServiceList={ttsServiceList ?? []}
+                isTTSEnabled={isTTSEnabled}
             />
         </div>
     );
