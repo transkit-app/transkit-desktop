@@ -1,5 +1,5 @@
 import { Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Tooltip } from '@nextui-org/react';
-import { MdMic, MdSpeaker, MdPlayArrow, MdStop, MdSubtitles, MdDeleteOutline, MdVolumeUp, MdVolumeOff, MdTune, MdTextFields, MdBlurOn } from 'react-icons/md';
+import { MdMic, MdSpeaker, MdPlayArrow, MdStop, MdSubtitles, MdDeleteOutline, MdVolumeUp, MdVolumeOff, MdTune, MdTextFields, MdBlurOn, MdVerticalAlignBottom, MdVerticalAlignTop } from 'react-icons/md';
 import { HiSwitchHorizontal } from 'react-icons/hi';
 import { useTranslation } from 'react-i18next';
 import React from 'react';
@@ -52,6 +52,8 @@ export default function MonitorToolbar({
     onToggleSubMode,
     onToggleTTS,
     onToggleContextPanel,
+    sortOrder = 'asc',
+    onToggleSortOrder,
 }) {
     const { t } = useTranslation();
     const opacity = bgOpacity ?? 100;
@@ -213,6 +215,19 @@ export default function MonitorToolbar({
                     onPress={onToggleContextPanel}
                 >
                     <MdTune className='text-[14px]' />
+                </Button>
+            </Tooltip>
+
+            {/* Sort order toggle */}
+            <Tooltip content={sortOrder === 'asc' ? t('monitor.sort_newest_bottom') : t('monitor.sort_newest_top')} size='sm' placement='bottom'>
+                <Button
+                    isIconOnly size='sm' variant='light' color='default'
+                    className='h-7 w-7 min-w-0'
+                    onPress={onToggleSortOrder}
+                >
+                    {sortOrder === 'asc'
+                        ? <MdVerticalAlignBottom className='text-[14px]' />
+                        : <MdVerticalAlignTop className='text-[14px]' />}
                 </Button>
             </Tooltip>
 

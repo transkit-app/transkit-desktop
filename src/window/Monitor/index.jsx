@@ -148,6 +148,7 @@ export default function Monitor() {
     const [autosaveEnabled, setAutosaveEnabled] = useConfig('monitor_autosave_enabled', false);
 
     // Show/hide original
+    const [sortOrder, setSortOrder] = useConfig('monitor_sort_order', 'asc');
     const [showOriginal, setShowOriginal] = useConfig('monitor_show_original', true);
     const [showOriginalSub, setShowOriginalSub] = useConfig('monitor_sub_show_original', false);
 
@@ -908,6 +909,8 @@ export default function Monitor() {
                 onToggleSubMode={toggleSubMode}
                 onToggleTTS={toggleTTS}
                 onToggleContextPanel={toggleContextPanel}
+                sortOrder={sortOrder}
+                onToggleSortOrder={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
             />
 
             {/* Context panel — absolute overlay, does not affect window size */}
@@ -1001,6 +1004,7 @@ export default function Monitor() {
                 sourceLang={sourceLang ?? 'auto'}
                 targetLang={targetLang ?? 'vi'}
                 transcriptFileRef={transcriptFileRef}
+                sortOrder={sortOrder}
             />
         </div>
     );

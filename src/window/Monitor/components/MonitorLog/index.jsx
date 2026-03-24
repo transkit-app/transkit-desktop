@@ -291,6 +291,7 @@ export default function MonitorLog({
     playingText = null,
     onReplayEntry,
     status = 'disconnected',
+    sortOrder = 'asc',
     aiSuggestionService = '',
     aiSuggestionContextLines = 10,
     aiSuggestionResponseLang = 'both',
@@ -303,6 +304,7 @@ export default function MonitorLog({
     const { t } = useTranslation();
     const scrollRef = useRef(null);
     const bottomRef = useRef(null);
+    const topRef = useRef(null);
     const isUserScrolledRef = useRef(false);
     const entryRefs = useRef({});
 
@@ -310,34 +312,53 @@ export default function MonitorLog({
     const [suggestions, setSuggestions] = useState({});
     const [bookmarks, setBookmarks] = useState(new Set());
 
-    // ── Auto-scroll to bottom — only when user has NOT manually scrolled.
-    //    Uses instant scroll (no animation) to avoid the "drift" jitter caused
-    //    by smooth scroll animation fighting with new incoming content.
-    //    Native overflow-anchor: auto handles keeping viewport stable when
-    //    content grows above the current scroll position.
+    // ── Reset scroll lock and jump to latest when sort order flips.
+    useEffect(() => {
+        isUserScrolledRef.current = false;
+        setIsUserScrolled(false);
+        const el = scrollRef.current;
+        if (!el) return;
+        if (sortOrder === 'desc') {
+            el.scrollTop = 0;
+        } else {
+            el.scrollTop = el.scrollHeight;
+        }
+    }, [sortOrder]);
+
+    // ── Auto-scroll to latest — instant scroll to avoid jitter with new content.
     useEffect(() => {
         if (!isUserScrolledRef.current) {
             const el = scrollRef.current;
-            if (el) el.scrollTop = el.scrollHeight;
+            if (!el) return;
+            if (sortOrder === 'desc') {
+                el.scrollTop = 0;
+            } else {
+                el.scrollTop = el.scrollHeight;
+            }
         }
     }, [entries, provisional]);
 
     const handleScroll = useCallback(() => {
         const el = scrollRef.current;
         if (!el) return;
-        const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-        const scrolled = distFromBottom > 80;
+        const scrolled = sortOrder === 'desc'
+            ? el.scrollTop > 80
+            : el.scrollHeight - el.scrollTop - el.clientHeight > 80;
         if (scrolled !== isUserScrolledRef.current) {
             isUserScrolledRef.current = scrolled;
             setIsUserScrolled(scrolled);
         }
-    }, []);
+    }, [sortOrder]);
 
     const scrollToLatest = useCallback(() => {
-        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+        if (sortOrder === 'desc') {
+            topRef.current?.scrollIntoView({ behavior: 'smooth' });
+        } else {
+            bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }
         isUserScrolledRef.current = false;
         setIsUserScrolled(false);
-    }, []);
+    }, [sortOrder]);
 
     // ── Bookmark toggle ───────────────────────────────────────────────────────
     const toggleBookmark = useCallback((entryId) => {
@@ -484,7 +505,20 @@ export default function MonitorLog({
                     )
                 ) : (
                     <>
-                        {entries.map((entry) => {
+                        <div ref={topRef} />
+
+                        {/* Provisional — top position when newest-first */}
+                        {sortOrder === 'desc' && provisional && (
+                            <div className='flex items-start gap-1.5 opacity-60'>
+                                <div className='w-1.5 h-1.5 rounded-full bg-primary animate-pulse mt-1.5 flex-shrink-0' />
+                                <p className='text-default-500 italic leading-relaxed' style={{ fontSize }}>
+                                    {provisional}
+                                </p>
+                            </div>
+                        )}
+
+                        <AnimatePresence initial={false}>
+                        {(sortOrder === 'desc' ? [...entries].reverse() : entries).map((entry) => {
                             const speakerLabel = formatSpeaker(entry.speaker);
                             const speakerColor = getSpeakerColor(entry.speaker);
                             const isThisPlaying = entry.translation && entry.translation === playingText;
@@ -493,8 +527,12 @@ export default function MonitorLog({
                             const isBookmarked = bookmarks.has(entry.id);
 
                             return (
-                                <div
+                                <motion.div
                                     key={entry.id}
+                                    initial={{ opacity: 0, y: sortOrder === 'desc' ? -6 : 6, filter: 'blur(3px)' }}
+                                    animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                                    exit={{ opacity: 0, transition: { duration: 0.15 } }}
+                                    transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
                                     ref={el => { if (el) entryRefs.current[entry.id] = el; else delete entryRefs.current[entry.id]; }}
                                     className={`flex flex-col gap-0.5 rounded-lg transition-colors ${isBookmarked ? 'bg-secondary/5' : ''}`}
                                     style={isBookmarked ? { padding: '2px 4px' } : undefined}
@@ -527,19 +565,19 @@ export default function MonitorLog({
                                                 </span>
                                             )}
 
-                                            {/* Text + inline AI button */}
-                                            <div className='flex-1 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5'>
-                                                <p className='text-foreground font-medium leading-relaxed' style={{ fontSize }}>
+                                            {/* Text + inline AI button — flows inline so button always follows last word */}
+                                            <div className='flex-1'>
+                                                <span className='text-foreground font-medium leading-relaxed' style={{ fontSize }}>
                                                     {entry.translation}
-                                                </p>
+                                                </span>
                                                 {aiSuggestionService && (
                                                     <button
-                                                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border transition-all self-center flex-shrink-0
+                                                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border transition-all ml-1.5
                                                             ${hasSuggestion
                                                                 ? 'border-secondary/40 text-secondary bg-secondary/8'
                                                                 : 'border-transparent opacity-0 group-hover/entry:opacity-60 hover:!opacity-100 text-default-400 hover:text-secondary hover:border-secondary/30 hover:bg-secondary/5'
                                                             } ${suggestion?.status === 'loading' ? 'cursor-wait' : 'cursor-pointer'}`}
-                                                        style={{ fontSize: 10 }}
+                                                        style={{ fontSize: 10, verticalAlign: 'middle' }}
                                                         onClick={() => hasSuggestion ? dismissSuggestion(entry.id) : handleAiSuggest(entry)}
                                                         disabled={suggestion?.status === 'loading'}
                                                     >
@@ -602,12 +640,13 @@ export default function MonitorLog({
                                             />
                                         )}
                                     </AnimatePresence>
-                                </div>
+                                </motion.div>
                             );
                         })}
+                        </AnimatePresence>
 
-                        {/* Provisional */}
-                        {provisional && (
+                        {/* Provisional — bottom position when newest-last (default) */}
+                        {sortOrder !== 'desc' && provisional && (
                             <div className='flex items-start gap-1.5 opacity-60'>
                                 <div className='w-1.5 h-1.5 rounded-full bg-primary animate-pulse mt-1.5 flex-shrink-0' />
                                 <p className='text-default-500 italic leading-relaxed' style={{ fontSize }}>

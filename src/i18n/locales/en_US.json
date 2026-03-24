@@ -391,6 +391,8 @@
       "ai_suggestion_research": "Research",
       "ai_suggestion_answer": "Suggested Answer",
       "scroll_to_latest": "Latest",
+      "sort_newest_bottom": "Newest at bottom",
+      "sort_newest_top": "Newest at top",
       "ai_suggestion_source_lang": "Source language",
       "ai_suggestion_target_lang": "Target language",
       "bookmark_add": "Bookmark this line",
