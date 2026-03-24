@@ -24,7 +24,7 @@
                     "displayLanguageSelector": true,
                     "installerIcon": "icons/icon.ico",
                     "license": "../LICENSE",
-                    "installMode": "currentUser",
+                    "installMode": "perMachine",
                     "languages": [
                         "SimpChinese",
                         "TradChinese",
