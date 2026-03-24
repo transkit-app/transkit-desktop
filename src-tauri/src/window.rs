@@ -93,7 +93,11 @@ fn build_window(label: &str, title: &str) -> (Window, bool) {
 
             #[cfg(target_os = "macos")]
             {
+                // transparent(true) is required for CSS rgba backgrounds and backdrop-filter
+                // to actually composite against the desktop. macOSPrivateApi: true in
+                // tauri.conf.json clears the WKWebView opaque layer at startup.
                 builder = builder
+                    .transparent(true)
                     .title_bar_style(tauri::TitleBarStyle::Overlay)
                     .hidden_title(true)
                     .minimizable(false)
@@ -429,8 +433,14 @@ pub fn monitor_window() {
     // macOSPrivateApi: true ensures Tauri sets up WKWebView transparency properly at creation time,
     // avoiding manual ObjC calls and the GCD-dispatch panic that those can trigger.
     if let Some(window) = app_handle.get_window("monitor") {
-        // Intercept the native close button so the window hides instead of being destroyed.
-        // This allows the window to be re-shown on subsequent tray/shortcut activations.
+        // Enable shadow so Windows/macOS DWM properly composites rounded corners.
+        // Without this the transparent window corners render as white squares on Windows.
+        #[cfg(not(target_os = "linux"))]
+        set_shadow(&window, true).unwrap_or_default();
+
+        // Rust-side safety net: prevent OS-level close from destroying the window.
+        // The JS onCloseRequested handler is the primary handler (it also calls hide),
+        // but this catches any edge-cases where JS hasn't loaded yet.
         let win_clone = window.clone();
         window.on_window_event(move |event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
@@ -438,7 +448,7 @@ pub fn monitor_window() {
                 win_clone.hide().unwrap_or_default();
             }
         });
-        // On Windows: show in taskbar so users can minimize/restore the session.
+        // On Windows: restore taskbar presence so the user can minimize/restore.
         #[cfg(target_os = "windows")]
         window.set_skip_taskbar(false).unwrap_or_default();
 

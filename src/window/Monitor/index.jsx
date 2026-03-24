@@ -7,8 +7,7 @@ import { writeTextFile, createDir, exists } from '@tauri-apps/api/fs';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@nextui-org/react';
 import { BsPinFill } from 'react-icons/bs';
-import { AiFillCloseCircle } from 'react-icons/ai';
-import { MdOpenInFull, MdBlurOn, MdVolumeUp, MdVolumeOff, MdSettings, MdSaveAlt, MdFolderOpen, MdClose } from 'react-icons/md';
+import { MdOpenInFull, MdBlurOn, MdVolumeUp, MdVolumeOff, MdSettings, MdSaveAlt, MdFolderOpen, MdClose, MdRemove } from 'react-icons/md';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useConfig } from '../../hooks';
 import { osType } from '../../utils/env';
@@ -631,17 +630,24 @@ export default function Monitor() {
         return () => { stop(true); };
     }, []);
 
-    // ── Flush on app close (Cmd+Q, OS close, etc.) ───────────────────────────
+    // Hide window + remove from taskbar (used by close button and OS close events)
+    const handleHideWindow = useCallback(async () => {
+        try { await appWindow.setSkipTaskbar(true); } catch (_) {}
+        await appWindow.hide();
+    }, []);
+
+    // ── Flush on app close (Cmd+Q, OS close, taskbar right-click→Close, etc.) ──
     useEffect(() => {
         const unlistenPromise = appWindow.onCloseRequested(async (event) => {
+            // Always prevent actual window destruction — the monitor window must
+            // survive closes so it can be re-opened from the tray/shortcut.
+            event.preventDefault();
             if (autosaveEnabledRef.current && transcriptFileRef.current) {
-                event.preventDefault();
                 const filePath = transcriptFileRef.current;
                 transcriptFileRef.current = null;
                 await finalizeTranscript(filePath);
             }
-            // Allow close to proceed
-            appWindow.close();
+            await handleHideWindow();
         });
         // Best-effort sync flush for browser-level unload
         const handleUnload = () => {
@@ -814,7 +820,11 @@ export default function Monitor() {
                 background: bgAlpha >= 1
                     ? 'hsl(var(--nextui-background))'
                     : `hsl(var(--nextui-background) / ${bgAlpha.toFixed(2)})`,
-                backdropFilter: bgAlpha < 1 ? 'blur(24px) saturate(1.6)' : undefined,
+                // backdrop-filter causes Core Animation layer invalidation on macOS every
+                // time a transcript entry lands (React repaint → re-composite → flicker).
+                // SubMode avoids this because its layout is simpler and uses rgba() directly.
+                // On macOS we skip the blur and rely on the semi-transparent solid bg instead.
+                backdropFilter: bgAlpha < 1 && osType !== 'Darwin' ? 'blur(24px) saturate(1.6)' : undefined,
             }}
         >
             {/* Header */}
@@ -879,10 +889,20 @@ export default function Monitor() {
                         size='sm'
                         variant='light'
                         className='h-[26px] w-[26px] min-w-0 bg-transparent'
-                        onPress={() => osType === 'Windows_NT' ? appWindow.minimize() : appWindow.hide()}
-                        title={osType === 'Windows_NT' ? t('monitor.minimize') : t('monitor.close')}
+                        onPress={() => appWindow.minimize()}
+                        title={t('monitor.minimize')}
                     >
-                        <AiFillCloseCircle className='text-[16px] text-default-400' />
+                        <MdRemove className='text-[16px] text-default-400' />
+                    </Button>
+                    <Button
+                        isIconOnly
+                        size='sm'
+                        variant='light'
+                        className='h-[26px] w-[26px] min-w-0 bg-transparent'
+                        onPress={handleHideWindow}
+                        title={t('monitor.close')}
+                    >
+                        <MdClose className='text-[16px] text-default-400' />
                     </Button>
                 </div>
             </div>

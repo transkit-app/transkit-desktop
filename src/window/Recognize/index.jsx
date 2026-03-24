@@ -113,7 +113,7 @@ export default function Recognize() {
                     background: bgAlpha >= 1
                         ? 'hsl(var(--nextui-background))'
                         : `hsl(var(--nextui-background) / ${bgAlpha.toFixed(2)})`,
-                    backdropFilter: bgAlpha < 1 ? 'blur(24px) saturate(1.6)' : undefined,
+                    backdropFilter: bgAlpha < 1 && osType !== 'Darwin' ? 'blur(24px) saturate(1.6)' : undefined,
                 }}
             >
                 <div

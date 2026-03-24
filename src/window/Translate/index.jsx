@@ -320,9 +320,17 @@ export default function Translate() {
     return (
         pluginList && (
             <div
-                className={`bg-background w-screen ${
-                    osType === 'Linux' && 'rounded-[10px] border-1 border-default-100'
+                className={`w-screen overflow-hidden ${
+                    osType !== 'Darwin' && 'rounded-[12px]'
+                } ${
+                    osType === 'Linux' && 'border-1 border-default-100'
                 }`}
+                style={{
+                    background: bgAlpha >= 1
+                        ? 'hsl(var(--nextui-background))'
+                        : `hsl(var(--nextui-background) / ${bgAlpha.toFixed(2)})`,
+                    backdropFilter: bgAlpha < 1 && osType !== 'Darwin' ? 'blur(24px) saturate(1.6)' : undefined,
+                }}
             >
                 {/* Drag region - positioned to not overlap buttons */}
                 {osType === 'Darwin' ? (
@@ -450,12 +458,6 @@ export default function Translate() {
                 <div
                     ref={contentRef}
                     className='px-[6px] pb-[6px] text-[12px] flex flex-col rounded-xl border border-content3 shadow-2xl overflow-hidden'
-                    style={{
-                        background: bgAlpha >= 1
-                            ? 'hsl(var(--nextui-background))'
-                            : `hsl(var(--nextui-background) / ${bgAlpha.toFixed(2)})`,
-                        backdropFilter: bgAlpha < 1 ? 'blur(24px) saturate(1.6)' : undefined,
-                    }}
                 >
                     {/* Source Area */}
                     <div>
