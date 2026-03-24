@@ -5,6 +5,13 @@
             "iconAsTemplate": true
         },
         "bundle": {
+            "icon": [
+                "icons/32x32.png",
+                "icons/128x128.png",
+                "icons/128x128@2x.png",
+                "icons/icon.icns",
+                "icons/icon.ico"
+            ],
             "windows": {
                 "certificateThumbprint": null,
                 "digestAlgorithm": "sha256",
@@ -15,9 +22,9 @@
                 },
                 "nsis": {
                     "displayLanguageSelector": true,
-                    "installerIcon": "icons/icon_mac.ico",
+                    "installerIcon": "icons/icon.ico",
                     "license": "../LICENSE",
-                    "installMode": "perMachine",
+                    "installMode": "currentUser",
                     "languages": ["SimpChinese", "TradChinese", "English"]
                 }
             }
