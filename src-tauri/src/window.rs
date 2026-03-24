@@ -122,6 +122,8 @@ pub fn config_window() {
         .unwrap();
     window.set_size(tauri::LogicalSize::new(960, 750)).unwrap();
     window.center().unwrap();
+    #[cfg(target_os = "windows")]
+    window.set_skip_taskbar(false).unwrap_or_default();
 }
 
 fn translate_window() -> Window {
@@ -311,6 +313,8 @@ pub fn recognize_window() {
         ))
         .unwrap();
     window.center().unwrap();
+    #[cfg(target_os = "windows")]
+    window.set_skip_taskbar(false).unwrap_or_default();
     window.emit("new_image", "").unwrap();
 }
 
@@ -410,6 +414,8 @@ pub fn updater_window() {
         .unwrap();
     window.set_size(tauri::LogicalSize::new(600, 400)).unwrap();
     window.center().unwrap();
+    #[cfg(target_os = "windows")]
+    window.set_skip_taskbar(false).unwrap_or_default();
 }
 
 #[tauri::command]
