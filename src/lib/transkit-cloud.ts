@@ -9,8 +9,8 @@ import { invoke } from '@tauri-apps/api/tauri'
 
 // ─── Supabase client ──────────────────────────────────────────────────────────
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string
+const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL as string) || 'https://hbrwrasfeztxiewosdnw.supabase.co'
+const SUPABASE_ANON_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY as string) || 'sb_publishable_neCrkpl83vRSPjSAH6BbkQ_fCQQwMCx'
 // Local port used for OAuth callback — must match Supabase allowed redirect URLs
 const OAUTH_CALLBACK_PORT = 54321
 
