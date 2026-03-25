@@ -665,9 +665,9 @@ export default function TargetArea(props) {
                 <div ref={boundRef}>
                     {/* result content with dynamic max height and scrollbar */}
                     <CardBody className={`p-[8px] ${hide ? 'h-0 p-0' : 'max-h-[800px] overflow-y-auto'}`}>
-                        {isLoading && (!result || result === '') ? (
-                            <div className='flex justify-start items-center h-[21px] text-default-400 text-sm select-none'>
-                                {t('translate.loading')}
+                        {(!result || result === '') && !error ? (
+                            <div className='flex justify-start items-center h-[21px]'>
+                                <PulseLoader size={5} color='hsl(var(--nextui-default-400))' speedMultiplier={0.8} />
                             </div>
                         ) : typeof result === 'string' ? (
                             <textarea

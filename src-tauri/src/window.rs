@@ -141,22 +141,23 @@ fn translate_window() -> Window {
         }
     };
     let (window, exists) = build_window("translate", "Translate");
-    if exists {
-        return window;
-    }
-    window.set_skip_taskbar(true).unwrap();
-    // Get Translate Window Size
+
+    // Get Translate Window Size (needed for both new and reused windows)
     let width = match get("translate_window_width") {
         Some(v) => v.as_i64().unwrap(),
         None => {
-            set("translate_window_width", 350);
+            if !exists {
+                set("translate_window_width", 350);
+            }
             350
         }
     };
     let height = match get("translate_window_height") {
         Some(v) => v.as_i64().unwrap(),
         None => {
-            set("translate_window_height", 420);
+            if !exists {
+                set("translate_window_height", 420);
+            }
             420
         }
     };
@@ -164,12 +165,24 @@ fn translate_window() -> Window {
     let monitor = window.current_monitor().unwrap().unwrap();
     let dpi = monitor.scale_factor();
 
-    window
-        .set_size(tauri::PhysicalSize::new(
-            (width as f64) * dpi,
-            (height as f64) * dpi,
-        ))
-        .unwrap();
+    if !exists {
+        window.set_skip_taskbar(true).unwrap();
+        window
+            .set_size(tauri::PhysicalSize::new(
+                (width as f64) * dpi,
+                (height as f64) * dpi,
+            ))
+            .unwrap();
+
+        // Prevent destroy on close — hide instead so next invocation is instant
+        let win_clone = window.clone();
+        window.on_window_event(move |event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                api.prevent_close();
+                win_clone.hide().unwrap_or_default();
+            }
+        });
+    }
 
     let position_type = match get("translate_window_position") {
         Some(v) => v.as_str().unwrap().to_string(),
@@ -178,7 +191,7 @@ fn translate_window() -> Window {
 
     match position_type.as_str() {
         "mouse" => {
-            // Adjust window position
+            // Adjust window position to stay within monitor bounds
             let monitor_size = monitor.size();
             let monitor_size_width = monitor_size.width as f64;
             let monitor_size_height = monitor_size.height as f64;

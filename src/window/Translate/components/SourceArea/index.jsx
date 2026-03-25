@@ -1,6 +1,7 @@
 import { Button, Card, CardBody, CardFooter, ButtonGroup, Chip, Tooltip, Spacer } from '@nextui-org/react';
 import { BaseDirectory, readTextFile } from '@tauri-apps/api/fs';
 import React, { useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { writeText } from '@tauri-apps/api/clipboard';
 import { HiOutlineVolumeUp } from 'react-icons/hi';
 import { appWindow } from '@tauri-apps/api/window';
@@ -34,6 +35,7 @@ export default function SourceArea(props) {
     const { pluginList, serviceInstanceConfigMap } = props;
     const [appFontSize] = useConfig('app_font_size', 16);
     const [sourceText, setSourceText, syncSourceText] = useSyncAtom(sourceTextAtom);
+    const setSourceTextAtom = useSetAtom(sourceTextAtom);
     const [detectLanguage, setDetectLanguage] = useAtom(detectLanguageAtom);
     const [incrementalTranslate] = useConfig('incremental_translate', false);
     const [dynamicTranslate] = useConfig('dynamic_translate', false);
@@ -52,14 +54,17 @@ export default function SourceArea(props) {
 
     const handleNewText = async (text) => {
         text = text.trim();
+        // Clear stale content synchronously before showing window so it appears clean
+        flushSync(() => {
+            setDetectLanguage('');
+            setSourceTextAtom('');
+        });
         if (hideWindow) {
             appWindow.hide();
         } else {
             appWindow.show();
             appWindow.setFocus();
         }
-        // 清空检测语言
-        setDetectLanguage('');
         if (text === '[INPUT_TRANSLATE]') {
             setWindowType('[INPUT_TRANSLATE]');
             appWindow.show();

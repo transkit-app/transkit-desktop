@@ -36,7 +36,7 @@ const listenBlur = () => {
             // 如果直接关闭将导致窗口无法拖动
             blurTimeout = setTimeout(async () => {
                 info('Confirm Blur');
-                await appWindow.close();
+                await appWindow.hide();
             }, 100);
         }
     });
@@ -446,7 +446,7 @@ export default function Translate() {
                                     variant='light'
                                     className='h-[26px] w-[26px] min-w-0 bg-transparent'
                                     onPress={() => {
-                                        void appWindow.close();
+                                        void appWindow.hide();
                                     }}
                                 >
                                     <AiFillCloseCircle className='text-[16px] text-default-400' />
