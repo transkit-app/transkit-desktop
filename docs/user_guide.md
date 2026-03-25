@@ -131,10 +131,8 @@ A high-end feature for tracking conversations (meetings, videos, etc.) in real-t
 
 ![Realtime Audio Translation](./images/RealtimeMonitorWithAISuggestion.png)
 
-Submode (Subtitle mode): A minimized overlay mode that shows a single line of scrolling subtitles—perfect for movies or meetings.
+SubMode (Subtitle mode): A minimized overlay mode that shows a single line of scrolling subtitles—perfect for movies or meetings.
 
-![Realtime Audio Translation](./images/Submode.png)
+![SubMode](./images/SubMode.png)
 ---
 *Note: You need to configure API Keys for paid services in the **Service** tab to achieve the best translation and recognition quality.*
-
-

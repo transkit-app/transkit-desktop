@@ -131,11 +131,8 @@ Nơi bạn quản lý API Key và các nhà cung cấp cho từng loại vụ:
 
 ![Màn hình dịch Audio Realtime](./images/RealtimeMonitorWithAISuggestion.png)
 
-Submode (Subtitle mode): Hiển thị phụ đề chạy dưới màn hình, rất hữu ích khi xem phim hoặc họp trực tuyến.
+SubMode (Subtitle mode): Hiển thị phụ đề chạy dưới màn hình, rất hữu ích khi xem phim hoặc họp trực tuyến.
 
-![Màn hình dịch Audio Realtime](./images/Submode.png)
+![Màn hình hiển thị Sub mode](./images/SubMode.png)
 ---
 *Lưu ý: Bạn cần cấu hình API Key cho các dịch vụ trả phí trong mục **Service** để đạt được chất lượng dịch và nhận diện tốt nhất.*
-
-> [!TIP]
-> **Dành cho lập trình viên build từ source**: Nếu bạn muốn vô hiệu hóa các tính năng Cloud (Đăng nhập, Trial key), hãy copy file `.env.example` thành `.env` và đặt `VITE_DISABLE_CLOUD=true` trước khi build.
