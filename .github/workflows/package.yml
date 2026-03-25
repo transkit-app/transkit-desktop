@@ -31,6 +31,11 @@ jobs:
 
                   echo $(git describe --tags | sed 's/-[0-9]*-.*//g')
 
+            - name: Inject cloud credentials
+              run: |
+                  echo "VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }}" >> .env
+                  echo "VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }}" >> .env
+
             - name: Upload Artifacts for Windows
               uses: actions/upload-artifact@v4
               with:

@@ -12,6 +12,7 @@ import {
   getUserProfile,
   updateUserProfile,
   onAuthStateChange,
+  CLOUD_ENABLED,
 } from '../../../../lib/transkit-cloud'
 import { useConfig } from '../../../../hooks'
 
@@ -457,6 +458,35 @@ export default function Account() {
       window.removeEventListener('focus', onFocus)
     }
   }, [refreshProfile, user])
+
+  if (!CLOUD_ENABLED) {
+    return (
+      <div className='page-wrapper'>
+        <Card>
+          <CardBody className='flex flex-col gap-3 py-6'>
+            <div className='flex items-center gap-2 text-default-500'>
+              <MdCloudDone className='text-2xl' />
+              <h2 className='text-sm font-semibold'>Cloud not configured</h2>
+            </div>
+            <p className='text-xs text-default-400 leading-relaxed'>
+              This build was compiled without Supabase credentials. Cloud features
+              (sign-in, Soniox trial) are unavailable. Your local profile is stored
+              on this device only.
+            </p>
+            <p className='text-xs text-default-400'>
+              To enable cloud: add <code className='bg-content3 px-1 rounded'>VITE_SUPABASE_URL</code> and{' '}
+              <code className='bg-content3 px-1 rounded'>VITE_SUPABASE_ANON_KEY</code> to <code className='bg-content3 px-1 rounded'>.env</code> and rebuild.
+            </p>
+          </CardBody>
+        </Card>
+        <Card className='mt-4'>
+          <CardBody>
+            <ProfileForm authUser={null} cloudProfile={null} />
+          </CardBody>
+        </Card>
+      </div>
+    )
+  }
 
   if (loading) {
     return (

@@ -18,7 +18,7 @@ import MonitorLog from './components/MonitorLog';
 import ContextPanel from './components/ContextPanel';
 import * as transcriptionServices from '../../services/transcription';
 import { getTTSQueue } from './tts';
-import { getSonioxKey, reportUsage, getUser } from '../../lib/transkit-cloud';
+import { getSonioxKey, reportUsage, getUser, CLOUD_ENABLED } from '../../lib/transkit-cloud';
 
 const MAX_ENTRIES = 100;
 const SUB_MODE_HEIGHT = 190;
@@ -364,6 +364,10 @@ export default function Monitor() {
 
         // If no BYO key and service is Soniox, try fetching a cloud trial key
         if (!transcriptionConfig.apiKey && serviceName === 'soniox_stt') {
+            if (!CLOUD_ENABLED) {
+                setErrorMsg('Add your own Soniox API key in Settings to use this service.');
+                return;
+            }
             const user = await getUser();
             if (!user) {
                 setErrorMsg('Sign in to your Transkit account to use the free trial, or add your own Soniox API key in Settings.');
