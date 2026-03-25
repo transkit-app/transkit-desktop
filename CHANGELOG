@@ -1,42 +1,28 @@
-## 3.1.6 (2026-03-24)
+# Changelog
 
-### New providers:
+## 3.2.0 (2026-03-25)
 
--   **Gladia STT** — real-time speech-to-text via Gladia API with WebSocket live streaming, speaker diarization, and code-switching support
--   **Deepgram STT** — real-time speech-to-text via Deepgram API with Nova-3 model, built-in translation to any target language via Google Cloud, and speaker diarization
+### Documentation & Global Support:
+- **Default Multi-language User Guides**: Standardized English (`docs/user_guide.md`) as primary and Vietnamese (`docs/user_guide_vi.md`) as supplementary guides.
+- **Enhanced macOS Support**: Added detailed instructions for unsigned app workarounds (`xattr -cr`) and a step-by-step guide for Screen/Audio Recording permissions.
+- **Developer Options**: Added instructions for building in **Local-only mode** (`VITE_DISABLE_CLOUD=true`) to bypass Supabase/Cloud dependency.
+- **Visual Aids**: Integrated high-quality UI screenshots into both READMEs and User Guides.
 
-### Monitor improvements:
+### Major Improvements (Refining 3.1.x):
+- **New Realtime Transcription Providers**:
+  - **Deepgram**: Fast STT with $200 free credit; supports built-in Google Translation.
+  - **Gladia**: WebSocket live streaming with 10 free hours per month; features speaker diarization.
+  - **Soniox**: Low-latency transcription for professional meetings.
+- **Realtime Monitor Enhancements**:
+  - **AI Suggestion & Context**: Tightly integrated LLMs (Gemini, OpenAI, Claude) to solve specialized terminology in real-time.
+  - **SubMode**: Overlay subtitle mode for movies and video calls.
+  - **Smart Sorting**: Toolbar options to sort transcripts newest-first or oldest-first.
+  - **Placeholder Redesign**: Quick-access provider switching and direct session start.
+- **Core & Performance**:
+  - **Installer Optimization**: Reduced installer size by 20MB by removing heavy local detection engines.
+  - **Cloud Session Tracking**: Live countdown for trial usage and account-based synchronization.
+- **TTS Upgrades**: Support for Edge TTS (free/built-in), ElevenLabs, and OpenAI-compatible streaming TTS.
+- **Clipboard Sync**: "Monitor Clipboard" feature to automatically translate any copied text in the background.
 
--   log entries can now be sorted newest-first or oldest-first via the toolbar
--   placeholder screen redesigned: the play button is now clickable to start a session directly
--   active transcription provider is highlighted in the placeholder; configured providers can be switched without going to Settings
--   TTS active provider is also shown and switchable from the placeholder screen
-
-### Account & cloud:
-
--   user authentication and account management added (sign in / sign out via Config sidebar)
--   trial usage display with live countdown when using Transkit Cloud transcription
--   pre-debit usage model implemented for cloud sessions
-
-## 3.1.1 (2026-03-20)
-
-### Changes:
-
--   removed "Local" language detection engine (powered by `lingua`) to reduce installer size by ~15–20 MB
--   users previously on "Local" detect will automatically fall back to Google detection
--   the "Local" option has been removed from Settings → Translate → Detect Engine
-
-## 3.1.0 (2026-03-18)
-
-### New feature:
-
--   first TransKit release line based on independent roadmap
--   realtime monitor enhancements for meetings and live translation
--   sub mode, AI suggestion, bookmarks, and transcript auto-save
--   TTS providers with BYO API model (free + premium options)
--   refreshed multilingual READMEs (EN/VI/CN/KR) with streamlined install/contribution guides
-
-### Build & release:
-
--   clarified CI release flow and platform packaging matrix
--   aligned release documentation for updater artifacts and platform installers
+---
+*For more details, visit the [Full User Guide](./docs/user_guide.md).*
