@@ -10,19 +10,23 @@ Dự án là bản fork từ [Pot Desktop](https://github.com/pot-app/pot-deskto
 
 <table>
 <tr>
-    <td><img src="asset/1.png"></td>
-    <td><img src="asset/2.png"></td>
-    <td><img src="asset/3.png"></td>
+    <td><img src="docs/images/Translate-Light.png"></td>
+    <td><img src="docs/images/Translate-Dark.png"></td>
 </tr>
 </table>
+<img src="docs/images/RealtimeMonitorWithAISuggestion.png">
+
 
 # Mục lục
 
 </div>
 
+- [Hướng dẫn sử dụng đầy đủ](./docs/user_guide_vi.md)
 - [Usage](#usage)
 - [Điểm Mới Trên TransKit](#điểm-mới-trên-transkit)
 - [Cài Đặt](#cài-đặt)
+- [Cấu hình Phiên âm (Monitor)](#cấu-hình-phiên-âm-monitor)
+- [Hỏi đáp & Xử lý sự cố](#hỏi-đáp--xử-lý-sự-cố)
 - [Build Từ Source](#build-từ-source)
 - [Release Version Mới (All Platforms)](#release-version-mới-all-platforms)
 - [Đóng Góp](#đóng-góp)
@@ -72,32 +76,73 @@ Trang release: <https://github.com/transkit-app/transkit-desktop/releases/latest
 
 ### Windows
 
-1. Tải file cài đặt `.exe` mới nhất từ Releases.
+1. Tải file cài đặt `.exe` mới nhất từ [Releases](https://github.com/transkit-app/transkit-desktop/releases/latest).
 2. Chọn đúng kiến trúc:
    - x64: `TransKit_{version}_x64-setup.exe`
    - x86: `TransKit_{version}_x86-setup.exe`
    - arm64: `TransKit_{version}_arm64-setup.exe`
 3. Chạy installer.
+   > [!NOTE]
+   > Nếu Windows Defender hiển thị thông báo "Windows protected your PC", hãy nhấn **"More info"** và chọn **"Run anyway"**.
 
-Nếu máy chưa có WebView2, dùng bản:
-
-- `TransKit_{version}_{arch}_fix_webview2_runtime-setup.exe`
+Hoặc cài đặt qua Winget:
+```powershell
+winget install TransKit
+```
 
 ### macOS
 
-1. Tải file `.dmg` mới nhất từ Releases.
-2. Chọn đúng kiến trúc:
-   - Apple Silicon: `TransKit_{version}_aarch64.dmg`
-   - Intel: `TransKit_{version}_x64.dmg`
-3. Mở file và cài đặt.
+Cài đặt qua Homebrew:
+```bash
+brew tap transkit-app/tap
+brew install --cask transkit
+```
+Hoặc trực tiếp:
+1. Tải file `.dmg` mới nhất từ trang [Releases](https://github.com/transkit-app/transkit-desktop/releases/latest).
+2. Mở file `.dmg` và kéo **TransKit** vào thư mục Applications.
+3. **Quan trọng** — Ứng dụng hiện chưa được ký (sign). macOS sẽ chặn khi mở lần đầu. Hãy chạy lệnh này **một lần duy nhất** trong Terminal để cho phép ứng dụng:
+   ```bash
+   xattr -cr /Applications/TransKit.app
+   ```
+4. Khi mở lần đầu, macOS sẽ hỏi quyền **Screen & System Audio Recording**. Hãy bật **ON** trong System Settings để ứng dụng có thể bắt được âm thanh hệ thống.
+
 
 ### Linux
 
-1. Tải gói theo đúng kiến trúc từ Releases.
-2. Các định dạng có trong CI artifacts:
-   - `.deb`
-   - `.rpm`
-   - `.AppImage` (x86_64)
+1. Tải gói theo đúng kiến trúc từ [Releases](https://github.com/transkit-app/transkit-desktop/releases/latest).
+2. Các định dạng gói:
+   - `.deb` (Ubuntu/Debian)
+   - `.rpm` (Fedora/RHEL)
+   - `.AppImage` (Phổ thông)
+
+---
+
+## Cấu hình Phiên âm (Monitor)
+
+Trong khi các tính năng dịch cơ bản (Bôi đen/Nhập liệu/OCR) có thể dùng ngay sau khi cài phím tắt, tính năng **Realtime Monitor** yêu cầu bạn cấu hình dịch vụ **Phiên âm** (Speech-to-Text).
+
+1. Vào **Cài đặt > Dịch vụ > Phiên âm**.
+2. Thêm một Provider và nhập API Key của bạn. Các nhà cung cấp hỗ trợ bao gồm:
+   - **Soniox** (Khuyến nghị cho độ trễ thấp) - [Lấy API Key](https://soniox.com/)
+   - **Deepgram** - [Lấy API Key](https://console.deepgram.com/)
+   - **AssemblyAI** - [Lấy API Key](https://www.assemblyai.com/)
+   - **Gladia** - [Lấy API Key](https://www.gladia.io/)
+   - **OpenAI Whisper** - [Lấy API Key](https://platform.openai.com/)
+3. Vào **Cài đặt > Phím tắt** và đặt phím cho **Dịch âm thanh realtime**.
+
+## Hỏi đáp & Xử lý sự cố
+
+### Tại sao cửa sổ dịch không hiển thị?
+- Kiểm tra lại phím tắt đã được đăng ký đúng trong **Cài đặt > Phím tắt** chưa.
+- Đảm bảo phím tắt không bị xung đột với ứng dụng khác.
+
+### Monitor báo trạng thái "Lỗi" (Error)?
+- Kiểm tra kết nối Internet của bạn.
+- Kiểm tra API Key của dịch vụ Phiên âm đã chính xác và còn số dư chưa.
+
+### Không bắt được âm thanh trên macOS?
+- Vào **System Settings > Privacy & Security**.
+- Đảm bảo TransKit đã được cấp quyền **Microphone** và **Screen Recording** (cần thiết để bắt âm thanh hệ thống).
 
 ## Build Từ Source
 
@@ -114,6 +159,9 @@ pnpm install
 pnpm tauri dev
 pnpm tauri build
 ```
+
+> [!TIP]
+> **Đối với nhà phát triển build từ Source**: Nếu bạn muốn tắt các tính năng Transkit Cloud (Xác thực, Khóa dùng thử), hãy sao chép `.env.example` sang `.env` và đặt `VITE_DISABLE_CLOUD=true` trước khi build.
 
 ## Release Version Mới (All Platforms)
 

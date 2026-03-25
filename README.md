@@ -10,19 +10,23 @@ This project is a fork of [Pot Desktop](https://github.com/pot-app/pot-desktop) 
 
 <table>
 <tr>
-    <td><img src="asset/1.png"></td>
-    <td><img src="asset/2.png"></td>
-    <td><img src="asset/3.png"></td>
+    <td><img src="docs/images/Translate-Light.png"></td>
+    <td><img src="docs/images/Translate-Dark.png"></td>
 </tr>
 </table>
+<img src="docs/images/RealtimeMonitorWithAISuggestion.png">
+
 
 # Table of Contents
 
 </div>
 
+- [Full User Guide](./docs/user_guide.md)
 - [Usage](#usage)
 - [What Is New In TransKit](#what-is-new-in-transkit)
 - [Installation](#installation)
+- [Transcription Setup (Monitor)](#transcription-setup-monitor)
+- [FAQ & Troubleshooting](#faq--troubleshooting)
 - [Build From Source](#build-from-source)
 - [Release New Version (All Platforms)](#release-new-version-all-platforms)
 - [Contributing](#contributing)
@@ -72,32 +76,73 @@ Release page: <https://github.com/transkit-app/transkit-desktop/releases/latest>
 
 ### Windows
 
-1. Download the latest `.exe` installer from Releases.
+1. Download the latest `.exe` installer from [Releases](https://github.com/transkit-app/transkit-desktop/releases/latest).
 2. Choose package by architecture:
    - x64: `TransKit_{version}_x64-setup.exe`
    - x86: `TransKit_{version}_x86-setup.exe`
    - arm64: `TransKit_{version}_arm64-setup.exe`
-3. Run installer.
+3. Run the installer.
+   > [!NOTE]
+   > If Windows Defender shows a "Windows protected your PC" message, click **"More info"** and then **"Run anyway"**.
 
-If your environment does not have WebView2, use:
-
-- `TransKit_{version}_{arch}_fix_webview2_runtime-setup.exe`
+Alternatively, install via Winget:
+```powershell
+winget install TransKit
+```
 
 ### macOS
 
-1. Download the latest `.dmg` from Releases.
-2. Choose package by architecture:
-   - Apple Silicon: `TransKit_{version}_aarch64.dmg`
-   - Intel: `TransKit_{version}_x64.dmg`
-3. Open and install.
+Install via Homebrew:
+```bash
+brew tap transkit-app/tap
+brew install --cask transkit
+```
+Alternatively 
+1. Download the latest `.dmg` from the [Releases page](https://github.com/transkit-app/transkit-desktop/releases/latest).
+2. Open the `.dmg` and drag **TransKit** to Applications.
+3. **Important** — the app is not yet signed with an Apple Developer certificate. macOS will block it on first open. Run this command **once** in Terminal to allow it:
+   ```bash
+   xattr -cr /Applications/TransKit.app
+   ```
+4. On first launch, macOS will ask for **Screen & System Audio Recording** permissions. Toggle them **ON** in System Settings for TransKit to capture system audio.
+
 
 ### Linux
 
-1. Download the package for your architecture from Releases.
-2. Available package formats in CI artifacts:
-   - `.deb`
-   - `.rpm`
-   - `.AppImage` (x86_64)
+1. Download the package for your architecture from [Releases](https://github.com/transkit-app/transkit-desktop/releases/latest).
+2. Available package formats:
+   - `.deb` (Ubuntu/Debian)
+   - `.rpm` (Fedora/RHEL)
+   - `.AppImage` (Universal)
+
+---
+
+## Transcription Setup (Monitor)
+
+While basic translation features (Selection/Input/OCR) work out-of-the-box, the **Realtime Monitor** requires a **Transcription** (Speech-to-Text) provider.
+
+1. Go to **Settings > Service > Transcription**.
+2. Add a provider and enter your API Key. Supported providers include:
+   - **Soniox** (Recommended for low latency) - [Get API Key](https://soniox.com/) require credit
+   - **Deepgram** - [Get API Key](https://console.deepgram.com/) free signup, get $200 credit
+   - **AssemblyAI** - [Get API Key](https://www.assemblyai.com/) 
+   - **Gladia** - [Get API Key](https://www.gladia.io/) free signup, get free 10 hours transcription credit/month
+   - **OpenAI Whisper** - [Get API Key](https://platform.openai.com/)
+3. Go to **Settings > Hotkey** and set a shortcut for **Audio Monitor**.
+
+## FAQ & Troubleshooting
+
+### Why is the translation window not appearing?
+- Check if the hotkey is registered correctly in **Settings > Hotkey**.
+- Ensure there are no hotkey conflicts with other applications.
+
+### Monitor status shows "Error"?
+- Verify your Internet connection.
+- Check if your API key for the Transcription provider is correct and has a balance.
+
+### No audio captured on macOS?
+- Go to **System Settings > Privacy & Security**.
+- Ensure TransKit has permissions for **Microphone** and **Screen Recording** (required for capturing system audio).
 
 ## Build From Source
 
@@ -114,6 +159,9 @@ pnpm install
 pnpm tauri dev
 pnpm tauri build
 ```
+
+> [!TIP]
+> **For Developers Building from Source**: If you want to disable Transkit Cloud features (Auth, Trial keys), copy `.env.example` to `.env` and set `VITE_DISABLE_CLOUD=true` before building.
 
 ## Release New Version (All Platforms)
 
