@@ -326,7 +326,7 @@ export default function TargetArea(props) {
 
     // hide empty textarea
     useEffect(() => {
-        if (textAreaRef.current !== null) {
+        if (textAreaRef.current) {
             textAreaRef.current.style.height = '0px';
             if (result !== '') {
                 textAreaRef.current.style.height = textAreaRef.current.scrollHeight + 'px';
@@ -665,11 +665,15 @@ export default function TargetArea(props) {
                 <div ref={boundRef}>
                     {/* result content with dynamic max height and scrollbar */}
                     <CardBody className={`p-[8px] ${hide ? 'h-0 p-0' : 'max-h-[800px] overflow-y-auto'}`}>
-                        {(!result || result === '') && !error ? (
+                        {sourceText.trim() === '' && windowType === '[SELECTION_TRANSLATE]' ? (
                             <div className='flex justify-start items-center h-[21px]'>
                                 <PulseLoader size={5} color='hsl(var(--nextui-default-400))' speedMultiplier={0.8} />
                             </div>
-                        ) : typeof result === 'string' ? (
+                        ) : (windowType === '[SELECTION_TRANSLATE]' ? (!result || result === '') && !error : isLoading && (!result || result === '') && !error) ? (
+                            <div className='flex justify-start items-center h-[21px]'>
+                                <PulseLoader size={5} color='hsl(var(--nextui-default-400))' speedMultiplier={0.8} />
+                            </div>
+                        ) : typeof result === 'string' && result !== '' ? (
                             <textarea
                                 ref={textAreaRef}
                                 className={`text-[14px] h-0 resize-none bg-transparent select-text outline-none w-full`}

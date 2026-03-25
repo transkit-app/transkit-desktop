@@ -179,7 +179,7 @@ export default function SourceArea(props) {
             });
         }
         if (event.key === 'Escape') {
-            appWindow.close();
+            appWindow.hide();
         }
     };
 
@@ -256,6 +256,7 @@ export default function SourceArea(props) {
     }, [deleteNewline, incrementalTranslate, recognizeLanguage, recognizeServiceList, hideWindow]);
 
     useEffect(() => {
+        if (!textAreaRef.current) return;
         textAreaRef.current.style.height = '50px';
         textAreaRef.current.style.height = textAreaRef.current.scrollHeight + 'px';
     }, [sourceText]);
@@ -351,6 +352,7 @@ export default function SourceArea(props) {
         return str2;
     }
     useEffect(() => {
+        if (!textAreaRef.current) return;
         textAreaRef.current.addEventListener("keydown", async (event) => {
             if (event.altKey && event.shiftKey && event.code === 'KeyU') {
                 const originText = textAreaRef.current.value;

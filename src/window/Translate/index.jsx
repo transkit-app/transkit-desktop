@@ -36,14 +36,7 @@ const listenBlur = () => {
             // 如果直接关闭将导致窗口无法拖动
             blurTimeout = setTimeout(async () => {
                 info('Confirm Blur');
-                // macOS: hide (keep-alive for instant reuse — WKWebView handles this cleanly)
-                // Windows/Linux: close (recreate next time — avoids WebView2/WebKitGTK
-                // compositor transparency bug after hide/show cycle)
-                if (osType === 'Darwin') {
-                    await appWindow.hide();
-                } else {
-                    await appWindow.close();
-                }
+                await appWindow.hide();
             }, 100);
         }
     });
@@ -269,6 +262,7 @@ export default function Translate() {
                 // Wait a bit for content to render
                 await new Promise(resolve => setTimeout(resolve, 100));
 
+                if (!contentRef.current) return;
                 const contentHeight = contentRef.current.offsetHeight;
                 const contentWidth = contentRef.current.scrollWidth;
                 const headerHeight = 32;
@@ -453,11 +447,7 @@ export default function Translate() {
                                     variant='light'
                                     className='h-[26px] w-[26px] min-w-0 bg-transparent'
                                     onPress={() => {
-                                        if (osType === 'Darwin') {
-                                            void appWindow.hide();
-                                        } else {
-                                            void appWindow.close();
-                                        }
+                                        void appWindow.hide();
                                     }}
                                 >
                                     <AiFillCloseCircle className='text-[16px] text-default-400' />
