@@ -174,14 +174,19 @@ fn translate_window() -> Window {
             ))
             .unwrap();
 
-        // Prevent destroy on close — hide instead so next invocation is instant
-        let win_clone = window.clone();
-        window.on_window_event(move |event| {
-            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                api.prevent_close();
-                win_clone.hide().unwrap_or_default();
-            }
-        });
+        // macOS only: prevent destroy on close — hide instead so next invocation is instant.
+        // Windows/Linux use close+recreate to avoid WebView2/WebKitGTK transparency issues
+        // that occur after a hide/show cycle.
+        #[cfg(target_os = "macos")]
+        {
+            let win_clone = window.clone();
+            window.on_window_event(move |event| {
+                if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                    api.prevent_close();
+                    win_clone.hide().unwrap_or_default();
+                }
+            });
+        }
     }
 
     let position_type = match get("translate_window_position") {
