@@ -75,7 +75,7 @@ fn build_window(label: &str, title: &str) -> (Window, bool) {
     match app_handle.get_window(label) {
         Some(v) => {
             info!("Window existence: {}", label);
-            v.set_focus().unwrap();
+            v.set_focus().unwrap_or_default();
             (v, true)
         }
         None => {
@@ -239,6 +239,13 @@ fn translate_window() -> Window {
                 ))
                 .unwrap();
         }
+    }
+
+    if exists {
+        // Must show before emitting event — on Windows, WebView2 won't
+        // process JS events while the window is hidden.
+        window.show().unwrap_or_default();
+        window.set_focus().unwrap_or_default();
     }
 
     window
