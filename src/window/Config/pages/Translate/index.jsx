@@ -14,7 +14,7 @@ export default function Translate() {
     const [translateBgOpacity, setTranslateBgOpacity] = useConfig('translate_bg_opacity', 100);
     const [autoCopy, setAutoCopy] = useConfig('translate_auto_copy', 'disable');
     const [incrementalTranslate, setIncrementalTranslate] = useConfig('incremental_translate', false);
-    const [historyDisable, setHistoryDisable] = useConfig('history_disable', false);
+    const [historyDisable, setHistoryDisable] = useConfig('history_disable', true);
     const [dynamicTranslate, setDynamicTranslate] = useConfig('dynamic_translate', false);
     const [deleteNewline, setDeleteNewline] = useConfig('translate_delete_newline', false);
     const [rememberLanguage, setRememberLanguage] = useConfig('translate_remember_language', false);
