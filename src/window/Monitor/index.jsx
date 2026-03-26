@@ -7,7 +7,7 @@ import { writeTextFile, createDir, exists } from '@tauri-apps/api/fs';
 import { useTranslation } from 'react-i18next';
 import { Button, Spinner } from '@nextui-org/react';
 import { BsPinFill } from 'react-icons/bs';
-import { MdOpenInFull, MdBlurOn, MdVolumeUp, MdVolumeOff, MdSettings, MdSaveAlt, MdFolderOpen, MdClose, MdRemove } from 'react-icons/md';
+import { MdOpenInFull, MdBlurOn, MdVolumeUp, MdVolumeOff, MdSettings, MdSaveAlt, MdFolderOpen, MdClose, MdRemove, MdMic } from 'react-icons/md';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useConfig } from '../../hooks';
 import { osType } from '../../utils/env';
@@ -43,6 +43,18 @@ function StatusDot({ status }) {
         error: 'bg-red-400',
     };
     return <div className={`w-2 h-2 rounded-full flex-shrink-0 ${colors[status] ?? colors.disconnected}`} />;
+}
+
+// Short display label for service names shown in the bottom status bar
+const SVC_LABELS = {
+    deepgram_stt: 'Deepgram', soniox_stt: 'Soniox', gladia_stt: 'Gladia',
+    transkit_cloud_stt: 'Transkit Cloud', openai_whisper_stt: 'Whisper',
+    assemblyai_stt: 'AssemblyAI',
+    edge_tts: 'Edge TTS', elevenlabs_tts: 'ElevenLabs', google_tts: 'Google TTS',
+    openai_tts: 'OpenAI TTS', vieneu_tts: 'VieNeu', lingva: 'Lingva',
+};
+function _svcLabel(name) {
+    return SVC_LABELS[name] ?? name.replace(/_stt|_tts/g, '').replace(/_/g, ' ');
 }
 
 function mapServiceConfigToTTSParams(serviceName, config) {
@@ -378,7 +390,10 @@ export default function Monitor() {
         // Non-cloud providers: require an API key / token before proceeding.
         // transkit_cloud_stt handles its own credential fetching internally.
         if (serviceName !== 'transkit_cloud_stt' && !transcriptionConfig.apiKey && !transcriptionConfig.token) {
-            setErrorMsg(t('monitor.no_api_key'));
+            setErrorMsg(t('monitor.no_api_key', {
+                service: t('config.service.label'),
+                transcription: t('config.service.transcription'),
+            }));
             return;
         }
 
@@ -867,13 +882,12 @@ export default function Monitor() {
                 className='h-[30px] flex items-center justify-between px-2 z-10 relative select-none'
                 data-tauri-drag-region='true'
             >
-                {/* Left: status + save status */}
+                {/* Left: status */}
                 <div className='flex items-center gap-1.5 pointer-events-none'>
                     <StatusDot status={status} />
                     <span className='text-[11px] text-default-500 font-medium'>
                         {t(`monitor.status_${status}`) || status}
                     </span>
-                    {saveStatusLabel()}
                 </div>
 
                 {/* Right: auto-save toggle + Config + Pin + Close */}
@@ -1071,6 +1085,18 @@ export default function Monitor() {
                 </div>
             )}
 
+            {/* Auth lock conflict — Supabase concurrent token refresh race */}
+            {errorMeta?.code === 'auth_lock_conflict' && (
+                <div className='mx-2 mt-1 px-2 py-2 bg-warning/10 border border-warning/20 rounded-lg flex flex-col gap-1'>
+                    <p className='text-xs text-warning-700 dark:text-warning-400 font-medium'>
+                        {t('monitor.auth_lock_conflict_title')}
+                    </p>
+                    <p className='text-xs text-default-500'>
+                        {t('monitor.auth_lock_conflict_hint')}
+                    </p>
+                </div>
+            )}
+
             {/* Plain error message */}
             {errorMsg && (
                 <div className='mx-2 mt-1 px-2 py-1 bg-danger/10 border border-danger/20 rounded-lg'>
@@ -1106,6 +1132,40 @@ export default function Monitor() {
                 ttsServiceList={ttsServiceList ?? []}
                 isTTSEnabled={isTTSEnabled}
             />
+
+            {/* ── Bottom status bar ────────────────────────────────────────── */}
+            <div className='flex items-center justify-between px-2 h-[22px] border-t border-content2/60 flex-shrink-0 select-none'>
+                {/* Left: transcription + TTS provider */}
+                <div className='flex items-center gap-2.5'>
+                    {/* Transcription */}
+                    <span className='flex items-center gap-1 text-[10px] text-default-400'>
+                        <MdMic className='text-[11px]' />
+                        {_svcLabel(getServiceName(activeTranscriptionService ?? ''))}
+                    </span>
+                    {/* TTS — only when enabled */}
+                    {isTTSEnabled && (
+                        <span className='flex items-center gap-1 text-[10px] text-default-400'>
+                            <span className='text-default-300'>·</span>
+                            <MdVolumeUp className='text-[11px]' />
+                            {_svcLabel(getServiceName(activeTtsService ?? ''))}
+                        </span>
+                    )}
+                </div>
+                {/* Right: auto-save status */}
+                <span className={`flex items-center gap-1 text-[10px] font-medium ${
+                    saveStatus === 'saving' ? 'text-warning animate-pulse' :
+                    saveStatus === 'saved'  ? 'text-success' :
+                    saveStatus === 'error'  ? 'text-danger' :
+                    autosaveEnabled        ? 'text-default-400' : 'text-default-300'
+                }`}>
+                    <MdSaveAlt className='text-[11px]' />
+                    {saveStatus === 'saving' ? t('monitor.autosave_saving') :
+                     saveStatus === 'saved'  ? t('monitor.autosave_saved') :
+                     saveStatus === 'error'  ? t('monitor.autosave_error') :
+                     autosaveEnabled        ? t('monitor.autosave_label') :
+                                             t('monitor.autosave_disabled_warning')}
+                </span>
+            </div>
         </div>
     );
 }

@@ -71,6 +71,25 @@ export class TranskitCloudSTTClient {
     }
 
     async _doConnect(config) {
+        try {
+            await this._doConnectInner(config);
+        } catch (err) {
+            // Safety net: catch any unexpected throw so it never becomes an
+            // unhandled promise rejection (e.g. Supabase auth lock conflicts).
+            this.onCredentialRequest?.(false);
+            if (this._intentionalDisconnect) return;
+            this._setStatus('error');
+            const msg = err?.message ?? '';
+            if (msg.includes('Lock') && msg.includes('auth-token')) {
+                this.onError?.('', { code: 'auth_lock_conflict' });
+            } else {
+                console.error('[transkit-cloud] unexpected error in _doConnect:', err);
+                this.onError?.('Connection failed unexpectedly. Please try again.');
+            }
+        }
+    }
+
+    async _doConnectInner(config) {
         this._setStatus('connecting');
 
         // Verify the user is logged in before hitting the network
@@ -187,7 +206,17 @@ export class TranskitCloudSTTClient {
     }
 
     _handleCredentialError(err) {
-        const code = err?.message ?? 'server_error';
+        const msg = err?.message ?? 'server_error';
+
+        // Supabase auth lock conflict — multiple concurrent requests raced to
+        // refresh the token. Surface as a structured error so UI can show a
+        // user-friendly message instead of hanging or showing a raw error code.
+        if (msg.includes('Lock') && msg.includes('auth-token')) {
+            this.onError?.('', { code: 'auth_lock_conflict' });
+            return;
+        }
+
+        const code = msg;
         switch (code) {
             case 'quota_exceeded': {
                 const used = err.used != null ? Math.ceil(err.used / 60) : null;
@@ -200,6 +229,9 @@ export class TranskitCloudSTTClient {
                 break;
             case 'cloud_disabled':
                 this.onError?.('Transkit Cloud is not available in this build.');
+                break;
+            case 'auth_lock_conflict':
+                this.onError?.('', { code: 'auth_lock_conflict' });
                 break;
             default:
                 this.onError?.(`Could not start cloud session: ${code}`);

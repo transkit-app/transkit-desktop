@@ -304,7 +304,8 @@ function CloudPlanCard({ profile }) {
   const plan = profile.plan ?? 'trial'
   const badgeColor = PLAN_BADGE_COLOR[plan] ?? 'default'
   const planLabel = t(`config.account.plan_badge_${plan}`, { defaultValue: plan })
-  const isUnlimited = profile.trial_limit_seconds === -1
+  const sttLimit    = profile.plan_stt_limit ?? profile.trial_limit_seconds
+  const isUnlimited = sttLimit === -1
   const isUpgradeable = plan === 'trial' || plan === 'starter'
 
   return (
@@ -326,7 +327,7 @@ function CloudPlanCard({ profile }) {
             icon={<MdMic className='text-base' />}
             label={t('config.account.stt_label')}
             used={profile.trial_seconds_used}
-            limit={profile.trial_limit_seconds}
+            limit={profile.plan_stt_limit ?? profile.trial_limit_seconds}
             unlimited={isUnlimited}
             comingSoon={false}
             t={t}

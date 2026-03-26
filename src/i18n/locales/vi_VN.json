@@ -339,7 +339,7 @@
       "placeholder": "Nhấn Bắt đầu để bắt đầu nghe...",
       "placeholder_context_hint": "Với nội dung chuyên ngành, hãy nhấn nút Ngữ cảnh (⚙) để cài đặt bối cảnh dịch cho phù hợp.",
       "listening": "Đang nghe...",
-      "no_api_key": "Vui lòng đặt Soniox API key trong Cài đặt > Dịch vụ > Âm thanh",
+      "no_api_key": "Vui lòng nhập API key trong Cài đặt › {{service}} › {{transcription}}",
       "status_connecting": "Đang kết nối...",
       "status_connected": "Đang nghe",
       "status_disconnected": "Sẵn sàng",
@@ -421,7 +421,9 @@
       "quota_exceeded_title": "Đã hết quota Transkit Cloud (đã dùng {{used}}/{{limit}} phút).",
       "quota_exceeded_title_short": "Đã hết quota Transkit Cloud.",
       "quota_action_upgrade": "Nâng cấp gói của bạn",
-      "quota_action_byok": "Hoặc dùng API key của bạn: Cài đặt › {{service}} › {{transcription}}"
+      "quota_action_byok": "Hoặc dùng API key của bạn: Cài đặt › {{service}} › {{transcription}}",
+      "auth_lock_conflict_title": "Xung đột xác thực — vui lòng thử lại.",
+      "auth_lock_conflict_hint": "Nhiều yêu cầu cùng tranh nhau lấy auth token. Nhấn Start để thử lại."
     },
     "updater": {
       "title": "Kiểm tra cập nhật",

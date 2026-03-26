@@ -127,8 +127,12 @@ Deno.serve(async (req: Request) => {
   // 4. Quota enforcement
   let remaining = 0
   if (serviceType === 'stt') {
-    remaining = profile.trial_limit_seconds - profile.trial_seconds_used
-    if (remaining <= 0) {
+    const isUnlimited = profile.trial_limit_seconds === -1
+    remaining = isUnlimited
+      ? MAX_SESSION_CAP
+      : profile.trial_limit_seconds - profile.trial_seconds_used
+
+    if (!isUnlimited && remaining <= 0) {
       return json({
         error: 'quota_exceeded',
         used: profile.trial_seconds_used,

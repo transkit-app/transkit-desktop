@@ -340,7 +340,7 @@
       "placeholder": "Press Start to begin listening...",
       "placeholder_context_hint": "For specialized topics, click the Settings (⚙) button to configure translation context for better accuracy.",
       "listening": "Listening...",
-      "no_api_key": "Please set your Soniox API key in Settings > Service > Audio",
+      "no_api_key": "Please set your API key in Settings › {{service}} › {{transcription}}",
       "status_connecting": "Connecting...",
       "status_connected": "Listening",
       "status_disconnected": "Ready",
@@ -392,7 +392,7 @@
       "ctx_ai_error": "AI generation failed",
       "ctx_ai_success": "Context generated",
       "ctx_char_limit_warning": "Context is close to the 10,000 character limit",
-      "autosave_label": "Auto-save",
+      "autosave_label": "Auto-save ON",
       "autosave_on": "Auto-save enabled",
       "autosave_off": "Auto-save: ON - Waiting to start",
       "autosave_saving": "Saving...",
@@ -422,7 +422,9 @@
       "quota_exceeded_title": "Transkit Cloud quota reached ({{used}}/{{limit}} min used).",
       "quota_exceeded_title_short": "Transkit Cloud quota reached.",
       "quota_action_upgrade": "Upgrade your plan",
-      "quota_action_byok": "Or use your own API key: Settings › {{service}} › {{transcription}}"
+      "quota_action_byok": "Or use your own API key: Settings › {{service}} › {{transcription}}",
+      "auth_lock_conflict_title": "Authentication conflict — please try again.",
+      "auth_lock_conflict_hint": "Multiple requests competed for the auth token at the same time. Click Start to retry."
     },
     "updater": {
       "title": "Check Update",

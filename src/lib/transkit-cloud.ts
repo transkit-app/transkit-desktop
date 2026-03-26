@@ -43,14 +43,27 @@ export const supabase: SupabaseClient | null = CLOUD_ENABLED
 
 export async function getSession(): Promise<Session | null> {
   if (!CLOUD_ENABLED || !supabase) return null
-  const { data } = await supabase.auth.getSession()
-  return data.session
+  try {
+    const { data } = await supabase.auth.getSession()
+    return data.session
+  } catch (e) {
+    console.warn('[transkit-cloud] getSession failed (auth lock conflict?):', e)
+    return null
+  }
 }
 
 export async function getUser(): Promise<User | null> {
   if (!CLOUD_ENABLED || !supabase) return null
-  const { data } = await supabase.auth.getUser()
-  return data.user ?? null
+  try {
+    const { data } = await supabase.auth.getUser()
+    return data.user ?? null
+  } catch (e) {
+    // Supabase can throw a lock conflict error when multiple concurrent requests
+    // race to refresh the auth token. Treat this as "not authenticated" so callers
+    // get a clean null instead of an unhandled rejection.
+    console.warn('[transkit-cloud] getUser failed (auth lock conflict?):', e)
+    return null
+  }
 }
 
 export function onAuthStateChange(callback: (user: User | null) => void): () => void {
@@ -229,7 +242,9 @@ export interface UserProfile {
   notes: string | null
   trial_seconds_used: number
   trial_limit_seconds: number
-  plan: string // 'trial' | 'starter' | 'pro'
+  plan: string              // 'trial' | 'starter' | 'pro'
+  plan_display_name: string // e.g. 'Free Trial', 'Starter', 'Pro'
+  plan_stt_limit: number    // authoritative STT limit from subscription_plans (-1 = unlimited)
 }
 
 export async function getUserProfile(): Promise<UserProfile | null> {
@@ -240,12 +255,23 @@ export async function getUserProfile(): Promise<UserProfile | null> {
 
   const { data, error } = await supabase
     .from('profiles')
-    .select('email, full_name, avatar_url, role, company, experience_level, expertise, notes, trial_seconds_used, trial_limit_seconds, plan')
+    .select('email, full_name, avatar_url, role, company, experience_level, expertise, notes, trial_seconds_used, trial_limit_seconds, plan, subscription_plans(display_name, stt_seconds_limit)')
     .eq('id', user.id)
     .single()
 
   if (error || !data) return null
-  return data as UserProfile
+
+  // subscription_plans is a nested join object from Supabase — flatten it
+  const raw = data as any
+  const planData = Array.isArray(raw.subscription_plans)
+    ? raw.subscription_plans[0]
+    : raw.subscription_plans
+
+  return {
+    ...raw,
+    plan_display_name: planData?.display_name ?? raw.plan ?? 'trial',
+    plan_stt_limit:    planData?.stt_seconds_limit ?? raw.trial_limit_seconds,
+  } as UserProfile
 }
 
 export type ProfilePatch = Partial<Pick<UserProfile, 'full_name' | 'role' | 'company' | 'experience_level' | 'expertise' | 'notes'>>

@@ -135,40 +135,43 @@ export function Config(props) {
                         </div>
 
                         {/* STT Quota */}
-                        {profile && (
-                            <div className='flex flex-col gap-1.5'>
-                                <div className='flex items-center justify-between text-xs text-default-500'>
-                                    <span>{t(`${BASE}.stt_usage`)}</span>
-                                    <span className='font-mono'>
-                                        {fmt(profile.trial_seconds_used)} / {fmt(profile.trial_limit_seconds)} min
-                                    </span>
+                        {profile && (() => {
+                            const limit = profile.plan_stt_limit ?? profile.trial_limit_seconds;
+                            const used  = profile.trial_seconds_used;
+                            const isUnlimited = limit === -1;
+                            const pct  = isUnlimited ? 0 : used / limit;
+                            return (
+                                <div className='flex flex-col gap-1.5'>
+                                    <div className='flex items-center justify-between text-xs text-default-500'>
+                                        <span>{t(`${BASE}.stt_usage`)}</span>
+                                        {isUnlimited
+                                            ? <span className='font-mono'>{fmt(used)} min</span>
+                                            : <span className='font-mono'>{fmt(used)} / {fmt(limit)} min</span>
+                                        }
+                                    </div>
+                                    {!isUnlimited && (
+                                        <Progress
+                                            size='sm'
+                                            value={used}
+                                            maxValue={limit}
+                                            color={pct >= 0.9 ? 'danger' : pct >= 0.7 ? 'warning' : 'primary'}
+                                        />
+                                    )}
+                                    {!isUnlimited && used >= limit && (
+                                        <p className='text-xs text-danger'>
+                                            {t(`${BASE}.quota_reached`)}{' '}
+                                            <span
+                                                className='cursor-pointer underline'
+                                                onClick={() => open('https://transkit.app/pricing')}
+                                            >
+                                                {t(`${BASE}.upgrade_plan`)}
+                                            </span>{' '}
+                                            {t(`${BASE}.quota_reached_hint`)}
+                                        </p>
+                                    )}
                                 </div>
-                                <Progress
-                                    size='sm'
-                                    value={profile.trial_seconds_used}
-                                    maxValue={profile.trial_limit_seconds}
-                                    color={
-                                        profile.trial_seconds_used / profile.trial_limit_seconds >= 0.9
-                                            ? 'danger'
-                                            : profile.trial_seconds_used / profile.trial_limit_seconds >= 0.7
-                                                ? 'warning'
-                                                : 'primary'
-                                    }
-                                />
-                                {profile.trial_seconds_used >= profile.trial_limit_seconds && (
-                                    <p className='text-xs text-danger'>
-                                        {t(`${BASE}.quota_reached`)}{' '}
-                                        <span
-                                            className='cursor-pointer underline'
-                                            onClick={() => open('https://transkit.app/pricing')}
-                                        >
-                                            {t(`${BASE}.upgrade_plan`)}
-                                        </span>{' '}
-                                        {t(`${BASE}.quota_reached_hint`)}
-                                    </p>
-                                )}
-                            </div>
-                        )}
+                            );
+                        })()}
 
                         {loading && (
                             <p className='text-xs text-default-400'>
