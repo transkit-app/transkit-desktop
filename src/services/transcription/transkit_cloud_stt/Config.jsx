@@ -16,10 +16,11 @@ import {
 
 const BASE = 'services.transcription.transkit_cloud_stt';
 
-function fmt(seconds) {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m}:${String(s).padStart(2, '0')}`;
+// Convert seconds → minutes with 1 decimal when not a whole number, locale separators.
+// e.g. 90 → "1.5", 3600 → "60", 18000 → "300"
+function fmtMin(seconds) {
+    const min = seconds / 60;
+    return min.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 });
 }
 
 export function Config(props) {
@@ -145,8 +146,8 @@ export function Config(props) {
                                     <div className='flex items-center justify-between text-xs text-default-500'>
                                         <span>{t(`${BASE}.stt_usage`)}</span>
                                         {isUnlimited
-                                            ? <span className='font-mono'>{fmt(used)} min</span>
-                                            : <span className='font-mono'>{fmt(used)} / {fmt(limit)} min</span>
+                                            ? <span className='font-mono'>{fmtMin(used)} {t(`${BASE}.min_label`)}</span>
+                                            : <span className='font-mono'>{fmtMin(used)} / {fmtMin(limit)} {t(`${BASE}.min_label`)}</span>
                                         }
                                     </div>
                                     {!isUnlimited && (

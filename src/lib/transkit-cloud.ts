@@ -136,10 +136,12 @@ async function _oauthFlow(provider: 'google' | 'github'): Promise<void> {
         }
         const { data: authData, error } = await supabase!.auth.exchangeCodeForSession(code)
         if (error) { reject(error); return }
-        // Ensure profile row exists for this user (handles existing users
-        // who signed up before the DB trigger was installed)
+        // Ensure profile row exists — fire-and-forget so any failure here
+        // (network blip, auth lock conflict) never rejects the login promise.
         if (authData.session?.user) {
-          await _ensureProfile(authData.session.user)
+          _ensureProfile(authData.session.user).catch(e =>
+            console.warn('[transkit-cloud] _ensureProfile failed (non-blocking):', e)
+          )
         }
         resolve()
       } catch (e) {

@@ -415,9 +415,6 @@
       "bookmark_add": "Đánh dấu dòng này",
       "bookmark_remove": "Xóa đánh dấu",
       "tts_replay": "Phát lại audio",
-      "cloud_connecting": "Đang kết nối Transkit Cloud...",
-      "cloud_session_countdown": "Cloud: còn {{time}}",
-      "cloud_session_active": "Transkit Cloud — còn {{time}}",
       "quota_exceeded_title": "Đã hết quota Transkit Cloud (đã dùng {{used}}/{{limit}} phút).",
       "quota_exceeded_title_short": "Đã hết quota Transkit Cloud.",
       "quota_action_upgrade": "Nâng cấp gói của bạn",
@@ -805,6 +802,7 @@
           "upgrade_plan": "Nâng cấp gói",
           "quota_reached_hint": "hoặc thêm API key cá nhân vào một provider STT khác.",
           "auto_provider_note": "Provider STT đang hoạt động do Transkit cấu hình và có thể thay đổi bất cứ lúc nào để đảm bảo chất lượng tốt nhất. Bạn không cần quản lý API key.",
+          "min_label": "phút",
           "loading_usage": "Đang tải dữ liệu sử dụng…",
           "not_available": "Transkit Cloud không khả dụng trong bản build này."
         }

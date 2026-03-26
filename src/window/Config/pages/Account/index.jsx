@@ -274,8 +274,9 @@ function ServiceRow({ icon, label, used, limit, unlimited, comingSoon, t }) {
 
   const pct = limit > 0 ? Math.min((used / limit) * 100, 100) : 0
   const color = pct >= 90 ? 'danger' : pct >= 70 ? 'warning' : 'primary'
-  const usedMin = Math.floor(used / 60)
-  const limitMin = Math.floor(limit / 60)
+  const fmtMin = (s) => (s / 60).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 })
+  const usedMin = fmtMin(used)
+  const limitMin = fmtMin(limit)
 
   return (
     <div className='flex flex-col gap-1.5'>

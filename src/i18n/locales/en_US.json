@@ -416,9 +416,6 @@
       "bookmark_add": "Bookmark this line",
       "bookmark_remove": "Remove bookmark",
       "tts_replay": "Replay audio",
-      "cloud_connecting": "Connecting to Transkit Cloud...",
-      "cloud_session_countdown": "Cloud: {{time}} remaining",
-      "cloud_session_active": "Transkit Cloud — {{time}} remaining",
       "quota_exceeded_title": "Transkit Cloud quota reached ({{used}}/{{limit}} min used).",
       "quota_exceeded_title_short": "Transkit Cloud quota reached.",
       "quota_action_upgrade": "Upgrade your plan",
@@ -806,6 +803,7 @@
           "upgrade_plan": "Upgrade your plan",
           "quota_reached_hint": "or add a personal API key in another STT provider.",
           "auto_provider_note": "The active STT provider is configured by Transkit and may change at any time to deliver the best quality. You do not need to manage any API keys.",
+          "min_label": "min",
           "loading_usage": "Loading usage data…",
           "not_available": "Transkit Cloud is not available in this build."
         }

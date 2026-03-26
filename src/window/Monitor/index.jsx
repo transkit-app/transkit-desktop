@@ -5,7 +5,7 @@ import { documentDir, join } from '@tauri-apps/api/path';
 import { open as openPath } from '@tauri-apps/api/shell';
 import { writeTextFile, createDir, exists } from '@tauri-apps/api/fs';
 import { useTranslation } from 'react-i18next';
-import { Button, Spinner } from '@nextui-org/react';
+import { Button } from '@nextui-org/react';
 import { BsPinFill } from 'react-icons/bs';
 import { MdOpenInFull, MdBlurOn, MdVolumeUp, MdVolumeOff, MdSettings, MdSaveAlt, MdFolderOpen, MdClose, MdRemove, MdMic } from 'react-icons/md';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -183,8 +183,7 @@ export default function Monitor() {
     const [audioCapabilities, setAudioCapabilities] = useState({ system_audio: false, microphone: true });
     const [errorMsg, setErrorMsg] = useState('');
     const [errorMeta, setErrorMeta] = useState(null); // { code, used?, limit? } for structured errors
-    const [cloudSessionNotice, setCloudSessionNotice] = useState(null); // { remainingSeconds } — shown briefly on cloud session start
-    const [cloudConnecting, setCloudConnecting] = useState(false); // shown while fetching cloud credentials
+    const [cloudConnecting, setCloudConnecting] = useState(false); // shown in status bar while fetching cloud credentials
 
     // Auto-save state
     const [saveStatus, setSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
@@ -475,10 +474,6 @@ export default function Monitor() {
             // Start cloud countdown only once the WebSocket is actually connected
             if (s === 'connected' && cloudSessionRef.current?.startTime === null) {
                 cloudSessionRef.current.startTime = Date.now();
-                if (pendingRemainingSeconds !== null) {
-                    setCloudSessionNotice({ remainingSeconds: pendingRemainingSeconds });
-                    setTimeout(() => setCloudSessionNotice(null), 4000);
-                }
                 setCloudCountdown(cloudSessionRef.current.debitedSeconds);
                 countdownTimerRef.current = setInterval(() => {
                     setCloudCountdown((prev) => {
@@ -1030,38 +1025,6 @@ export default function Monitor() {
                 </div>
             )}
 
-            {/* Cloud session countdown */}
-            {cloudCountdown !== null && isRunning && (
-                <div className={`mx-2 mt-1 px-2 py-1 rounded-lg flex items-center gap-1.5 ${cloudCountdown <= 60 ? 'bg-danger/10 border border-danger/20' : 'bg-warning/10 border border-warning/20'}`}>
-                    <span className='text-xs'>⏱</span>
-                    <p className={`text-xs font-mono ${cloudCountdown <= 60 ? 'text-danger' : 'text-warning-600 dark:text-warning-400'}`}>
-                        {t('monitor.cloud_session_countdown', {
-                            time: `${Math.floor(cloudCountdown / 60)}:${String(cloudCountdown % 60).padStart(2, '0')}`,
-                        })}
-                    </p>
-                </div>
-            )}
-
-            {/* Loading: fetching cloud credentials */}
-            {cloudConnecting && (
-                <div className='mx-2 mt-1 px-2 py-1.5 bg-primary/10 border border-primary/20 rounded-lg flex items-center gap-2'>
-                    <Spinner size='sm' color='primary' />
-                    <p className='text-xs text-primary font-medium'>{t('monitor.cloud_connecting')}</p>
-                </div>
-            )}
-
-            {/* Cloud session notice — shown briefly on session start */}
-            {cloudSessionNotice && (
-                <div className='mx-2 mt-1 px-2 py-1.5 bg-brand-500/10 border border-brand-500/20 rounded-lg flex items-center gap-1.5'>
-                    <span className='text-xs'>☁️</span>
-                    <p className='text-xs text-brand-600 dark:text-brand-400 font-medium'>
-                        {t('monitor.cloud_session_active', {
-                            time: `${Math.floor(cloudSessionNotice.remainingSeconds / 60)}:${String(cloudSessionNotice.remainingSeconds % 60).padStart(2, '0')}`,
-                        })}
-                    </p>
-                </div>
-            )}
-
             {/* Quota exceeded — structured error with action hints */}
             {errorMeta?.code === 'quota_exceeded' && (
                 <div className='mx-2 mt-1 px-2 py-2 bg-danger/10 border border-danger/20 rounded-lg flex flex-col gap-1.5'>
@@ -1135,13 +1098,25 @@ export default function Monitor() {
 
             {/* ── Bottom status bar ────────────────────────────────────────── */}
             <div className='flex items-center justify-between px-2 h-[22px] border-t border-content2/60 flex-shrink-0 select-none'>
-                {/* Left: transcription + TTS provider */}
+                {/* Left: transcription + TTS provider + cloud countdown */}
                 <div className='flex items-center gap-2.5'>
                     {/* Transcription */}
-                    <span className='flex items-center gap-1 text-[10px] text-default-400'>
+                    <span className={`flex items-center gap-1 text-[10px] ${status === 'connected' ? 'text-foreground' : 'text-default-400'}`}>
                         <MdMic className='text-[11px]' />
                         {_svcLabel(getServiceName(activeTranscriptionService ?? ''))}
                     </span>
+                    {/* Cloud: connecting indicator or countdown */}
+                    {cloudConnecting && isRunning && (
+                        <span className='flex items-center gap-1 text-[10px] text-default-400'>
+                            <span className='text-default-300'>·</span>
+                            <span className='w-2.5 h-2.5 rounded-full border border-primary/70 border-t-transparent animate-spin flex-shrink-0' />
+                        </span>
+                    )}
+                    {!cloudConnecting && cloudCountdown !== null && isRunning && (
+                        <span className={`text-[10px] font-mono ${cloudCountdown <= 60 ? 'text-danger' : 'text-default-400'}`}>
+                            · {`${Math.floor(cloudCountdown / 60)}:${String(cloudCountdown % 60).padStart(2, '0')}`}
+                        </span>
+                    )}
                     {/* TTS — only when enabled */}
                     {isTTSEnabled && (
                         <span className='flex items-center gap-1 text-[10px] text-default-400'>
