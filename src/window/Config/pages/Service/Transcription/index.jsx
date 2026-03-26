@@ -15,8 +15,8 @@ export default function Transcription(props) {
     const { pluginList } = props;
     const { isOpen: isSelectOpen, onOpen: onSelectOpen, onOpenChange: onSelectOpenChange } = useDisclosure();
     const { isOpen: isConfigOpen, onOpen: onConfigOpen, onOpenChange: onConfigOpenChange } = useDisclosure();
-    const [currentConfigKey, setCurrentConfigKey] = useState('soniox_stt');
-    const [transcriptionServiceList, setTranscriptionServiceList] = useConfig('transcription_service_list', ['soniox_stt']);
+    const [currentConfigKey, setCurrentConfigKey] = useState('deepgram_stt');
+    const [transcriptionServiceList, setTranscriptionServiceList] = useConfig('transcription_service_list', ['deepgram_stt']);
 
     const { t } = useTranslation();
     const toastStyle = useToastStyle();

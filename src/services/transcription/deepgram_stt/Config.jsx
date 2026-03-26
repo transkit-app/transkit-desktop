@@ -77,7 +77,7 @@ export function Config(props) {
                 </div>
                 <div className='config-item'>
                     <p className='text-xs text-default-400'>
-                        {t('services.transcription.deepgram_stt.api_key_hint')}{' '}
+                        {`${t('services.transcription.deepgram_stt.api_key_hint')} `}
                         <span
                             className='text-primary cursor-pointer hover:underline'
                             onClick={() => open('https://console.deepgram.com/signup')}

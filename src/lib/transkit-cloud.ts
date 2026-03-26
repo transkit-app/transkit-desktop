@@ -138,31 +138,65 @@ async function _oauthFlow(provider: 'google' | 'github'): Promise<void> {
   })
 }
 
-// ─── Soniox key management ────────────────────────────────────────────────────
+// ─── Cloud credential resolver ────────────────────────────────────────────────
 
-export interface SonioxKeyResult {
-  api_key: string
-  expires_at: string
-  remaining_seconds: number
-  debited_seconds: number  // seconds pre-debited; countdown shows this, not remaining
+/**
+ * Credentials returned per provider:
+ *   deepgram →  { token: string }       (short-lived Deepgram access token)
+ *   soniox   →  { api_key: string }     (short-lived Soniox temporary key)
+ *   gladia   →  { url: string }         (pre-created WSS session URL)
+ */
+export interface CloudCredentialsResult {
+  provider: string
+  credentials: Record<string, string>
   session_id: string
+  remaining_seconds: number
+  debited_seconds: number
+  plan: string
 }
 
-export async function getSonioxKey(): Promise<SonioxKeyResult> {
+export interface CloudCredentialsOptions {
+  // STT session options — forwarded to providers that need them at session-creation
+  // time (Gladia creates its live session server-side).
+  sourceLanguage?: string | null
+  targetLanguage?: string | null
+  context?: { text?: string; terms?: string[] }
+  endpointing?: number
+  speechThreshold?: number
+}
+
+// FunctionsHttpError.context is the raw Response — must be awaited to read body.
+// Throws with the `error` field from our JSON body, or falls back to the SDK message.
+async function _throwFunctionError(error: any): Promise<never> {
+  let body: any = null
+  try {
+    body = await (error?.context as Response | undefined)?.json?.()
+  } catch { /* non-JSON response */ }
+
+  const code: string = body?.error ?? 'server_error'
+  const err = new Error(code) as any
+  if (body?.used !== undefined) err.used = body.used
+  if (body?.limit !== undefined) err.limit = body.limit
+  throw err
+}
+
+/**
+ * Request session credentials for a cloud-managed provider.
+ * The backend validates the user's JWT, checks quota, reads cloud_service_config
+ * to pick the active provider, and returns short-lived credentials — never
+ * exposing master API keys.
+ */
+export async function getCloudCredentials(
+  serviceType: 'stt' | 'tts' | 'ai',
+  options?: CloudCredentialsOptions
+): Promise<CloudCredentialsResult> {
   if (!CLOUD_ENABLED || !supabase) throw new Error('cloud_disabled')
 
-  // supabase.functions.invoke() sends both Authorization + apikey headers,
-  // which is required for the Supabase Edge Function gateway to verify the JWT.
-  const { data, error } = await supabase.functions.invoke<SonioxKeyResult>('get-soniox-key')
-
-  if (error) {
-    // FunctionsHttpError carries the response body; extract our error field
-    const msg: string = (error as any)?.context?.error
-      ?? (error as any)?.message
-      ?? 'server_error'
-    throw new Error(msg)
-  }
-
+  const { data, error } = await supabase.functions.invoke<CloudCredentialsResult>(
+    'get-cloud-credentials',
+    { body: { service_type: serviceType, options: options ?? {} } }
+  )
+  if (error) await _throwFunctionError(error)
   if (!data) throw new Error('server_error')
   return data
 }
@@ -195,6 +229,7 @@ export interface UserProfile {
   notes: string | null
   trial_seconds_used: number
   trial_limit_seconds: number
+  plan: string // 'trial' | 'starter' | 'pro'
 }
 
 export async function getUserProfile(): Promise<UserProfile | null> {
@@ -205,7 +240,7 @@ export async function getUserProfile(): Promise<UserProfile | null> {
 
   const { data, error } = await supabase
     .from('profiles')
-    .select('email, full_name, avatar_url, role, company, experience_level, expertise, notes, trial_seconds_used, trial_limit_seconds')
+    .select('email, full_name, avatar_url, role, company, experience_level, expertise, notes, trial_seconds_used, trial_limit_seconds, plan')
     .eq('id', user.id)
     .single()
 

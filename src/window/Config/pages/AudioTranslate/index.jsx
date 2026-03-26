@@ -37,8 +37,8 @@ export default function AudioTranslate() {
     const { t } = useTranslation();
 
     // ── Transcription provider selector ──────────────────────────────────────
-    const [transcriptionServiceList] = useConfig('transcription_service_list', ['soniox_stt']);
-    const [activeTranscriptionService, setActiveTranscriptionService] = useConfig('transcription_active_service', 'soniox_stt');
+    const [transcriptionServiceList] = useConfig('transcription_service_list', ['deepgram_stt']);
+    const [activeTranscriptionService, setActiveTranscriptionService] = useConfig('transcription_active_service', 'deepgram_stt');
 
     // ── Auto-save ────────────────────────────────────────────────────────────
     const [autosaveEnabled, setAutosaveEnabled] = useConfig('monitor_autosave_enabled', false);

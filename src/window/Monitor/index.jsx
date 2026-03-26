@@ -5,7 +5,7 @@ import { documentDir, join } from '@tauri-apps/api/path';
 import { open as openPath } from '@tauri-apps/api/shell';
 import { writeTextFile, createDir, exists } from '@tauri-apps/api/fs';
 import { useTranslation } from 'react-i18next';
-import { Button } from '@nextui-org/react';
+import { Button, Spinner } from '@nextui-org/react';
 import { BsPinFill } from 'react-icons/bs';
 import { MdOpenInFull, MdBlurOn, MdVolumeUp, MdVolumeOff, MdSettings, MdSaveAlt, MdFolderOpen, MdClose, MdRemove } from 'react-icons/md';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -18,7 +18,7 @@ import MonitorLog from './components/MonitorLog';
 import ContextPanel from './components/ContextPanel';
 import * as transcriptionServices from '../../services/transcription';
 import { getTTSQueue } from './tts';
-import { getSonioxKey, reportUsage, getUser, CLOUD_ENABLED } from '../../lib/transkit-cloud';
+import { reportUsage, CLOUD_ENABLED } from '../../lib/transkit-cloud';
 
 const MAX_ENTRIES = 100;
 const SUB_MODE_HEIGHT = 190;
@@ -115,8 +115,8 @@ async function buildTranscriptPath() {
 export default function Monitor() {
     const { t } = useTranslation();
 
-    const [activeTranscriptionService, setActiveTranscriptionService] = useConfig('transcription_active_service', 'soniox_stt');
-    const [transcriptionServiceList] = useConfig('transcription_service_list', ['soniox_stt']);
+    const [activeTranscriptionService, setActiveTranscriptionService] = useConfig('transcription_active_service', 'deepgram_stt');
+    const [transcriptionServiceList] = useConfig('transcription_service_list', ['deepgram_stt']);
     const [sourceLang, setSourceLang] = useConfig('audio_source_lang', 'auto');
     const [targetLang, setTargetLang] = useConfig('audio_target_lang', 'vi');
     const [sourceAudio, setSourceAudio] = useConfig('audio_source', 'microphone');
@@ -170,7 +170,9 @@ export default function Monitor() {
     const [provisional, setProvisional] = useState('');
     const [audioCapabilities, setAudioCapabilities] = useState({ system_audio: false, microphone: true });
     const [errorMsg, setErrorMsg] = useState('');
-    const [trialNotice, setTrialNotice] = useState(null); // { remainingSeconds } — shown on trial start
+    const [errorMeta, setErrorMeta] = useState(null); // { code, used?, limit? } for structured errors
+    const [cloudSessionNotice, setCloudSessionNotice] = useState(null); // { remainingSeconds } — shown briefly on cloud session start
+    const [cloudConnecting, setCloudConnecting] = useState(false); // shown while fetching cloud credentials
 
     // Auto-save state
     const [saveStatus, setSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved' | 'error'
@@ -362,52 +364,20 @@ export default function Monitor() {
         const serviceName = getServiceName(activeTranscriptionService);
         const transcriptionConfig = (await store.get(activeTranscriptionService)) ?? {};
 
-        // If no BYO key and service is Soniox, try fetching a cloud trial key
-        if (!transcriptionConfig.apiKey && serviceName === 'soniox_stt') {
-            if (!CLOUD_ENABLED) {
-                setErrorMsg('Add your own Soniox API key in Settings to use this service.');
-                return;
-            }
-            const user = await getUser();
-            if (!user) {
-                setErrorMsg('Sign in to your Transkit account to use the free trial, or add your own Soniox API key in Settings.');
-                return;
-            }
-            try {
-                const result = await getSonioxKey();
-                transcriptionConfig.apiKey = result.api_key;
-                cloudSessionRef.current = {
-                    id: result.session_id,
-                    startTime: Date.now(),
-                    debitedSeconds: result.debited_seconds,
-                };
-                // Show trial notice banner, auto-dismiss after 4s
-                setTrialNotice({ remainingSeconds: result.remaining_seconds });
-                setTimeout(() => setTrialNotice(null), 4000);
-                // Countdown based on debited window for this session
-                setCloudCountdown(result.debited_seconds);
-                countdownTimerRef.current = setInterval(() => {
-                    setCloudCountdown((prev) => {
-                        if (prev <= 1) {
-                            clearInterval(countdownTimerRef.current);
-                            return 0;
-                        }
-                        return prev - 1;
-                    });
-                }, 1000);
-            } catch (err) {
-                if (err.message === 'trial_expired') {
-                    setErrorMsg('Your 5-minute trial has been used. Add your own Soniox API key in Settings to continue.');
-                } else if (err.message === 'not_logged_in') {
-                    setErrorMsg('Sign in to your Transkit account to use the free trial.');
-                } else if (err.message === 'profile_not_found') {
-                    setErrorMsg('Account profile not found. Please sign out and sign in again to fix this.');
-                } else {
-                    setErrorMsg(`Could not get trial key: ${err.message}`);
-                }
-                return;
-            }
-        } else if (!transcriptionConfig.apiKey) {
+        setErrorMsg(''); setErrorMeta(null); // clear any leftover error from previous attempt
+
+        // If a previous cloud session was never properly reported (e.g. WS failed before
+        // connecting), report it now with 0s so the server refunds the pre-debit.
+        if (cloudSessionRef.current) {
+            const { id, startTime, debitedSeconds } = cloudSessionRef.current;
+            const elapsed = startTime !== null ? Math.min(Math.floor((Date.now() - startTime) / 1000), debitedSeconds) : 0;
+            cloudSessionRef.current = null;
+            reportUsage(id, elapsed);
+        }
+
+        // Non-cloud providers: require an API key / token before proceeding.
+        // transkit_cloud_stt handles its own credential fetching internally.
+        if (serviceName !== 'transkit_cloud_stt' && !transcriptionConfig.apiKey && !transcriptionConfig.token) {
             setErrorMsg(t('monitor.no_api_key'));
             return;
         }
@@ -416,7 +386,24 @@ export default function Monitor() {
         const batchInterval = transcriptionConfig.batchIntervalMs ?? 100;
         batchIntervalRef.current = batchInterval;
 
+        // Tracks remaining seconds shown in the trial notice popup (populated via onCloudSession).
+        let pendingRemainingSeconds = null;
+
         // Attach callbacks
+        // transkit_cloud_stt fires this once credentials are ready (before WS connects).
+        // We register the session immediately so stop() always finds it to report usage,
+        // even if the WebSocket never connects (startTime stays null → 0s → full refund).
+        if (client.onCredentialRequest !== undefined) {
+            client.onCredentialRequest = (loading) => setCloudConnecting(loading);
+        }
+
+        if (client.onCloudSession !== undefined) {
+            client.onCloudSession = ({ session_id, remaining_seconds, debited_seconds }) => {
+                cloudSessionRef.current = { id: session_id, startTime: null, debitedSeconds: debited_seconds };
+                pendingRemainingSeconds = remaining_seconds;
+            };
+        }
+
         client.onOriginal = (text, speaker) => {
             pendingOriginalRef.current = { text, speaker };
         };
@@ -441,10 +428,55 @@ export default function Monitor() {
             getTTSQueue().enqueue(text);
         };
         client.onProvisional = (text) => setProvisional(text || '');
-        client.onStatusChange = (s) => setStatus(s);
-        client.onError = (msg) => {
-            setErrorMsg(msg);
-            setTimeout(() => setErrorMsg(''), 5000);
+        client.onStatusChange = (s) => {
+            setStatus(s);
+            if (s === 'connected') setErrorMsg('');
+
+            // Auto-cleanup on unrecoverable error (quota, invalid key, max reconnects exceeded…).
+            // 'error' is only set when no further reconnect will be attempted, so stopping here
+            // is always correct — the user must click Start again to retry.
+            if (s === 'error') {
+                setIsRunning(false);
+                setCloudConnecting(false);
+                clearInterval(countdownTimerRef.current);
+                setCloudCountdown(null);
+                invoke('stop_audio_capture').catch(() => {});
+                if (unlistenAudioRef.current) {
+                    unlistenAudioRef.current();
+                    unlistenAudioRef.current = null;
+                }
+                getTTSQueue().stop();
+                // Reconcile any cloud session that was already pre-debited
+                if (cloudSessionRef.current) {
+                    const { id, startTime, debitedSeconds } = cloudSessionRef.current;
+                    const elapsed = startTime !== null
+                        ? Math.min(Math.floor((Date.now() - startTime) / 1000), debitedSeconds)
+                        : 0;
+                    cloudSessionRef.current = null;
+                    reportUsage(id, elapsed);
+                }
+            }
+
+            // Start cloud countdown only once the WebSocket is actually connected
+            if (s === 'connected' && cloudSessionRef.current?.startTime === null) {
+                cloudSessionRef.current.startTime = Date.now();
+                if (pendingRemainingSeconds !== null) {
+                    setCloudSessionNotice({ remainingSeconds: pendingRemainingSeconds });
+                    setTimeout(() => setCloudSessionNotice(null), 4000);
+                }
+                setCloudCountdown(cloudSessionRef.current.debitedSeconds);
+                countdownTimerRef.current = setInterval(() => {
+                    setCloudCountdown((prev) => {
+                        if (prev <= 1) { clearInterval(countdownTimerRef.current); return 0; }
+                        return prev - 1;
+                    });
+                }, 1000);
+            }
+        };
+        client.onError = (msg, meta) => {
+            setErrorMeta(meta ?? null);
+            setErrorMsg(meta?.code ? '' : msg); // structured errors use meta; plain strings use msg
+            if (!meta?.code) setTimeout(() => setErrorMsg(''), 5000);
         };
         client.onReconnect = async () => {
             console.log('[Monitor] Transcription reconnected — restarting audio capture');
@@ -509,10 +541,9 @@ export default function Monitor() {
         // Reconcile cloud usage: report actual duration so server refunds unused debited seconds
         if (cloudSessionRef.current) {
             const { id, startTime, debitedSeconds } = cloudSessionRef.current;
-            const durationSeconds = Math.min(
-                Math.floor((Date.now() - startTime) / 1000),
-                debitedSeconds,
-            );
+            const durationSeconds = startTime !== null
+                ? Math.min(Math.floor((Date.now() - startTime) / 1000), debitedSeconds)
+                : 0;
             cloudSessionRef.current = null;
             clearInterval(countdownTimerRef.current);
             setCloudCountdown(null);
@@ -985,27 +1016,62 @@ export default function Monitor() {
                 </div>
             )}
 
-            {/* Cloud trial countdown */}
+            {/* Cloud session countdown */}
             {cloudCountdown !== null && isRunning && (
                 <div className={`mx-2 mt-1 px-2 py-1 rounded-lg flex items-center gap-1.5 ${cloudCountdown <= 60 ? 'bg-danger/10 border border-danger/20' : 'bg-warning/10 border border-warning/20'}`}>
                     <span className='text-xs'>⏱</span>
                     <p className={`text-xs font-mono ${cloudCountdown <= 60 ? 'text-danger' : 'text-warning-600 dark:text-warning-400'}`}>
-                        Trial: {Math.floor(cloudCountdown / 60)}:{String(cloudCountdown % 60).padStart(2, '0')} remaining
+                        {t('monitor.cloud_session_countdown', {
+                            time: `${Math.floor(cloudCountdown / 60)}:${String(cloudCountdown % 60).padStart(2, '0')}`,
+                        })}
                     </p>
                 </div>
             )}
 
-            {/* Trial notice — shown briefly on trial start */}
-            {trialNotice && (
+            {/* Loading: fetching cloud credentials */}
+            {cloudConnecting && (
+                <div className='mx-2 mt-1 px-2 py-1.5 bg-primary/10 border border-primary/20 rounded-lg flex items-center gap-2'>
+                    <Spinner size='sm' color='primary' />
+                    <p className='text-xs text-primary font-medium'>{t('monitor.cloud_connecting')}</p>
+                </div>
+            )}
+
+            {/* Cloud session notice — shown briefly on session start */}
+            {cloudSessionNotice && (
                 <div className='mx-2 mt-1 px-2 py-1.5 bg-brand-500/10 border border-brand-500/20 rounded-lg flex items-center gap-1.5'>
                     <span className='text-xs'>☁️</span>
                     <p className='text-xs text-brand-600 dark:text-brand-400 font-medium'>
-                        Using Transkit Cloud trial — {Math.floor(trialNotice.remainingSeconds / 60)}:{String(trialNotice.remainingSeconds % 60).padStart(2, '0')} remaining
+                        {t('monitor.cloud_session_active', {
+                            time: `${Math.floor(cloudSessionNotice.remainingSeconds / 60)}:${String(cloudSessionNotice.remainingSeconds % 60).padStart(2, '0')}`,
+                        })}
                     </p>
                 </div>
             )}
 
-            {/* Error message */}
+            {/* Quota exceeded — structured error with action hints */}
+            {errorMeta?.code === 'quota_exceeded' && (
+                <div className='mx-2 mt-1 px-2 py-2 bg-danger/10 border border-danger/20 rounded-lg flex flex-col gap-1.5'>
+                    <p className='text-xs text-danger font-medium'>
+                        {errorMeta.used != null && errorMeta.limit != null
+                            ? t('monitor.quota_exceeded_title', { used: errorMeta.used, limit: errorMeta.limit })
+                            : t('monitor.quota_exceeded_title_short')}
+                    </p>
+                    <button
+                        onClick={() => openPath('https://transkit.app/pricing').catch(() => {})}
+                        className='text-xs text-primary hover:underline text-left'
+                    >
+                        → {t('monitor.quota_action_upgrade')}
+                    </button>
+                    <p className='text-xs text-default-500'>
+                        → {t('monitor.quota_action_byok', {
+                            service: t('config.service.label'),
+                            transcription: t('config.service.transcription'),
+                        })}
+                    </p>
+                </div>
+            )}
+
+            {/* Plain error message */}
             {errorMsg && (
                 <div className='mx-2 mt-1 px-2 py-1 bg-danger/10 border border-danger/20 rounded-lg'>
                     <p className='text-xs text-danger'>{errorMsg}</p>

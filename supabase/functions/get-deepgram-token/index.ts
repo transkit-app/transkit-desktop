@@ -1,7 +1,7 @@
 /**
  * DEPRECATED — use get-cloud-credentials instead.
  *
- * This function was the original Soniox-only credential endpoint.
+ * This function was the original Deepgram-only credential endpoint.
  * It has been superseded by get-cloud-credentials which supports all
  * providers (Deepgram, Soniox, Gladia) with unified quota enforcement.
  *

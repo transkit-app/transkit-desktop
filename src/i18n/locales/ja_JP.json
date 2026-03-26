@@ -1,165 +1,165 @@
 {
-    "translation": {
-        "config": {
-            "translate": {
-                "title": "翻訳設定",
-                "label": "翻訳",
-                "delete_newline": "改行を削除",
-                "source_language": "ソース言語"
-            },
-            "account": {
+  "translation": {
+    "config": {
+      "translate": {
+        "title": "翻訳設定",
+        "label": "翻訳",
+        "delete_newline": "改行を削除",
+        "source_language": "ソース言語"
+      },
+      "account": {
         "label": "Account",
         "title": "Account"
       },
       "backup": {
-                "title": "バックアップ設定",
-                "label": "バックアップ",
-                "type": "サービスの種類"
-            },
-            "about": {
-                "title": "アプリケーションに関する",
-                "label": "に関する"
-            },
-            "general": {
-                "label": "一般設定",
-                "event": {
-                    "translate": "翻訳",
-                    "config": "コンフィグ",
-                    "ocr_recognize": "テキスト認識",
-                    "ocr_translate": "スクリーンショット翻訳"
-                },
-                "title": "一般設定",
-                "app_fallback_font": "フォールバックフォント",
-                "transparent": "透明効果",
-                "proxy": {
-                    "title": "プロキシ",
-                    "password": "パスワード",
-                    "username": "ユーザー名"
-                },
-                "font_size": {
-                    "10": "極小 (10px)",
-                    "title": "文字サイズ",
-                    "20": "非常に大きい (20px)",
-                    "24": "特大 (24px)",
-                    "18": "大 (18px)",
-                    "16": "標準 (16px)",
-                    "12": "非常に小さい (12px)",
-                    "14": "小 (14px)"
-                },
-                "default_font": "デフォルト",
-                "dev_mode": "開発者モード",
-                "app_theme": "テーマ",
-                "auto_start": "自動起動",
-                "proxy_change": "プロキシが変更されました。変更を有効にするためにアプリケーションを再起動してください",
-                "server_port_change": "リスニング・ポートが変更されました。変更を有効にするにはアプリケーションを再起動してください",
-                "app_language": "表示言語",
-                "app_font": "フォント",
-                "server_port": "リスニング・ポート"
-            },
-            "hotkey": {
-                "label": "ホットキー",
-                "title": "ホットキー設定"
-            },
-            "recognize": {
-                "title": "認識設定",
-                "label": "テキスト認識",
-                "delete_newline": "改行の自動削除"
-            },
-            "service": {
-                "title": "サービス設定",
-                "label": "サービス"
-            },
-            "history": {
-                "label": "履歴",
-                "title": "履歴"
-            }
+        "title": "バックアップ設定",
+        "label": "バックアップ",
+        "type": "サービスの種類"
+      },
+      "about": {
+        "title": "アプリケーションに関する",
+        "label": "に関する"
+      },
+      "general": {
+        "label": "一般設定",
+        "event": {
+          "translate": "翻訳",
+          "config": "コンフィグ",
+          "ocr_recognize": "テキスト認識",
+          "ocr_translate": "スクリーンショット翻訳"
         },
-        "languages": {
-            "mn_cy": "モンゴル語（キリル文字）",
-            "ar": "アラビア語",
-            "it": "イタリア語",
-            "vi": "ベトナム語",
-            "id": "インドネシア語",
-            "km": "クメール語",
-            "ru": "ロシア語",
-            "mn_mo": "モンゴル語",
-            "en": "英語",
-            "th": "タイ語",
-            "ja": "日本語",
-            "ms": "マレー語",
-            "fr": "フランス語",
-            "de": "ドイツ語",
-            "es": "スペイン語",
-            "pt_pt": "ポルトガル語",
-            "ko": "朝鮮語",
-            "tr": "トルコ語",
-            "auto": "自動検出",
-            "pt_br": "ポルトガル語（ブラジル）",
-            "hi": "ヒンディー語",
-            "zh_tw": "繁体字中国語",
-            "zh_cn": "簡体字中国語"
+        "title": "一般設定",
+        "app_fallback_font": "フォールバックフォント",
+        "transparent": "透明効果",
+        "proxy": {
+          "title": "プロキシ",
+          "password": "パスワード",
+          "username": "ユーザー名"
         },
-        "common": {
-            "plugin": "プラグイン",
-            "cancel": "キャンセル",
-            "ok": "Ok",
-            "save": "保存"
+        "font_size": {
+          "10": "極小 (10px)",
+          "title": "文字サイズ",
+          "20": "非常に大きい (20px)",
+          "24": "特大 (24px)",
+          "18": "大 (18px)",
+          "16": "標準 (16px)",
+          "12": "非常に小さい (12px)",
+          "14": "小 (14px)"
         },
-        "translate": {
-            "translate": "翻訳",
-            "delete_newline": "改行を削除",
-            "copy": "コピー"
+        "default_font": "デフォルト",
+        "dev_mode": "開発者モード",
+        "app_theme": "テーマ",
+        "auto_start": "自動起動",
+        "proxy_change": "プロキシが変更されました。変更を有効にするためにアプリケーションを再起動してください",
+        "server_port_change": "リスニング・ポートが変更されました。変更を有効にするにはアプリケーションを再起動してください",
+        "app_language": "表示言語",
+        "app_font": "フォント",
+        "server_port": "リスニング・ポート"
+      },
+      "hotkey": {
+        "label": "ホットキー",
+        "title": "ホットキー設定"
+      },
+      "recognize": {
+        "title": "認識設定",
+        "label": "テキスト認識",
+        "delete_newline": "改行の自動削除"
+      },
+      "service": {
+        "title": "サービス設定",
+        "label": "サービス"
+      },
+      "history": {
+        "label": "履歴",
+        "title": "履歴"
+      }
+    },
+    "languages": {
+      "mn_cy": "モンゴル語（キリル文字）",
+      "ar": "アラビア語",
+      "it": "イタリア語",
+      "vi": "ベトナム語",
+      "id": "インドネシア語",
+      "km": "クメール語",
+      "ru": "ロシア語",
+      "mn_mo": "モンゴル語",
+      "en": "英語",
+      "th": "タイ語",
+      "ja": "日本語",
+      "ms": "マレー語",
+      "fr": "フランス語",
+      "de": "ドイツ語",
+      "es": "スペイン語",
+      "pt_pt": "ポルトガル語",
+      "ko": "朝鮮語",
+      "tr": "トルコ語",
+      "auto": "自動検出",
+      "pt_br": "ポルトガル語（ブラジル）",
+      "hi": "ヒンディー語",
+      "zh_tw": "繁体字中国語",
+      "zh_cn": "簡体字中国語"
+    },
+    "common": {
+      "plugin": "プラグイン",
+      "cancel": "キャンセル",
+      "ok": "Ok",
+      "save": "保存"
+    },
+    "translate": {
+      "translate": "翻訳",
+      "delete_newline": "改行を削除",
+      "copy": "コピー"
+    },
+    "recognize": {
+      "translate": "翻訳",
+      "delete_newline": "改行を削除",
+      "copy_text": "コピー",
+      "delete_space": "空白を削除",
+      "copy_img": "画像をコピー"
+    },
+    "services": {
+      "translate": {
+        "caiyun": {
+          "token": "トークン"
         },
-        "recognize": {
-            "translate": "翻訳",
-            "delete_newline": "改行を削除",
-            "copy_text": "コピー",
-            "delete_space": "空白を削除",
-            "copy_img": "画像をコピー"
+        "transmart": {
+          "token": "トークン"
         },
-        "services": {
-            "translate": {
-                "caiyun": {
-                    "token": "トークン"
-                },
-                "transmart": {
-                    "token": "トークン"
-                },
-                "deepl": {
-                    "type": "サービスの種類"
-                }
-            },
-            "recognize": {
-                "volcengine_ocr": {
-                    "appid": "アプリID"
-                },
-                "volcengine_multi_lang_ocr": {
-                    "appid": "アプリID"
-                },
-                "qrcode": {
-                    "title": "QRコード"
-                },
-                "simple_latex_ocr": {
-                    "token": "トークン"
-                },
-                "tencent_img_ocr": {
-                    "title": "テンセント画像翻訳"
-                }
-            },
-            "tts": {
-                "lingva_tts": {
-                    "request_path": "リクエストパス"
-                }
-            },
-            "collection": {
-                "anki": {
-                    "title": "Anki"
-                },
-                "eudic": {
-                    "token": "トークン",
-                    "name": "コレクション名"
-                }
-            }
+        "deepl": {
+          "type": "サービスの種類"
         }
+      },
+      "recognize": {
+        "volcengine_ocr": {
+          "appid": "アプリID"
+        },
+        "volcengine_multi_lang_ocr": {
+          "appid": "アプリID"
+        },
+        "qrcode": {
+          "title": "QRコード"
+        },
+        "simple_latex_ocr": {
+          "token": "トークン"
+        },
+        "tencent_img_ocr": {
+          "title": "テンセント画像翻訳"
+        }
+      },
+      "tts": {
+        "lingva_tts": {
+          "request_path": "リクエストパス"
+        }
+      },
+      "collection": {
+        "anki": {
+          "title": "Anki"
+        },
+        "eudic": {
+          "token": "トークン",
+          "name": "コレクション名"
+        }
+      }
     }
+  }
 }

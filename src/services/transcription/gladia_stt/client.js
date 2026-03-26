@@ -39,23 +39,32 @@ export class GladiaClient {
     }
 
     /**
-     * Initiate a Gladia session (HTTP POST) then connect the WebSocket.
+     * Initiate a Gladia session then connect the WebSocket.
      * Called without await from Monitor — async work happens internally.
+     *
+     * Two modes:
+     *   BYOK:         config.apiKey provided → POST /v2/live to create session
+     *   Transkit Cloud: config._preCreatedUrl provided → skip HTTP init, connect directly
      */
     connect(config) {
-        const { apiKey } = config;
-
-        if (!apiKey) {
-            this._setStatus('error');
-            this.onError?.('API key is required. Please add it in Settings.');
-            return;
-        }
-
         this._config = config;
         this._intentionalDisconnect = false;
         this._reconnectAttempts = 0;
         this._hasTranslation = !!config.targetLanguage;
         this._clearPending();
+
+        if (config._preCreatedUrl) {
+            // Cloud-managed session: session was created server-side, URL is ready.
+            this._setStatus('connecting');
+            this._connectWebSocket(config._preCreatedUrl);
+            return;
+        }
+
+        if (!config.apiKey) {
+            this._setStatus('error');
+            this.onError?.('API key is required. Please add it in Settings.');
+            return;
+        }
 
         this._initSession(config);
     }
@@ -357,6 +366,14 @@ export class GladiaClient {
     // ─── Reconnect ────────────────────────────────────────────
 
     _tryReconnect(reason) {
+        // Cloud sessions use a pre-created WSS URL that is single-use.
+        // Reconnect is not possible without generating a new session server-side.
+        if (this._config?._preCreatedUrl) {
+            this._setStatus('error');
+            this.onError?.('Connection lost. Please start a new session.');
+            return;
+        }
+
         if (this._reconnectAttempts >= MAX_RECONNECT) {
             this._setStatus('error');
             this.onError?.(`${reason}. Reconnect failed after ${MAX_RECONNECT} attempts.`);

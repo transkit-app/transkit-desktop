@@ -250,7 +250,22 @@
         "title": "Account",
         "profile_title": "Profile",
         "not_signed_in": "Not signed in",
-        "sign_in_description": "Sign in to sync your profile and data across devices."
+        "sign_in_description": "Sign in to sync your profile and data across devices.",
+        "plan_section_title": "Transkit Cloud",
+        "plan_badge_trial": "Free Trial",
+        "plan_badge_starter": "Starter",
+        "plan_badge_pro": "Pro",
+        "stt_label": "Speech to Text",
+        "tts_label": "Text to Speech",
+        "ai_label": "AI Suggestion",
+        "coming_soon": "Coming soon",
+        "usage_minutes": "{{used}} / {{limit}} min",
+        "unlimited": "Unlimited",
+        "quota_low": "Running low",
+        "quota_full": "Quota reached",
+        "upgrade_cta_trial": "Get more minutes with a plan",
+        "upgrade_cta_starter": "Upgrade to Pro for unlimited access",
+        "view_plans": "View plans →"
       },
       "backup": {
         "label": "Backup",
@@ -400,7 +415,14 @@
       "ai_suggestion_target_lang": "Target language",
       "bookmark_add": "Bookmark this line",
       "bookmark_remove": "Remove bookmark",
-      "tts_replay": "Replay audio"
+      "tts_replay": "Replay audio",
+      "cloud_connecting": "Connecting to Transkit Cloud...",
+      "cloud_session_countdown": "Cloud: {{time}} remaining",
+      "cloud_session_active": "Transkit Cloud — {{time}} remaining",
+      "quota_exceeded_title": "Transkit Cloud quota reached ({{used}}/{{limit}} min used).",
+      "quota_exceeded_title_short": "Transkit Cloud quota reached.",
+      "quota_action_upgrade": "Upgrade your plan",
+      "quota_action_byok": "Or use your own API key: Settings › {{service}} › {{transcription}}"
     },
     "updater": {
       "title": "Check Update",
@@ -770,6 +792,20 @@
           "provisional_timeout_hint": "If no new transcript arrives within this duration, the pending text is committed automatically. Prevents text getting stuck at end of speech.",
           "speaker_diarization": "Speaker diarization",
           "speaker_diarization_hint": "Identify and label different speakers. Disable to reduce latency."
+        },
+        "transkit_cloud_stt": {
+          "title": "Transkit Cloud",
+          "sign_in_desc": "Sign in to use Transkit Cloud STT — no API key needed. Your plan includes free trial minutes and automatically uses the best available provider.",
+          "continue_google": "Continue with Google",
+          "continue_github": "Continue with GitHub",
+          "sign_out": "Sign out",
+          "stt_usage": "STT usage this period",
+          "quota_reached": "Quota reached.",
+          "upgrade_plan": "Upgrade your plan",
+          "quota_reached_hint": "or add a personal API key in another STT provider.",
+          "auto_provider_note": "The active STT provider is configured by Transkit and may change at any time to deliver the best quality. You do not need to manage any API keys.",
+          "loading_usage": "Loading usage data…",
+          "not_available": "Transkit Cloud is not available in this build."
         }
       }
     },

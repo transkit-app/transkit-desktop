@@ -2,10 +2,12 @@
  * Deepgram Live STT Client + Google Cloud Translation
  *
  * Uses the official @deepgram/sdk v5.
- * Since Deepgram has no native translation, final utterances (speech_final=true)
- * are translated via Google Cloud Translation REST API.
+ * Supports both:
+ *  - apiKey  → new DeepgramClient({ apiKey })       — BYOK
+ *  - token   → new DeepgramClient({ accessToken })  — Transkit Cloud trial
  *
  * Docs: https://developers.deepgram.com/docs/live-streaming-audio
+ * Token auth: https://developers.deepgram.com/guides/fundamentals/token-based-authentication
  */
 
 import { DeepgramClient as _DeepgramSDK } from '@deepgram/sdk';
@@ -23,25 +25,23 @@ export class DeepgramClient {
         this._config = null;
         this._intentionalDisconnect = false;
         this._keepAliveTimer = null;
-        this._utteranceBuffer = '';   // accumulates is_final=true segments within an utterance
-        this._currentSpeaker = null;  // most recent speaker seen in is_final results
-        this._committedKeys = new Set(); // dedup: avoid double-commit between interim and is_final
-        this._provisionalTimer = null; // flush provisional after silence timeout
+        this._utteranceBuffer = '';
+        this._currentSpeaker = null;
+        this._committedKeys = new Set();
+        this._provisionalTimer = null;
 
-        // Chain translation promises to preserve utterance order
         this._translationQueue = Promise.resolve();
 
-        // Callbacks — same interface as SonioxClient / GladiaClient
-        this.onOriginal = null;      // (text, speaker) => {}
-        this.onTranslation = null;   // (text) => {}
-        this.onProvisional = null;   // (text) => {}
-        this.onStatusChange = null;  // (status) => {}
-        this.onError = null;         // (message) => {}
-        this.onReconnect = null;     // () => {}
+        this.onOriginal = null;
+        this.onTranslation = null;
+        this.onProvisional = null;
+        this.onStatusChange = null;
+        this.onError = null;
+        this.onReconnect = null;
     }
 
     connect(config) {
-        if (!config.apiKey) {
+        if (!config.apiKey && !config.token) {
             this._setStatus('error');
             this.onError?.('Deepgram API key is required. Please add it in Settings.');
             return;
@@ -64,13 +64,17 @@ export class DeepgramClient {
 
         const {
             apiKey,
+            token,
             sourceLanguage,
             model = 'nova-3',
             endpointing = 100,
             speakerDiarization = true,
         } = this._config;
 
-        const sdk = new _DeepgramSDK({ apiKey });
+        // Use accessToken for cloud trial tokens, apiKey for BYOK
+        const sdk = apiKey
+            ? new _DeepgramSDK({ apiKey })
+            : new _DeepgramSDK({ accessToken: token });
 
         const options = {
             model,
@@ -82,7 +86,6 @@ export class DeepgramClient {
             punctuate: true,
             endpointing,
         };
-
         if (speakerDiarization) options.diarize = true;
 
         try {
@@ -100,59 +103,7 @@ export class DeepgramClient {
                 if (wasReconnect) this.onReconnect?.();
             });
 
-            socket.on('message', (data) => {
-                if (data.type !== 'Results') return;
-                const transcript = data.channel?.alternatives?.[0]?.transcript;
-                if (!transcript?.trim()) return;
-
-                const isFinal = data.is_final === true;
-                const speechFinal = data.speech_final === true;
-                console.log(`[Deepgram] Results is_final=${isFinal} speech_final=${speechFinal}:`, transcript);
-
-                if (speechFinal) {
-                    // End of utterance — flush sentences, commit remainder, reset state
-                    this._utteranceBuffer = this._utteranceBuffer
-                        ? `${this._utteranceBuffer} ${transcript}`.trim()
-                        : transcript;
-                    const speaker = this._extractSpeaker(data) ?? this._currentSpeaker;
-                    this._flushCompleteSentences(speaker);
-                    if (this._utteranceBuffer.trim()) {
-                        this._commitUnique(this._utteranceBuffer.trim(), speaker);
-                    }
-                    this._utteranceBuffer = '';
-                    this._currentSpeaker = null;
-                    this._committedKeys.clear();
-                    this._clearProvisionalTimer();
-                } else if (isFinal) {
-                    // Stable segment — append to buffer, flush complete sentences
-                    this._utteranceBuffer = this._utteranceBuffer
-                        ? `${this._utteranceBuffer} ${transcript}`.trim()
-                        : transcript;
-                    this._currentSpeaker = this._extractSpeaker(data);
-                    this._flushCompleteSentences(this._currentSpeaker);
-                    const rem = this._utteranceBuffer || '';
-                    this.onProvisional?.(rem);
-                    this._scheduleProvisionalFlush(rem);
-                } else {
-                    // Interim — split on sentence boundaries immediately for real-time feel.
-                    const combined = this._utteranceBuffer
-                        ? `${this._utteranceBuffer} ${transcript}`.trim()
-                        : transcript;
-                    const parts = combined.split(/(?<=[.!?])\s+(?=[A-Z])/);
-                    if (parts.length > 1) {
-                        for (const s of parts.slice(0, -1)) {
-                            if (s.trim()) this._commitUnique(s.trim(), this._currentSpeaker);
-                        }
-                        this._utteranceBuffer = '';
-                        const frag = parts[parts.length - 1];
-                        this.onProvisional?.(frag);
-                        this._scheduleProvisionalFlush(frag);
-                    } else {
-                        this.onProvisional?.(combined);
-                        this._scheduleProvisionalFlush(combined);
-                    }
-                }
-            });
+            socket.on('message', (data) => this._handleMessage(data));
 
             socket.on('error', (err) => {
                 console.error('[Deepgram] Error:', err);
@@ -173,15 +124,16 @@ export class DeepgramClient {
 
                 if (event?.code === 1008) {
                     this._setStatus('error');
-                    this.onError?.('Invalid API key. Please check your Deepgram key in Settings.');
+                    const msg = apiKey
+                        ? 'Invalid API key. Please check your Deepgram key in Settings.'
+                        : 'Token invalid or expired. Please try again.';
+                    this.onError?.(msg);
                 } else {
                     this._tryReconnect(`Connection closed (code: ${event?.code})`);
                 }
             });
 
-            // Must call connect() explicitly — createConnection only builds the socket object
             socket.connect();
-
         } catch (err) {
             if (this._intentionalDisconnect) return;
             console.error('[Deepgram] Failed to create connection:', err);
@@ -214,14 +166,12 @@ export class DeepgramClient {
         this._setStatus('disconnected');
     }
 
-    // ─── Keep-alive ───────────────────────────────────────────
+    // ─── Keep-alive ───────────────────────────────────────────────────────────
 
     _startKeepAlive(socket) {
         this._stopKeepAlive();
         this._keepAliveTimer = setInterval(() => {
-            try {
-                socket.sendKeepAlive();
-            } catch (_) {}
+            try { socket.sendKeepAlive(); } catch (_) {}
         }, 8000);
     }
 
@@ -230,29 +180,85 @@ export class DeepgramClient {
         this._keepAliveTimer = null;
     }
 
-    // ─── Provisional flush timeout ────────────────────────────
+    // ─── Message handler ──────────────────────────────────────────────────────
 
-    /**
-     * Reset the silence timer every time provisional text is updated.
-     * If no new data arrives within `provisionalTimeoutMs`, commit whatever
-     * is left in buffer + current provisional as a final entry.
-     */
-    _scheduleProvisionalFlush(provisionalText) {
-        this._clearProvisionalTimer();
-        const timeoutMs = this._config?.provisionalTimeoutMs ?? 1500;
-        if (!timeoutMs || !provisionalText) return;
+    _handleMessage(data) {
+        if (data.type !== 'Results') return;
+        const transcript = data.channel?.alternatives?.[0]?.transcript;
+        if (!transcript?.trim()) return;
 
-        this._provisionalTimer = setTimeout(() => {
-            const text = (this._utteranceBuffer
-                ? `${this._utteranceBuffer} ${provisionalText}`.trim()
-                : provisionalText).trim();
-            if (!text) return;
+        const isFinal = data.is_final === true;
+        const speechFinal = data.speech_final === true;
+        console.log(`[Deepgram] is_final=${isFinal} speech_final=${speechFinal}:`, transcript);
 
+        if (speechFinal) {
+            // Utterance complete — commit the whole accumulated buffer
+            this._clearProvisionalTimer();
+            this._utteranceBuffer = this._utteranceBuffer
+                ? `${this._utteranceBuffer} ${transcript}`.trim()
+                : transcript;
+            const speaker = this._extractSpeaker(data) ?? this._currentSpeaker;
+            // Flush complete sentences first (dedup handles overlap with earlier commits)
+            this._flushCompleteSentences(speaker);
+            // Commit whatever remains (last sentence that didn't have a following capital)
+            if (this._utteranceBuffer.trim()) {
+                this._commitUnique(this._utteranceBuffer.trim(), speaker);
+            }
             this._utteranceBuffer = '';
             this._currentSpeaker = null;
             this._committedKeys.clear();
-            this._commitUnique(text, this._currentSpeaker);
             this.onProvisional?.('');
+
+        } else if (isFinal) {
+            // Stable segment — accumulate, try early sentence commits, show provisional
+            this._utteranceBuffer = this._utteranceBuffer
+                ? `${this._utteranceBuffer} ${transcript}`.trim()
+                : transcript;
+            this._currentSpeaker = this._extractSpeaker(data);
+            // Commit complete sentences eagerly (starts translation sooner)
+            this._flushCompleteSentences(this._currentSpeaker);
+            this.onProvisional?.(this._utteranceBuffer || '');
+            // Fallback flush only if buffer looks like a finished sentence —
+            // prevents committing mid-phrase fragments during continuous speech
+            if (/[.!?]\s*$/.test(this._utteranceBuffer)) {
+                this._scheduleProvisionalFlush();
+            } else {
+                this._clearProvisionalTimer();
+            }
+
+        } else {
+            // Interim — display only, never commit, cancel any pending flush
+            // (active speech means it's too early to treat anything as final)
+            const combined = this._utteranceBuffer
+                ? `${this._utteranceBuffer} ${transcript}`.trim()
+                : transcript;
+            this.onProvisional?.(combined);
+            this._clearProvisionalTimer();
+        }
+    }
+
+    // ─── Provisional flush timeout ────────────────────────────────────────────
+
+    // Fallback: commits _utteranceBuffer after silence when speech_final never arrives.
+    // Only called from the is_final path when buffer ends with terminal punctuation.
+    _scheduleProvisionalFlush() {
+        this._clearProvisionalTimer();
+        const timeoutMs = this._config?.provisionalTimeoutMs ?? 1500;
+        if (!timeoutMs || !this._utteranceBuffer) return;
+
+        this._provisionalTimer = setTimeout(() => {
+            const text = this._utteranceBuffer.trim();
+            if (!text) return;
+            const speaker = this._currentSpeaker;
+            this._utteranceBuffer = '';
+            this._currentSpeaker = null;
+            this._committedKeys.clear();
+            this.onProvisional?.('');
+            // Split and commit any remaining sentences
+            const parts = text.split(/(?<=[.!?])\s+(?=[A-Z])/);
+            for (const s of parts) {
+                if (s.trim()) this._commitUnique(s.trim(), speaker);
+            }
         }, timeoutMs);
     }
 
@@ -261,21 +267,9 @@ export class DeepgramClient {
         this._provisionalTimer = null;
     }
 
-    // ─── Sentence splitting ───────────────────────────────────
+    // ─── Sentence splitting ───────────────────────────────────────────────────
 
-    /**
-     * Scan the utterance buffer for complete sentences (ending with . ? !)
-     * followed by a capital letter (next sentence start). Commit each complete
-     * sentence immediately so translation starts without waiting for silence.
-     *
-     * Example:
-     *   buffer = "Is simply too complex. Take this example. If I"
-     *   → commits "Is simply too complex." and "Take this example."
-     *   → leaves  "If I" in buffer
-     */
     _flushCompleteSentences(speaker) {
-        // Split on sentence-ending punctuation followed by whitespace + capital letter
-        // Lookbehind (?<=[.!?]) ensures we keep the punctuation with the sentence
         const parts = this._utteranceBuffer.split(/(?<=[.!?])\s+(?=[A-Z])/);
         if (parts.length <= 1) return;
 
@@ -288,19 +282,14 @@ export class DeepgramClient {
         }
     }
 
-    /**
-     * Commit a sentence only if not already committed in this utterance.
-     * Deduplicates between interim commits and subsequent is_final commits of same text.
-     */
     _commitUnique(text, speaker) {
-        // Normalize: lowercase, collapse whitespace, strip punctuation for comparison
         const key = text.toLowerCase().replace(/\s+/g, ' ').replace(/[^a-z0-9 ]/g, '').substring(0, 80);
         if (this._committedKeys.has(key)) return;
         this._committedKeys.add(key);
         this._commitWithTranslation(text, speaker);
     }
 
-    // ─── Speaker diarization ─────────────────────────────────
+    // ─── Speaker diarization ─────────────────────────────────────────────────
 
     _extractSpeaker(data) {
         if (!this._config?.speakerDiarization) return null;
@@ -309,9 +298,7 @@ export class DeepgramClient {
 
         const counts = {};
         for (const w of words) {
-            if (w.speaker != null) {
-                counts[w.speaker] = (counts[w.speaker] ?? 0) + 1;
-            }
+            if (w.speaker != null) counts[w.speaker] = (counts[w.speaker] ?? 0) + 1;
         }
         const keys = Object.keys(counts);
         if (!keys.length) return null;
@@ -320,7 +307,7 @@ export class DeepgramClient {
         return `S${dominant}`;
     }
 
-    // ─── Translation ──────────────────────────────────────────
+    // ─── Translation ──────────────────────────────────────────────────────────
 
     _commitWithTranslation(original, speaker) {
         const { targetLanguage, googleApiKey } = this._config ?? {};
@@ -330,7 +317,6 @@ export class DeepgramClient {
             return;
         }
 
-        // Show original immediately while translation fetches
         this.onProvisional?.(original);
 
         this._translationQueue = this._translationQueue.then(async () => {
@@ -376,7 +362,7 @@ export class DeepgramClient {
         this.onProvisional?.('');
     }
 
-    // ─── Reconnect ────────────────────────────────────────────
+    // ─── Reconnect ────────────────────────────────────────────────────────────
 
     _tryReconnect(reason) {
         if (this._reconnectAttempts >= MAX_RECONNECT) {

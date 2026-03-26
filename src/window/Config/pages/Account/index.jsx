@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
-import { Button, Avatar, Card, CardBody } from '@nextui-org/react'
+import { Button, Avatar, Card, CardBody, Chip, Progress } from '@nextui-org/react'
 import { FaGoogle, FaGithub } from 'react-icons/fa'
-import { MdLogout, MdSync, MdPerson, MdCloudDone } from 'react-icons/md'
+import { MdLogout, MdSync, MdPerson, MdCloudDone, MdMic, MdVolumeUp, MdAutoAwesome } from 'react-icons/md'
+import { open as openBrowser } from '@tauri-apps/api/shell'
 import toast, { Toaster } from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
 import {
@@ -15,6 +16,8 @@ import {
   CLOUD_ENABLED,
 } from '../../../../lib/transkit-cloud'
 import { useConfig } from '../../../../hooks'
+
+const PRICING_URL = 'https://transkit.app/pricing'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -240,35 +243,124 @@ function ProfileForm({ authUser, cloudProfile, onCloudSynced }) {
   )
 }
 
-// ─── Trial usage bar ──────────────────────────────────────────────────────────
+// ─── Cloud Plan Card ──────────────────────────────────────────────────────────
 
-function TrialBar({ used, limit }) {
+const PLAN_BADGE_COLOR = { trial: 'warning', starter: 'primary', pro: 'success' }
+
+function ServiceRow({ icon, label, used, limit, unlimited, comingSoon, t }) {
+  if (comingSoon) {
+    return (
+      <div className='flex items-center justify-between py-0.5'>
+        <div className='flex items-center gap-2'>
+          <span className='text-default-400'>{icon}</span>
+          <span className='text-xs text-default-500'>{label}</span>
+        </div>
+        <Chip size='sm' variant='flat' className='text-default-400 bg-content3'>{t('config.account.coming_soon')}</Chip>
+      </div>
+    )
+  }
+
+  if (unlimited) {
+    return (
+      <div className='flex items-center justify-between py-0.5'>
+        <div className='flex items-center gap-2'>
+          <span className='text-foreground'>{icon}</span>
+          <span className='text-xs font-medium'>{label}</span>
+        </div>
+        <Chip size='sm' variant='flat' color='success'>{t('config.account.unlimited')}</Chip>
+      </div>
+    )
+  }
+
   const pct = limit > 0 ? Math.min((used / limit) * 100, 100) : 0
+  const color = pct >= 90 ? 'danger' : pct >= 70 ? 'warning' : 'primary'
   const usedMin = Math.floor(used / 60)
-  const usedSec = used % 60
   const limitMin = Math.floor(limit / 60)
-  const isLow = pct >= 80
 
   return (
     <div className='flex flex-col gap-1.5'>
-      <div className='flex items-center justify-between text-xs'>
-        <span className='text-default-500'>Trial usage</span>
-        <span className={`font-mono font-medium ${isLow ? 'text-danger' : 'text-default-600 dark:text-default-400'}`}>
-          {usedMin}:{String(usedSec).padStart(2, '0')} / {limitMin}:00 min
+      <div className='flex items-center justify-between'>
+        <div className='flex items-center gap-2'>
+          <span className={pct >= 90 ? 'text-danger' : 'text-foreground'}>{icon}</span>
+          <span className='text-xs font-medium'>{label}</span>
+        </div>
+        <span className={`text-xs font-mono ${pct >= 90 ? 'text-danger' : pct >= 70 ? 'text-warning-600 dark:text-warning-400' : 'text-default-500'}`}>
+          {t('config.account.usage_minutes', { used: usedMin, limit: limitMin })}
         </span>
       </div>
-      <div className='w-full h-2 rounded-full bg-content3 dark:bg-content3 overflow-hidden'>
-        <div
-          className={`h-full rounded-full transition-all duration-500 ${isLow ? 'bg-danger' : 'bg-brand-500'}`}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
+      <Progress size='sm' value={pct} maxValue={100} color={color} aria-label={label} />
       {pct >= 100 && (
-        <p className='text-xs text-danger'>
-          Trial expired. Coming soon: Pro plan for unlimited access.
-        </p>
+        <p className='text-xs text-danger'>{t('config.account.quota_full')}</p>
+      )}
+      {pct >= 70 && pct < 100 && (
+        <p className='text-xs text-warning-600 dark:text-warning-400'>{t('config.account.quota_low')}</p>
       )}
     </div>
+  )
+}
+
+function CloudPlanCard({ profile }) {
+  const { t } = useTranslation()
+  const plan = profile.plan ?? 'trial'
+  const badgeColor = PLAN_BADGE_COLOR[plan] ?? 'default'
+  const planLabel = t(`config.account.plan_badge_${plan}`, { defaultValue: plan })
+  const isUnlimited = profile.trial_limit_seconds === -1
+  const isUpgradeable = plan === 'trial' || plan === 'starter'
+
+  return (
+    <Card>
+      <CardBody className='flex flex-col gap-3 pb-3'>
+        {/* Header */}
+        <div className='flex items-center justify-between'>
+          <p className='text-xs font-semibold text-default-500 uppercase tracking-wider'>
+            {t('config.account.plan_section_title')}
+          </p>
+          <Chip size='sm' variant='flat' color={badgeColor} className='capitalize font-medium'>
+            {planLabel}
+          </Chip>
+        </div>
+
+        {/* Services */}
+        <div className='flex flex-col gap-3'>
+          <ServiceRow
+            icon={<MdMic className='text-base' />}
+            label={t('config.account.stt_label')}
+            used={profile.trial_seconds_used}
+            limit={profile.trial_limit_seconds}
+            unlimited={isUnlimited}
+            comingSoon={false}
+            t={t}
+          />
+          <ServiceRow
+            icon={<MdVolumeUp className='text-base' />}
+            label={t('config.account.tts_label')}
+            comingSoon
+            t={t}
+          />
+          <ServiceRow
+            icon={<MdAutoAwesome className='text-base' />}
+            label={t('config.account.ai_label')}
+            comingSoon
+            t={t}
+          />
+        </div>
+
+        {/* Upgrade CTA */}
+        {isUpgradeable && (
+          <div className='flex items-center justify-between pt-2 border-t border-content3 mt-1'>
+            <p className='text-xs text-default-500'>
+              {t(`config.account.upgrade_cta_${plan}`)}
+            </p>
+            <button
+              onClick={() => openBrowser(PRICING_URL)}
+              className='text-xs font-medium text-primary hover:text-primary-600 transition-colors'
+            >
+              {t('config.account.view_plans')}
+            </button>
+          </div>
+        )}
+      </CardBody>
+    </Card>
   )
 }
 
@@ -396,20 +488,8 @@ function AccountDashboard({ user, cloudProfile, onSignOut }) {
         </CardBody>
       </Card>
 
-      {/* Trial usage — temporarily hidden */}
-      {/* {cloudProfile && (
-        <Card>
-          <CardBody className='flex flex-col gap-3'>
-            <p className='text-xs font-semibold text-default-500 uppercase tracking-wider'>
-              Soniox Trial
-            </p>
-            <TrialBar
-              used={cloudProfile.trial_seconds_used}
-              limit={cloudProfile.trial_limit_seconds}
-            />
-          </CardBody>
-        </Card>
-      )} */}
+      {/* Transkit Cloud plan & quota */}
+      {cloudProfile && <CloudPlanCard profile={cloudProfile} />}
 
       {/* Profile form — auto-saves to cloud */}
       <Card>
