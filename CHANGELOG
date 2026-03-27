@@ -1,5 +1,24 @@
 # Changelog
 
+## 3.2.1 (2026-03-27)
+
+### Transkit Cloud & Account:
+- **Major i18n Expansion**: Complete English and Vietnamese translations for **Transkit Cloud** account management, including plan levels (Free Trial, Starter, Pro) and detailed usage tracking for STT, TTS, and AI.
+- **Built-in Cloud Providers**: Introduced **Transkit Cloud** as a zero-config provider for Translation, TTS, AI, and STT (powered by Gemini 2.5 Flash and ElevenLabs).
+- **Quota Management**: Real-time tracking of transcription minutes, TTS characters, and AI requests with automatic "Quota Reached" notifications and upgrade paths.
+- **Authentication Conflict Fixes**: Added automatic retry prompts and informative states for concurrent auth token requests.
+
+### User Interface & Experience:
+- **Sorting Options**: Transcripts can now be sorted "Newest at top" or "Newest at bottom" with persistent UI labels.
+- **Improved Error Messaging**: Dynamic "Missing API Key" errors that guide users directly to the relevant provider settings.
+- **Auto-save Status**: Clearer "Auto-save ON" indicators in the Monitor toolbar.
+- **Subtitle Mode (SubMode)**: New visual documentation and guide for the minimized overlay mode.
+
+### Distribution & Installation:
+- **Official Homebrew Support**: Install via the new tap: `brew install --cask transkit`.
+- **Winget Integration**: Verified and updated instructions for installing via `winget install TransKit`.
+- **Provider Transparency**: Added clear credit information for Soniox, Deepgram ($200 credit), and Gladia (10h/month free).
+
 ## 3.2.0 (2026-03-25)
 
 ### Documentation & Global Support:
