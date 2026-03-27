@@ -412,7 +412,7 @@ export default function SourceArea(props) {
                     <textarea
                         autoFocus
                         ref={textAreaRef}
-                        className={`text-[${appFontSize}px] bg-content1 h-full resize-none outline-none`}
+                        className={`text-[14px] bg-content1 h-full resize-none outline-none`}
                         placeholder={windowType === '[INPUT_TRANSLATE]' ? t('translate.input_placeholder') : ''}
                         value={sourceText}
                         onKeyDown={keyDown}
