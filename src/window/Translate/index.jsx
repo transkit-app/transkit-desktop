@@ -25,6 +25,17 @@ let blurTimeout = null;
 let resizeTimeout = null;
 let moveTimeout = null;
 
+const normalizeBooleanConfig = (value, fallback = false) => {
+    if (value === null || value === undefined) return fallback;
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'string') {
+        const v = value.toLowerCase().trim();
+        if (v === 'true') return true;
+        if (v === 'false') return false;
+    }
+    return Boolean(value);
+};
+
 const listenBlur = () => {
     return listen('tauri://blur', () => {
         if (appWindow.label === 'translate') {
@@ -71,7 +82,7 @@ export default function Translate() {
     const [closeOnBlur] = useConfig('translate_close_on_blur', true);
     const [alwaysOnTop] = useConfig('translate_always_on_top', false);
     const [windowPosition] = useConfig('translate_window_position', 'mouse');
-    const [rememberWindowSize] = useConfig('translate_remember_window_size', false);
+    const [rememberWindowSize, setRememberWindowSize] = useConfig('translate_remember_window_size', false);
     const [fixedProviders] = useConfig('selection_translate_fixed_providers', false);
     const [translateServiceInstanceList, setTranslateServiceInstanceList] = useConfig('translate_service_list', [
         'google',
@@ -89,6 +100,7 @@ export default function Translate() {
     const contentRef = useRef(null);
     const windowType = useAtomValue(windowTypeAtom);
     const [translateBgOpacity, setTranslateBgOpacity] = useConfig('translate_bg_opacity', 100);
+    const rememberWindowSizeEnabled = normalizeBooleanConfig(rememberWindowSize, false);
     const bgAlpha = (translateBgOpacity ?? 100) / 100;
     const reorder = (list, startIndex, endIndex) => {
         const result = Array.from(list);
@@ -160,7 +172,7 @@ export default function Translate() {
     }, [windowPosition]);
     // 保存窗口大小
     useEffect(() => {
-        if (rememberWindowSize !== null && rememberWindowSize) {
+        if (rememberWindowSize !== null && rememberWindowSizeEnabled) {
             const unlistenResize = listen('tauri://resize', async () => {
                 if (resizeTimeout) {
                     clearTimeout(resizeTimeout);
@@ -183,7 +195,15 @@ export default function Translate() {
                 });
             };
         }
-    }, [rememberWindowSize]);
+    }, [rememberWindowSize, rememberWindowSizeEnabled]);
+
+    // Migrate legacy string/number values into strict boolean to avoid
+    // cross-platform truthy checks (e.g. "false" being treated as true).
+    useEffect(() => {
+        if (rememberWindowSize === 'true' || rememberWindowSize === 'false') {
+            setRememberWindowSize(rememberWindowSize === 'true');
+        }
+    }, [rememberWindowSize, setRememberWindowSize]);
 
     const loadPluginList = async () => {
         const serviceTypeList = ['translate', 'tts', 'recognize', 'collection'];
@@ -256,7 +276,7 @@ export default function Translate() {
         if (!contentRef.current) return;
 
         const resizeWindow = async () => {
-            if (rememberWindowSize) return;
+            if (rememberWindowSizeEnabled) return;
 
             try {
                 // Wait a bit for content to render
@@ -316,7 +336,7 @@ export default function Translate() {
         return () => {
             resizeObserver.disconnect();
         };
-    }, [rememberWindowSize, translateServiceInstanceList, serviceInstanceConfigMap]);
+    }, [rememberWindowSizeEnabled, translateServiceInstanceList, serviceInstanceConfigMap]);
 
     return (
         pluginList && (

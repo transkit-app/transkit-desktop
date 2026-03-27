@@ -136,7 +136,7 @@ export default function Monitor() {
     const [transcriptionServiceList] = useConfig('transcription_service_list', ['deepgram_stt']);
     const [sourceLang, setSourceLang] = useConfig('audio_source_lang', 'auto');
     const [targetLang, setTargetLang] = useConfig('audio_target_lang', 'vi');
-    const [sourceAudio, setSourceAudio] = useConfig('audio_source', 'microphone');
+    const [sourceAudio, setSourceAudio] = useConfig('audio_source', 'system');
     const [fontSize, setFontSize] = useConfig('monitor_font_size', 14);
 
     // TTS config
