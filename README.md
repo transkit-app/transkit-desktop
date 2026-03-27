@@ -41,12 +41,33 @@ This project is a fork of [Pot Desktop](https://github.com/pot-app/pot-desktop) 
 | Translation by selection                        | Translate by input                                                    | External calls                                                                           |
 | ----------------------------------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | Select text and press the shortcut to translate | Press shortcut to open translation window, translate by hitting Enter | More efficient workflow by integrating with other apps |
-| <img src="asset/eg1.gif"/>                    | <img src="asset/eg2.gif"/>                                          | <img src="asset/eg3.gif"/>                                                             |
+| <img src="asset/eg1.gif"/>                    | <img src="asset/eg2.gif"/>                                          | <img src="asset/eg1.gif"/>                                                             |
 
-| Clipboard Listening                                                                                                          | Screenshot OCR                     | Screenshot Translation                   |
-| ---------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ---------------------------------------- |
-| Click the top left icon on any translation panel to start clipboard listening. Copied text will be translated automatically. | Press shortcut, select area to OCR | Press shortcut, select area to translate |
-| <img src="asset/eg4.gif"/>                                                                                                 | <img src="asset/eg5.gif"/>       | <img src="asset/eg6.gif"/>             |
+<table>
+  <tr>
+    <th width="33%">Clipboard Listening</th>
+    <th width="33%">Screenshot OCR</th>
+    <th width="33%">Screenshot Translation</th>
+  </tr>
+  <tr>
+    <td>Click the top left icon on any translation panel to start clipboard listening. Copied text will be translated automatically.</td>
+    <td>Press shortcut, select area to OCR</td>
+    <td>Press shortcut, select area to translate</td>
+  </tr>
+  <tr>
+    <td><img src="asset/eg4.gif"/></td>
+    <td><img src="asset/eg5.gif"/></td>
+    <td><img src="asset/eg6.gif"/></td>
+  </tr>
+  <tr>
+    <td colspan="3" align="center">
+      <b>Realtime Audio Monitor</b><br/>
+      Realtime Audio Monitor with AI suggestions, Submode, and TTS. All services are configurable in the Service settings.<br/>
+      <img src="asset/eg7.gif" width="100%"/>
+    </td>
+  </tr>
+</table>
+
 
 ## What Is New In TransKit
 
