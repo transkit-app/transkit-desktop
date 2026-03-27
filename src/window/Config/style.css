@@ -5,10 +5,32 @@
 
 /* ---------- Config Item Layout ---------- */
 .config-item {
-    margin: 2px 0;
+    margin: 0;
+    padding: 5px 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
+}
+
+/* Normalize heading labels inside config rows.
+   Old pages use <h3> which can inherit bold weight from browser or NextUI base styles.
+   Match sidebar nav item: text-[13px] font-medium (13px, weight 500). */
+.config-item h3 {
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    margin: 0 !important;
+    line-height: 1.5;
+}
+
+/* Compact dropdown-trigger buttons in config rows.
+   NextUI default size="md" gives h-10 px-4 (40px tall) which is too large.
+   Target via stable data-slot attribute to get size="sm" equivalent (h-8 px-3). */
+.config-item button[data-slot="base"] {
+    height: 2rem;
+    min-width: 0;
+    padding-inline-start: 0.75rem;
+    padding-inline-end: 0.75rem;
+    font-size: 0.8125rem;
 }
 
 /* ---------- Navigation Item Styles ---------- */
