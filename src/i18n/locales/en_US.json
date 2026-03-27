@@ -263,9 +263,14 @@
         "unlimited": "Unlimited",
         "quota_low": "Running low",
         "quota_full": "Quota reached",
-        "upgrade_cta_trial": "Get more minutes with a plan",
+        "upgrade_cta_trial": "Upgrade for more TTS, AI, and translation quota",
         "upgrade_cta_starter": "Upgrade to Pro for unlimited access",
-        "view_plans": "View plans →"
+        "view_plans": "View plans →",
+        "unit_min": "min",
+        "unit_chars": "chars",
+        "unit_requests": "requests",
+        "translate_label": "Translation",
+        "powered_by_note": "AI & Translation: Gemini 2.5 Flash · TTS: ElevenLabs"
       },
       "backup": {
         "label": "Backup",
@@ -392,15 +397,17 @@
       "ctx_ai_error": "AI generation failed",
       "ctx_ai_success": "Context generated",
       "ctx_char_limit_warning": "Context is close to the 10,000 character limit",
-      "autosave_label": "Auto-save ON",
-      "autosave_on": "Auto-save enabled",
-      "autosave_off": "Auto-save: ON - Waiting to start",
+      "autosave_label": "Auto-save: ON",
+      "autosave_on": "Auto-save is ON — click to disable",
+      "autosave_off": "Auto-save is OFF — click to enable",
       "autosave_saving": "Saving...",
-      "autosave_saved": "Saved",
+      "autosave_saved": "Transcript saved",
       "autosave_error": "Save error",
       "autosave_clear_blocked": "Cannot clear while recording with auto-save on. Stop first to save the file.",
       "autosave_toggle": "Toggle auto-save to file",
       "autosave_disabled_warning": "Auto-save: OFF",
+      "autosave_open_file": "Open saved file",
+      "autosave_open_folder": "Open transcripts folder",
       "ai_suggestion_hint": "Get AI suggestion for this line",
       "ai_suggestion_dismiss": "Dismiss AI suggestion",
       "ai_suggestion_loading": "Thinking...",
@@ -588,6 +595,20 @@
         "caiyun": {
           "title": "Caiyun",
           "token": "Token"
+        },
+        "transkit_cloud_translate": {
+          "title": "Transkit Cloud",
+          "sign_in_desc": "Sign in to use Transkit Cloud Translation — no API key needed.",
+          "continue_google": "Continue with Google",
+          "continue_github": "Continue with GitHub",
+          "sign_out": "Sign out",
+          "translate_usage": "Translation usage this period",
+          "requests_label": "requests",
+          "quota_reached": "Quota reached.",
+          "upgrade_plan": "Upgrade your plan",
+          "loading_usage": "Loading usage data…",
+          "powered_by_note": "Powered by Gemini 2.5 Flash. Model may be updated for quality improvements.",
+          "not_available": "Transkit Cloud is not available in this build."
         }
       },
       "recognize": {
@@ -702,6 +723,21 @@
           "api_key": "API Key (optional)",
           "voice": "Voice",
           "model": "Model"
+        },
+        "transkit_cloud_tts": {
+          "title": "Transkit Cloud",
+          "sign_in_desc": "Sign in to use Transkit Cloud TTS — no API key needed. Your plan includes free trial characters.",
+          "continue_google": "Continue with Google",
+          "continue_github": "Continue with GitHub",
+          "sign_out": "Sign out",
+          "voice": "Voice",
+          "tts_usage": "TTS usage this period",
+          "chars_label": "chars",
+          "quota_reached": "Quota reached.",
+          "upgrade_plan": "Upgrade your plan",
+          "loading_usage": "Loading usage data…",
+          "auto_provider_note": "The active TTS provider is configured by Transkit and may change to deliver the best quality.",
+          "not_available": "Transkit Cloud is not available in this build."
         }
       },
       "ai": {
@@ -724,6 +760,20 @@
         },
         "gemini_ai": {
           "title": "Google Gemini"
+        },
+        "transkit_cloud_ai": {
+          "title": "Transkit Cloud AI",
+          "sign_in_desc": "Sign in to use Transkit Cloud AI — no API key needed. Your plan includes free AI suggestion requests.",
+          "continue_google": "Continue with Google",
+          "continue_github": "Continue with GitHub",
+          "sign_out": "Sign out",
+          "ai_usage": "AI usage this period",
+          "requests_label": "requests",
+          "quota_reached": "Quota reached.",
+          "upgrade_plan": "Upgrade your plan",
+          "loading_usage": "Loading usage data…",
+          "powered_by_note": "Powered by Gemini 2.5 Flash. Model may be updated for quality improvements.",
+          "not_available": "Transkit Cloud is not available in this build."
         }
       },
       "collection": {
@@ -820,7 +870,8 @@
       "translate_back": "Translation back to the original",
       "loading": "Translating...",
       "show_other_translations": "View other translations",
-      "hide_other_translations": "Hide other translations"
+      "hide_other_translations": "Hide other translations",
+      "input_placeholder": "Enter text to translate..."
     },
     "recognize": {
       "recognize": "Recognize",

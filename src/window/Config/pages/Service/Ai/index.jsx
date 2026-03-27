@@ -23,7 +23,7 @@ export default function Ai(props) {
     const { isOpen: isConfigOpen, onOpen: onConfigOpen, onOpenChange: onConfigOpenChange } = useDisclosure();
     const [currentConfigKey, setCurrentConfigKey] = useState('openai_compat_ai');
 
-    const [aiServiceInstanceList, setAiServiceInstanceList] = useConfig('ai_service_list', []);
+    const [aiServiceInstanceList, setAiServiceInstanceList] = useConfig('ai_service_list', ['transkit_cloud_ai']);
 
     const { t } = useTranslation();
     const toastStyle = useToastStyle();

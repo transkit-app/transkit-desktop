@@ -233,6 +233,37 @@ export async function reportUsage(sessionId: string, durationSeconds: number): P
 
 // ─── Profile (usage info for UI) ─────────────────────────────────────────────
 
+export async function getUserProfile(): Promise<UserProfile | null> {
+  if (!CLOUD_ENABLED || !supabase) return null
+
+  const user = await getUser()
+  if (!user) return null
+
+  // Read profile including denormalized plan limit columns (synced by trigger in migration 007).
+  // This avoids a second query to subscription_plans which requires separate table permissions.
+  const { data: profileData, error: profileError } = await supabase
+    .from('profiles')
+    .select('email, full_name, avatar_url, role, company, experience_level, expertise, notes, trial_seconds_used, trial_limit_seconds, plan, tts_chars_used, ai_requests_used, translate_requests_used, plan_stt_limit, plan_tts_chars_limit, plan_ai_requests_limit, plan_translate_requests_limit')
+    .eq('id', user.id)
+    .single()
+
+  if (profileError || !profileData) return null
+
+  const raw = profileData as any
+
+  return {
+    ...raw,
+    plan_display_name:             raw.plan ?? 'trial',
+    plan_stt_limit:                raw.plan_stt_limit                 ?? raw.trial_limit_seconds,
+    plan_tts_chars_limit:          raw.plan_tts_chars_limit           ?? 0,
+    plan_ai_requests_limit:        raw.plan_ai_requests_limit         ?? 0,
+    plan_translate_requests_limit: raw.plan_translate_requests_limit  ?? 0,
+    tts_chars_used:                raw.tts_chars_used                 ?? 0,
+    ai_requests_used:              raw.ai_requests_used               ?? 0,
+    translate_requests_used:       raw.translate_requests_used        ?? 0,
+  } as UserProfile
+}
+
 export interface UserProfile {
   email: string | null
   full_name: string | null
@@ -242,38 +273,21 @@ export interface UserProfile {
   experience_level: string | null
   expertise: string[] | null
   notes: string | null
+  // STT quota
   trial_seconds_used: number
   trial_limit_seconds: number
   plan: string              // 'trial' | 'starter' | 'pro'
   plan_display_name: string // e.g. 'Free Trial', 'Starter', 'Pro'
   plan_stt_limit: number    // authoritative STT limit from subscription_plans (-1 = unlimited)
-}
-
-export async function getUserProfile(): Promise<UserProfile | null> {
-  if (!CLOUD_ENABLED || !supabase) return null
-
-  const user = await getUser()
-  if (!user) return null
-
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('email, full_name, avatar_url, role, company, experience_level, expertise, notes, trial_seconds_used, trial_limit_seconds, plan, subscription_plans(display_name, stt_seconds_limit)')
-    .eq('id', user.id)
-    .single()
-
-  if (error || !data) return null
-
-  // subscription_plans is a nested join object from Supabase — flatten it
-  const raw = data as any
-  const planData = Array.isArray(raw.subscription_plans)
-    ? raw.subscription_plans[0]
-    : raw.subscription_plans
-
-  return {
-    ...raw,
-    plan_display_name: planData?.display_name ?? raw.plan ?? 'trial',
-    plan_stt_limit:    planData?.stt_seconds_limit ?? raw.trial_limit_seconds,
-  } as UserProfile
+  // TTS quota
+  tts_chars_used: number
+  plan_tts_chars_limit: number
+  // AI quota
+  ai_requests_used: number
+  plan_ai_requests_limit: number
+  // Translate quota
+  translate_requests_used: number
+  plan_translate_requests_limit: number
 }
 
 export type ProfilePatch = Partial<Pick<UserProfile, 'full_name' | 'role' | 'company' | 'experience_level' | 'expertise' | 'notes'>>
@@ -288,6 +302,118 @@ export async function updateUserProfile(patch: ProfilePatch): Promise<void> {
     .from('profiles')
     .update(patch)
     .eq('id', user.id)
+}
+
+// ─── Cloud TTS ────────────────────────────────────────────────────────────────
+
+export interface CloudVoice {
+  id: string
+  label: string
+  is_default?: boolean
+}
+
+export interface CloudTTSConfig {
+  available: boolean
+  voices: CloudVoice[]
+  min_plan: string
+}
+
+// Cache voice catalog for 5 minutes
+let _ttsConfigCache: { data: CloudTTSConfig; expiresAt: number } | null = null
+
+export async function getCloudTTSConfig(): Promise<CloudTTSConfig> {
+  if (!CLOUD_ENABLED) return { available: false, voices: [], min_plan: 'trial' }
+
+  const now = Date.now()
+  if (_ttsConfigCache && now < _ttsConfigCache.expiresAt) return _ttsConfigCache.data
+
+  try {
+    const url = `${_url}/functions/v1/cloud-config?service=tts`
+    const res = await fetch(url)
+    if (!res.ok) return { available: false, voices: [], min_plan: 'trial' }
+    const data: CloudTTSConfig = await res.json()
+    _ttsConfigCache = { data, expiresAt: now + 5 * 60 * 1000 }
+    return data
+  } catch {
+    return { available: false, voices: [], min_plan: 'trial' }
+  }
+}
+
+/**
+ * Synthesize text via Transkit Cloud TTS proxy.
+ * Returns raw audio ArrayBuffer (audio/mpeg).
+ * Throws with code 'quota_exceeded', 'unauthorized', 'service_not_configured', etc.
+ */
+export async function callCloudTTS(
+  text: string,
+  voiceId: string,
+  language: string
+): Promise<ArrayBuffer> {
+  if (!CLOUD_ENABLED || !supabase) throw new Error('cloud_disabled')
+
+  const session = await supabase.auth.getSession()
+  const token = session.data.session?.access_token
+  if (!token) throw new Error('unauthorized')
+
+  const res = await fetch(`${_url}/functions/v1/proxy-tts`, {
+    method:  'POST',
+    headers: {
+      'Content-Type':  'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({ text, voice_id: voiceId, language }),
+  })
+
+  if (!res.ok) {
+    let code = 'server_error'
+    try { code = (await res.json()).error ?? code } catch { /* ignore */ }
+    const err: any = new Error(code)
+    err.status = res.status
+    throw err
+  }
+
+  return res.arrayBuffer()
+}
+
+// ─── Cloud AI / Translate ─────────────────────────────────────────────────────
+
+export interface CloudAIMessage {
+  role: 'system' | 'user' | 'model' | 'assistant'
+  content: string
+}
+
+export interface CloudAIOptions {
+  source_lang?: string
+  target_lang?: string
+}
+
+export interface CloudAIResult {
+  text: string
+  requests_remaining: number
+}
+
+/**
+ * Send an AI suggestion or translation request via Transkit Cloud proxy.
+ * task = 'ai'        → AI suggestion (messages must include system prompt)
+ * task = 'translate' → Translation (system prompt injected server-side)
+ */
+export async function callCloudAI(
+  messages: CloudAIMessage[],
+  task: 'ai' | 'translate',
+  options?: CloudAIOptions
+): Promise<CloudAIResult> {
+  if (!CLOUD_ENABLED || !supabase) throw new Error('cloud_disabled')
+
+  const session = await supabase.auth.getSession()
+  const token = session.data.session?.access_token
+  if (!token) throw new Error('unauthorized')
+
+  const { data, error } = await supabase.functions.invoke<CloudAIResult>('proxy-ai', {
+    body: { task, messages, options: options ?? {} },
+  })
+  if (error) await _throwFunctionError(error)
+  if (!data) throw new Error('server_error')
+  return data
 }
 
 // ─── Internal helpers ─────────────────────────────────────────────────────────

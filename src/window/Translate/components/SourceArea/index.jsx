@@ -54,10 +54,15 @@ export default function SourceArea(props) {
 
     const handleNewText = async (text) => {
         text = text.trim();
-        // Clear stale content synchronously before showing window so it appears clean
+        // Determine window type from text payload
+        const newWindowType = text === '[INPUT_TRANSLATE]' ? '[INPUT_TRANSLATE]'
+            : text === '[IMAGE_TRANSLATE]' ? '[IMAGE_TRANSLATE]'
+            : '[SELECTION_TRANSLATE]';
+        // Clear stale content AND set correct window type synchronously before showing window
         flushSync(() => {
             setDetectLanguage('');
             setSourceTextAtom('');
+            setWindowType(newWindowType);
         });
         if (hideWindow) {
             appWindow.hide();
@@ -66,12 +71,10 @@ export default function SourceArea(props) {
             appWindow.setFocus();
         }
         if (text === '[INPUT_TRANSLATE]') {
-            setWindowType('[INPUT_TRANSLATE]');
             appWindow.show();
             appWindow.setFocus();
             setSourceText('', true);
         } else if (text === '[IMAGE_TRANSLATE]') {
-            setWindowType('[IMAGE_TRANSLATE]');
             const base64 = await invoke('get_base64');
             const serviceInstanceKey = recognizeServiceList[0];
             if (getServiceSouceType(serviceInstanceKey) === ServiceSourceType.PLUGIN) {
@@ -151,7 +154,6 @@ export default function SourceArea(props) {
                 }
             }
         } else {
-            setWindowType('[SELECTION_TRANSLATE]');
             let newText = text.trim();
             if (deleteNewline) {
                 newText = text.replace(/\-\s+/g, '').replace(/\s+/g, ' ');
@@ -257,9 +259,10 @@ export default function SourceArea(props) {
 
     useEffect(() => {
         if (!textAreaRef.current) return;
-        textAreaRef.current.style.height = '50px';
+        const minH = windowType === '[INPUT_TRANSLATE]' ? 80 : 50;
+        textAreaRef.current.style.height = minH + 'px';
         textAreaRef.current.style.height = textAreaRef.current.scrollHeight + 'px';
-    }, [sourceText]);
+    }, [sourceText, windowType]);
 
     const detect_language = async (text) => {
         setDetectLanguage(await detect(text));
@@ -372,7 +375,7 @@ export default function SourceArea(props) {
 
 
     return (
-        <div className={hideSource && windowType !== '[INPUT_TRANSLATE]' && 'hidden'}>
+        <div className={windowType === '[INPUT_TRANSLATE]' ? '' : (hideSource || windowType === '[SELECTION_TRANSLATE]') ? 'hidden' : ''}>
             <Card
                 shadow='none'
                 className='bg-content1 rounded-[10px] mt-[1px] pb-0'
@@ -383,6 +386,7 @@ export default function SourceArea(props) {
                         autoFocus
                         ref={textAreaRef}
                         className={`text-[${appFontSize}px] bg-content1 h-full resize-none outline-none`}
+                        placeholder={windowType === '[INPUT_TRANSLATE]' ? t('translate.input_placeholder') : ''}
                         value={sourceText}
                         onKeyDown={keyDown}
                         onChange={(e) => {

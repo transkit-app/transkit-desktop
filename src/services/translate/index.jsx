@@ -1,3 +1,4 @@
+import * as _transkit_cloud_translate from './transkit_cloud_translate';
 import * as _deepl from './deepl';
 import * as _bing from './bing';
 import * as _yandex from './yandex';
@@ -22,6 +23,7 @@ import * as _lingva from './lingva';
 import * as _openrouter from './openrouter';
 import * as _groq from './groq';
 
+export const transkit_cloud_translate = _transkit_cloud_translate;
 export const deepl = _deepl;
 export const bing = _bing;
 export const yandex = _yandex;

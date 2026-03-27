@@ -67,6 +67,7 @@
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { verifyUser, AuthError } from '../_shared/auth.ts'
 
 const MAX_SESSION_CAP = 1800 // 30 minutes
 
@@ -78,22 +79,19 @@ type ServiceType = typeof VALID_SERVICE_TYPES[number]
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders() })
 
-  // 1. Verify JWT
-  const authHeader = req.headers.get('Authorization')
-  if (!authHeader) return json({ error: 'unauthorized' }, 401)
-
-  const supabase = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_ANON_KEY')!,
-    { global: { headers: { Authorization: authHeader } } }
-  )
+  // 1. Verify JWT — manual verification required (Supabase JWT middleware disabled)
   const admin = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   )
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) return json({ error: 'unauthorized' }, 401)
+  let user: Awaited<ReturnType<typeof verifyUser>>
+  try {
+    user = await verifyUser(req, admin)
+  } catch (e) {
+    if (e instanceof AuthError) return json({ error: e.code }, e.status)
+    return json({ error: 'unauthorized' }, 401)
+  }
 
   // 2. Parse body
   let body: { service_type?: string; options?: Record<string, unknown> } = {}
@@ -110,7 +108,7 @@ Deno.serve(async (req: Request) => {
   const options = body.options ?? {}
 
   // 3. Load user profile for quota check
-  const { data: profile, error: profileError } = await supabase
+  const { data: profile, error: profileError } = await admin
     .from('profiles')
     .select('trial_seconds_used, trial_limit_seconds, plan')
     .eq('id', user.id)

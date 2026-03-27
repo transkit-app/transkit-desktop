@@ -7,7 +7,7 @@ import { writeTextFile, createDir, exists } from '@tauri-apps/api/fs';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@nextui-org/react';
 import { BsPinFill } from 'react-icons/bs';
-import { MdOpenInFull, MdBlurOn, MdVolumeUp, MdVolumeOff, MdSettings, MdSaveAlt, MdFolderOpen, MdClose, MdRemove, MdMic } from 'react-icons/md';
+import { MdOpenInFull, MdBlurOn, MdVolumeUp, MdVolumeOff, MdSettings, MdSave, MdSaveAlt, MdFolderOpen, MdClose, MdRemove, MdMic } from 'react-icons/md';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useConfig } from '../../hooks';
 import { osType } from '../../utils/env';
@@ -111,7 +111,7 @@ function formatEntryMarkdown(entry, index) {
     return lines.join('\n');
 }
 
-async function buildTranscriptPath() {
+async function getTranscriptFilePath() {
     const docsDir = await documentDir();
     const dir = await join(docsDir, 'TransKit');
     if (!(await exists(dir))) {
@@ -516,7 +516,7 @@ export default function Monitor() {
         // Init auto-save file
         if (autosaveEnabled) {
             try {
-                const filePath = await buildTranscriptPath();
+                const filePath = await getTranscriptFilePath();
                 const header = `# TransKit Transcript\n\n**Started:** ${new Date().toLocaleString()}\n**Source language:** ${sourceLang}\n**Target language:** ${targetLang}\n\n---\n\n`;
                 await writeTextFile(filePath, header);
                 transcriptFileRef.current = filePath;
@@ -894,9 +894,9 @@ export default function Monitor() {
                         color={autosaveEnabled ? 'primary' : 'default'}
                         className='h-[26px] w-[26px] min-w-0'
                         onPress={() => setAutosaveEnabled(!autosaveEnabled)}
-                        title={t('monitor.autosave_toggle')}
+                        title={autosaveEnabled ? t('monitor.autosave_on') : t('monitor.autosave_off')}
                     >
-                        <MdSaveAlt className='text-[16px]' />
+                        <MdSave className='text-[16px]' />
                     </Button>
                     <Button
                         isIconOnly
@@ -904,7 +904,7 @@ export default function Monitor() {
                         variant='light'
                         className='h-[26px] w-[26px] min-w-0 bg-transparent'
                         onPress={handleOpenTranscriptFolder}
-                        title='Open transcripts folder'
+                        title={t('monitor.autosave_open_folder')}
                     >
                         <MdFolderOpen className='text-[16px] text-default-400' />
                     </Button>
@@ -1011,10 +1011,27 @@ export default function Monitor() {
                     <MdSaveAlt className='text-success text-[16px] flex-shrink-0 mt-0.5' />
                     <div className='flex-1 min-w-0'>
                         <p className='text-xs font-semibold' style={{ color: '#4ade80' }}>{t('monitor.autosave_saved')}</p>
-                        <p className='text-[10px] truncate' style={{ color: '#9ca3af' }} title={savedNotification.path}>
+                        <button
+                            className='text-[10px] truncate text-left w-full hover:underline cursor-pointer'
+                            style={{ color: '#9ca3af' }}
+                            title={savedNotification.path}
+                            onClick={() => openPath(savedNotification.path).catch(() => {})}
+                        >
                             {savedNotification.path}
-                        </p>
+                        </button>
                     </div>
+                    <button
+                        onClick={() => {
+                            const dir = savedNotification.path.substring(0, savedNotification.path.lastIndexOf('/') + 1) ||
+                                        savedNotification.path.substring(0, savedNotification.path.lastIndexOf('\\') + 1);
+                            openPath(dir || savedNotification.path).catch(() => {});
+                        }}
+                        className='flex-shrink-0 hover:opacity-70 transition-opacity'
+                        style={{ color: '#9ca3af' }}
+                        title={t('monitor.autosave_open_folder')}
+                    >
+                        <MdFolderOpen className='text-[14px]' />
+                    </button>
                     <button
                         onClick={() => setSavedNotification(null)}
                         className='flex-shrink-0 hover:opacity-70 transition-opacity'
@@ -1131,9 +1148,9 @@ export default function Monitor() {
                     saveStatus === 'saving' ? 'text-warning animate-pulse' :
                     saveStatus === 'saved'  ? 'text-success' :
                     saveStatus === 'error'  ? 'text-danger' :
-                    autosaveEnabled        ? 'text-default-400' : 'text-default-300'
+                    autosaveEnabled        ? 'text-success' : 'text-default-300'
                 }`}>
-                    <MdSaveAlt className='text-[11px]' />
+                    <MdSave className='text-[11px]' />
                     {saveStatus === 'saving' ? t('monitor.autosave_saving') :
                      saveStatus === 'saved'  ? t('monitor.autosave_saved') :
                      saveStatus === 'error'  ? t('monitor.autosave_error') :

@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef, memo } from 'react'
 import { Button, Avatar, Card, CardBody, Chip, Progress } from '@nextui-org/react'
 import { FaGoogle, FaGithub } from 'react-icons/fa'
-import { MdLogout, MdSync, MdPerson, MdCloudDone, MdMic, MdVolumeUp, MdAutoAwesome } from 'react-icons/md'
+import { MdLogout, MdSync, MdPerson, MdCloudDone, MdMic, MdVolumeUp, MdAutoAwesome, MdTranslate } from 'react-icons/md'
 import { open as openBrowser } from '@tauri-apps/api/shell'
 import toast, { Toaster } from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
@@ -247,7 +247,7 @@ function ProfileForm({ authUser, cloudProfile, onCloudSynced }) {
 
 const PLAN_BADGE_COLOR = { trial: 'warning', starter: 'primary', pro: 'success' }
 
-function ServiceRow({ icon, label, used, limit, unlimited, comingSoon, t }) {
+const ServiceRow = memo(function ServiceRow({ icon, label, used, limit, unlimited, comingSoon, unit = 'minutes', t }) {
   if (comingSoon) {
     return (
       <div className='flex items-center justify-between py-0.5'>
@@ -274,9 +274,20 @@ function ServiceRow({ icon, label, used, limit, unlimited, comingSoon, t }) {
 
   const pct = limit > 0 ? Math.min((used / limit) * 100, 100) : 0
   const color = pct >= 90 ? 'danger' : pct >= 70 ? 'warning' : 'primary'
-  const fmtMin = (s) => (s / 60).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 })
-  const usedMin = fmtMin(used)
-  const limitMin = fmtMin(limit)
+
+  const fmt = (n) => {
+    if (unit === 'minutes') {
+      return (n / 60).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 1 })
+    }
+    if (unit === 'chars') {
+      return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n)
+    }
+    return String(n)
+  }
+
+  const unitLabel = unit === 'minutes' ? t('config.account.unit_min')
+    : unit === 'chars' ? t('config.account.unit_chars')
+    : t('config.account.unit_requests')
 
   return (
     <div className='flex flex-col gap-1.5'>
@@ -286,7 +297,7 @@ function ServiceRow({ icon, label, used, limit, unlimited, comingSoon, t }) {
           <span className='text-xs font-medium'>{label}</span>
         </div>
         <span className={`text-xs font-mono ${pct >= 90 ? 'text-danger' : pct >= 70 ? 'text-warning-600 dark:text-warning-400' : 'text-default-500'}`}>
-          {t('config.account.usage_minutes', { used: usedMin, limit: limitMin })}
+          {fmt(used)} / {fmt(limit)} {unitLabel}
         </span>
       </div>
       <Progress size='sm' value={pct} maxValue={100} color={color} aria-label={label} />
@@ -298,25 +309,44 @@ function ServiceRow({ icon, label, used, limit, unlimited, comingSoon, t }) {
       )}
     </div>
   )
-}
+})
 
-function CloudPlanCard({ profile }) {
+function CloudPlanCard({ profile, usage, onRefresh }) {
   const { t } = useTranslation()
+  const [refreshing, setRefreshing] = useState(false)
   const plan = profile.plan ?? 'trial'
   const badgeColor = PLAN_BADGE_COLOR[plan] ?? 'default'
   const planLabel = t(`config.account.plan_badge_${plan}`, { defaultValue: plan })
-  const sttLimit    = profile.plan_stt_limit ?? profile.trial_limit_seconds
-  const isUnlimited = sttLimit === -1
+  const sttLimit      = profile.trial_limit_seconds  // enforced per-user limit, not plan default
+  const ttsLimit      = profile.plan_tts_chars_limit ?? 0
+  const aiLimit       = profile.plan_ai_requests_limit ?? 0
+  const translateLimit= profile.plan_translate_requests_limit ?? 0
   const isUpgradeable = plan === 'trial' || plan === 'starter'
+
+  const handleRefresh = async () => {
+    if (refreshing) return
+    setRefreshing(true)
+    try { await onRefresh?.() } finally { setRefreshing(false) }
+  }
 
   return (
     <Card>
       <CardBody className='flex flex-col gap-3 pb-3'>
         {/* Header */}
         <div className='flex items-center justify-between'>
-          <p className='text-xs font-semibold text-default-500 uppercase tracking-wider'>
-            {t('config.account.plan_section_title')}
-          </p>
+          <div className='flex items-center gap-1.5'>
+            <p className='text-xs font-semibold text-default-500 uppercase tracking-wider'>
+              {t('config.account.plan_section_title')}
+            </p>
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className='text-default-400 hover:text-default-600 transition-colors disabled:opacity-50'
+              title='Refresh usage'
+            >
+              <MdSync className={`text-sm ${refreshing ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
           <Chip size='sm' variant='flat' color={badgeColor} className='capitalize font-medium'>
             {planLabel}
           </Chip>
@@ -324,32 +354,71 @@ function CloudPlanCard({ profile }) {
 
         {/* Services */}
         <div className='flex flex-col gap-3'>
+          {/* STT */}
           <ServiceRow
             icon={<MdMic className='text-base' />}
             label={t('config.account.stt_label')}
-            used={profile.trial_seconds_used}
-            limit={profile.plan_stt_limit ?? profile.trial_limit_seconds}
-            unlimited={isUnlimited}
-            comingSoon={false}
+            used={usage.stt}
+            limit={sttLimit}
+            unlimited={sttLimit === -1}
+            unit='minutes'
             t={t}
           />
-          <ServiceRow
-            icon={<MdVolumeUp className='text-base' />}
-            label={t('config.account.tts_label')}
-            comingSoon
-            t={t}
-          />
-          <ServiceRow
-            icon={<MdAutoAwesome className='text-base' />}
-            label={t('config.account.ai_label')}
-            comingSoon
-            t={t}
-          />
+
+          {/* TTS */}
+          {ttsLimit !== 0 ? (
+            <ServiceRow
+              icon={<MdVolumeUp className='text-base' />}
+              label={t('config.account.tts_label')}
+              used={usage.tts}
+              limit={ttsLimit}
+              unlimited={ttsLimit === -1}
+              unit='chars'
+              t={t}
+            />
+          ) : (
+            <ServiceRow icon={<MdVolumeUp className='text-base' />} label={t('config.account.tts_label')} comingSoon t={t} />
+          )}
+
+          {/* AI */}
+          {aiLimit !== 0 ? (
+            <ServiceRow
+              icon={<MdAutoAwesome className='text-base' />}
+              label={t('config.account.ai_label')}
+              used={usage.ai}
+              limit={aiLimit}
+              unlimited={aiLimit === -1}
+              unit='requests'
+              t={t}
+            />
+          ) : (
+            <ServiceRow icon={<MdAutoAwesome className='text-base' />} label={t('config.account.ai_label')} comingSoon t={t} />
+          )}
+
+          {/* Translate */}
+          {translateLimit !== 0 ? (
+            <ServiceRow
+              icon={<MdTranslate className='text-base' />}
+              label={t('config.account.translate_label')}
+              used={usage.translate}
+              limit={translateLimit}
+              unlimited={translateLimit === -1}
+              unit='requests'
+              t={t}
+            />
+          ) : (
+            <ServiceRow icon={<MdTranslate className='text-base' />} label={t('config.account.translate_label')} comingSoon t={t} />
+          )}
         </div>
+
+        {/* Informational note about underlying models */}
+        <p className='text-[10px] text-default-400 border-t border-content3 pt-2 mt-1'>
+          {t('config.account.powered_by_note')}
+        </p>
 
         {/* Upgrade CTA */}
         {isUpgradeable && (
-          <div className='flex items-center justify-between pt-2 border-t border-content3 mt-1'>
+          <div className='flex items-center justify-between border-t border-content3 mt-1 pt-2'>
             <p className='text-xs text-default-500'>
               {t(`config.account.upgrade_cta_${plan}`)}
             </p>
@@ -444,7 +513,7 @@ function GuestView() {
 
 // ─── Logged-in dashboard ──────────────────────────────────────────────────────
 
-function AccountDashboard({ user, cloudProfile, onSignOut }) {
+function AccountDashboard({ user, cloudProfile, cloudUsage, onRefreshUsage, onSignOut }) {
   const [signingOut, setSigningOut] = useState(false)
 
   const handleSignOut = async () => {
@@ -491,7 +560,7 @@ function AccountDashboard({ user, cloudProfile, onSignOut }) {
       </Card>
 
       {/* Transkit Cloud plan & quota */}
-      {cloudProfile && <CloudPlanCard profile={cloudProfile} />}
+      {cloudProfile && cloudUsage && <CloudPlanCard profile={cloudProfile} usage={cloudUsage} onRefresh={onRefreshUsage} />}
 
       {/* Profile form — auto-saves to cloud */}
       <Card>
@@ -505,41 +574,87 @@ function AccountDashboard({ user, cloudProfile, onSignOut }) {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
+const FOCUS_REFRESH_COOLDOWN_MS = 30_000 // min 30s between focus-triggered refreshes
+
+// Extract usage counters from a profile object into a stable shape
+function extractUsage(p) {
+  return {
+    stt:      p.trial_seconds_used       ?? 0,
+    tts:      p.tts_chars_used           ?? 0,
+    ai:       p.ai_requests_used         ?? 0,
+    translate: p.translate_requests_used ?? 0,
+  }
+}
+
 export default function Account() {
   const [user, setUser] = useState(null)
   const [cloudProfile, setCloudProfile] = useState(null)
+  // Usage counters are kept in separate state so polling only re-renders
+  // the ServiceRow components — not the whole plan card structure.
+  const [cloudUsage, setCloudUsage] = useState(null)
   const [loading, setLoading] = useState(true)
+  const lastFetchRef = useRef(0)
+  // Track user in a ref so the focus handler doesn't need user in deps
+  const userRef = useRef(null)
 
-  const refreshProfile = useCallback(async () => {
-    const p = await getUserProfile()
-    setCloudProfile(p)
+  const applyProfile = useCallback((p, { usageOnly = false } = {}) => {
+    if (!p) return
+    if (!usageOnly) setCloudProfile(p)
+    setCloudUsage(prev => {
+      const next = extractUsage(p)
+      // Skip state update if nothing changed to avoid re-renders
+      if (prev &&
+          prev.stt === next.stt &&
+          prev.tts === next.tts &&
+          prev.ai === next.ai &&
+          prev.translate === next.translate) return prev
+      return next
+    })
+    lastFetchRef.current = Date.now()
   }, [])
 
+  // Full fetch: updates both plan structure and usage counters
+  const refreshProfile = useCallback(async () => {
+    const p = await getUserProfile()
+    if (p) applyProfile(p)
+  }, [applyProfile])
+
+  // Lightweight focus refresh: same fetch but only updates usage counters
+  const refreshUsage = useCallback(async () => {
+    const p = await getUserProfile()
+    if (p) applyProfile(p, { usageOnly: true })
+  }, [applyProfile])
+
+  // Auth + initial load (runs once; does not re-run when user object changes)
   useEffect(() => {
     getUser().then((u) => {
+      userRef.current = u
       setUser(u)
       if (u) refreshProfile()
       setLoading(false)
     })
 
     const unsub = onAuthStateChange((u) => {
+      userRef.current = u
       setUser(u)
       if (u) refreshProfile()
-      else setCloudProfile(null)
+      else { setCloudProfile(null); setCloudUsage(null) }
     })
 
-    // Refresh trial usage when the Config window regains focus
-    // (e.g. after a Monitor session ends)
+    return () => unsub()
+  }, [refreshProfile])
+
+  // Focus listener uses userRef — no user in deps, no re-subscription on token refresh
+  useEffect(() => {
     const onFocus = () => {
-      if (user) refreshProfile()
+      if (!userRef.current) return
+      const now = Date.now()
+      if (now - lastFetchRef.current < FOCUS_REFRESH_COOLDOWN_MS) return
+      refreshUsage()
     }
     window.addEventListener('focus', onFocus)
-
-    return () => {
-      unsub()
-      window.removeEventListener('focus', onFocus)
-    }
-  }, [refreshProfile, user])
+    return () => window.removeEventListener('focus', onFocus)
+  }, [refreshUsage])
 
   if (!CLOUD_ENABLED) {
     return (
@@ -585,7 +700,9 @@ export default function Account() {
         <AccountDashboard
           user={user}
           cloudProfile={cloudProfile}
-          onSignOut={() => { setUser(null); setCloudProfile(null) }}
+          cloudUsage={cloudUsage}
+          onRefreshUsage={refreshUsage}
+          onSignOut={() => { userRef.current = null; setUser(null); setCloudProfile(null); setCloudUsage(null) }}
         />
       ) : (
         <GuestView />

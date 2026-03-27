@@ -19,6 +19,7 @@
  * debited_seconds (avoids billing more than was debited).
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { verifyUser, AuthError } from '../_shared/auth.ts'
 
 const MIN_DEBIT_FLOOR = 60 // seconds — minimum billable once a session opens
 
@@ -27,23 +28,19 @@ Deno.serve(async (req: Request) => {
     return new Response(null, { headers: corsHeaders() })
   }
 
-  // 1. Verify user session
-  const authHeader = req.headers.get('Authorization')
-  if (!authHeader) return json({ error: 'unauthorized' }, 401)
-
-  const supabase = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_ANON_KEY')!,
-    { global: { headers: { Authorization: authHeader } } }
-  )
-
+  // 1. Verify user session — manual verification required (Supabase JWT middleware disabled)
   const admin = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   )
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) return json({ error: 'unauthorized' }, 401)
+  let user: Awaited<ReturnType<typeof verifyUser>>
+  try {
+    user = await verifyUser(req, admin)
+  } catch (e) {
+    if (e instanceof AuthError) return json({ error: e.code }, e.status)
+    return json({ error: 'unauthorized' }, 401)
+  }
 
   // 2. Parse body
   let session_id: string, duration_seconds: number
