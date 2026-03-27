@@ -137,8 +137,8 @@ export function Config(props) {
 
                         {/* STT Quota */}
                         {profile && (() => {
-                            const limit = profile.plan_stt_limit ?? profile.trial_limit_seconds;
-                            const used  = profile.trial_seconds_used;
+                            const limit = profile.plan_stt_limit;
+                            const used  = profile.stt_seconds_used;
                             const isUnlimited = limit === -1;
                             const pct  = isUnlimited ? 0 : used / limit;
                             return (

@@ -317,7 +317,7 @@ function CloudPlanCard({ profile, usage, onRefresh }) {
   const plan = profile.plan ?? 'trial'
   const badgeColor = PLAN_BADGE_COLOR[plan] ?? 'default'
   const planLabel = t(`config.account.plan_badge_${plan}`, { defaultValue: plan })
-  const sttLimit      = profile.trial_limit_seconds  // enforced per-user limit, not plan default
+  const sttLimit      = profile.plan_stt_limit
   const ttsLimit      = profile.plan_tts_chars_limit ?? 0
   const aiLimit       = profile.plan_ai_requests_limit ?? 0
   const translateLimit= profile.plan_translate_requests_limit ?? 0
@@ -579,7 +579,7 @@ const FOCUS_REFRESH_COOLDOWN_MS = 30_000 // min 30s between focus-triggered refr
 // Extract usage counters from a profile object into a stable shape
 function extractUsage(p) {
   return {
-    stt:      p.trial_seconds_used       ?? 0,
+    stt:      p.stt_seconds_used         ?? 0,
     tts:      p.tts_chars_used           ?? 0,
     ai:       p.ai_requests_used         ?? 0,
     translate: p.translate_requests_used ?? 0,

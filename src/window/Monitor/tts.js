@@ -38,6 +38,7 @@ import { fetch as tauriFetch, Body, ResponseType } from '@tauri-apps/api/http';
 import { invoke } from '@tauri-apps/api/tauri';
 import { listen } from '@tauri-apps/api/event';
 import { ElevenLabsTTS } from './elevenlabs-tts';
+import { callCloudTTS, CLOUD_ENABLED } from '../../lib/transkit-cloud';
 
 // ── Edge TTS native streaming ──────────────────────────────────────────────
 // Persistent Tauri event listeners shared across all concurrent synthesis calls.
@@ -137,6 +138,8 @@ export class TTSQueue {
         this.elevenLabsVoiceId = 'FTYCiQT21H9XQvhRu0ch';
         this.elevenLabsModelId = 'eleven_flash_v2_5';
         this.elevenLabsMode    = 'wss'; // 'wss' | 'http'
+        // Transkit Cloud TTS
+        this.cloudLang = 'auto';
 
         // ── ElevenLabs provider ────────────────────────────────────────────
         /** @type {ElevenLabsTTS|null} */
@@ -182,6 +185,7 @@ export class TTSQueue {
         googleLang, googleSpeed, baseRate, volume,
         edgeServerUrl, edgeVoice, edgeRate, edgePitch,
         elevenLabsApiKey, elevenLabsVoiceId, elevenLabsModelId, elevenLabsMode,
+        cloudLang,
     } = {}) {
         if (serverUrl     !== undefined) this.serverUrl     = serverUrl;
         if (apiType       !== undefined) this.apiType       = apiType;
@@ -205,6 +209,7 @@ export class TTSQueue {
         if (elevenLabsVoiceId !== undefined) this.elevenLabsVoiceId = elevenLabsVoiceId || 'FTYCiQT21H9XQvhRu0ch';
         if (elevenLabsModelId !== undefined) this.elevenLabsModelId = elevenLabsModelId || 'eleven_flash_v2_5';
         if (elevenLabsMode    !== undefined) this.elevenLabsMode    = elevenLabsMode    || 'wss';
+        if (cloudLang         !== undefined) this.cloudLang         = cloudLang         || 'auto';
         // Re-configure ElevenLabs client if it exists.
         if (this._elevenlabs) {
             this._elevenlabs.updateConfig({
@@ -546,8 +551,9 @@ export class TTSQueue {
 
     /** Returns { buffer: ArrayBuffer, mime: string } */
     async _fetchAudio(text) {
-        if (this.apiType === 'google')   return this._fetchGoogle(text);
-        if (this.apiType === 'edge_tts') return this._fetchEdgeTTSNative(text);
+        if (this.apiType === 'google')          return this._fetchGoogle(text);
+        if (this.apiType === 'edge_tts')        return this._fetchEdgeTTSNative(text);
+        if (this.apiType === 'transkit_cloud')  return this._fetchCloudTTS(text);
 
         const base = this._base();
 
@@ -587,6 +593,12 @@ export class TTSQueue {
         const isRiff = raw[0] === 0x52 && raw[1] === 0x49 && raw[2] === 0x46 && raw[3] === 0x46;
         if (isRiff) return { buffer: raw.buffer, mime: 'audio/wav' };
         return { buffer: raw.buffer, mime: 'audio/pcm-f32' };
+    }
+
+    async _fetchCloudTTS(text) {
+        if (!CLOUD_ENABLED) throw new Error('cloud_disabled');
+        const arrayBuffer = await callCloudTTS(text, this.voiceId || 'auto', this.cloudLang || 'auto');
+        return { buffer: arrayBuffer, mime: 'audio/mpeg' };
     }
 
     async _fetchEdgeTTSNative(text) {

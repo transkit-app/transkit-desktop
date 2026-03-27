@@ -95,6 +95,11 @@ function mapServiceConfigToTTSParams(serviceName, config) {
                 voiceId: c.voice ?? '',
                 model: c.model ?? 'tts-1',
             };
+        case 'transkit_cloud_tts':
+            return {
+                apiType: 'transkit_cloud',
+                voiceId: c.voiceId ?? 'auto',
+            };
         default:
             return { apiType: 'google', googleLang: 'vi', googleSpeed: 1 };
     }
@@ -256,6 +261,7 @@ export default function Monitor() {
                 ...mapServiceConfigToTTSParams(serviceName, cfg),
                 baseRate: ttsPlaybackRate,
                 volume: ttsVolume ?? 1.0,
+                cloudLang: targetLang,
             });
         };
 
@@ -264,7 +270,7 @@ export default function Monitor() {
         const eventKey = serviceKey.replaceAll('.', '_').replaceAll('@', ':');
         const unlistenPromise = listen(`${eventKey}_changed`, (e) => applyConfig(e.payload));
         return () => { unlistenPromise.then(f => f()); };
-    }, [activeTtsService, ttsPlaybackRate, ttsVolume]);
+    }, [activeTtsService, ttsPlaybackRate, ttsVolume, targetLang]);
 
     // ── Load audio capabilities ───────────────────────────────────────────────
     useEffect(() => {

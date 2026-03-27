@@ -243,7 +243,7 @@ export async function getUserProfile(): Promise<UserProfile | null> {
   // This avoids a second query to subscription_plans which requires separate table permissions.
   const { data: profileData, error: profileError } = await supabase
     .from('profiles')
-    .select('email, full_name, avatar_url, role, company, experience_level, expertise, notes, trial_seconds_used, trial_limit_seconds, plan, tts_chars_used, ai_requests_used, translate_requests_used, plan_stt_limit, plan_tts_chars_limit, plan_ai_requests_limit, plan_translate_requests_limit')
+    .select('email, full_name, avatar_url, role, company, experience_level, expertise, notes, stt_seconds_used, plan, tts_chars_used, ai_requests_used, translate_requests_used, plan_stt_limit, plan_tts_chars_limit, plan_ai_requests_limit, plan_translate_requests_limit')
     .eq('id', user.id)
     .single()
 
@@ -254,7 +254,8 @@ export async function getUserProfile(): Promise<UserProfile | null> {
   return {
     ...raw,
     plan_display_name:             raw.plan ?? 'trial',
-    plan_stt_limit:                raw.plan_stt_limit                 ?? raw.trial_limit_seconds,
+    stt_seconds_used:              raw.stt_seconds_used               ?? 0,
+    plan_stt_limit:                raw.plan_stt_limit                 ?? 0,
     plan_tts_chars_limit:          raw.plan_tts_chars_limit           ?? 0,
     plan_ai_requests_limit:        raw.plan_ai_requests_limit         ?? 0,
     plan_translate_requests_limit: raw.plan_translate_requests_limit  ?? 0,
@@ -274,8 +275,7 @@ export interface UserProfile {
   expertise: string[] | null
   notes: string | null
   // STT quota
-  trial_seconds_used: number
-  trial_limit_seconds: number
+  stt_seconds_used: number
   plan: string              // 'trial' | 'starter' | 'pro'
   plan_display_name: string // e.g. 'Free Trial', 'Starter', 'Pro'
   plan_stt_limit: number    // authoritative STT limit from subscription_plans (-1 = unlimited)

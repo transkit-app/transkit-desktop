@@ -110,7 +110,7 @@ Deno.serve(async (req: Request) => {
   // 3. Load user profile for quota check
   const { data: profile, error: profileError } = await admin
     .from('profiles')
-    .select('trial_seconds_used, trial_limit_seconds, plan')
+    .select('stt_seconds_used, plan_stt_limit, plan')
     .eq('id', user.id)
     .single()
 
@@ -125,16 +125,16 @@ Deno.serve(async (req: Request) => {
   // 4. Quota enforcement
   let remaining = 0
   if (serviceType === 'stt') {
-    const isUnlimited = profile.trial_limit_seconds === -1
+    const isUnlimited = profile.plan_stt_limit === -1
     remaining = isUnlimited
       ? MAX_SESSION_CAP
-      : profile.trial_limit_seconds - profile.trial_seconds_used
+      : profile.plan_stt_limit - profile.stt_seconds_used
 
     if (!isUnlimited && remaining <= 0) {
       return json({
         error: 'quota_exceeded',
-        used: profile.trial_seconds_used,
-        limit: profile.trial_limit_seconds,
+        used: profile.stt_seconds_used,
+        limit: profile.plan_stt_limit,
       }, 403)
     }
   } else {
@@ -187,8 +187,8 @@ Deno.serve(async (req: Request) => {
   if (!actualDebit || actualDebit <= 0) {
     return json({
       error: 'quota_exceeded',
-      used: profile.trial_seconds_used,
-      limit: profile.trial_limit_seconds,
+      used: profile.stt_seconds_used,
+      limit: profile.plan_stt_limit,
     }, 403)
   }
 
