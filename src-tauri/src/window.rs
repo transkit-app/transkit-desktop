@@ -241,12 +241,10 @@ fn translate_window() -> Window {
         }
     }
 
-    if exists {
-        // Must show before emitting event — on Windows, WebView2 won't
-        // process JS events while the window is hidden.
-        window.show().unwrap_or_default();
-        window.set_focus().unwrap_or_default();
-    }
+    // Always show before emitting event. On Windows/WebView2 and Linux/WebKitGTK,
+    // hidden windows can miss frontend event handling.
+    window.show().unwrap_or_default();
+    window.set_focus().unwrap_or_default();
 
     window
 }
@@ -255,12 +253,13 @@ pub fn selection_translate() {
     use selection::get_text;
     // Get Selected Text
     let text = get_text();
-    if !text.trim().is_empty() {
-        let app_handle = APP.get().unwrap();
-        // Write into State
-        let state: tauri::State<StringWrapper> = app_handle.state();
-        state.0.lock().unwrap().replace_range(.., &text);
+    if text.trim().is_empty() {
+        return;
     }
+    let app_handle = APP.get().unwrap();
+    // Write into State
+    let state: tauri::State<StringWrapper> = app_handle.state();
+    state.0.lock().unwrap().replace_range(.., &text);
 
     let window = translate_window();
     window.emit("new_text", text).unwrap();

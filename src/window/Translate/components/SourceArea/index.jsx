@@ -31,6 +31,12 @@ export const windowTypeAtom = atom('[SELECTION_TRANSLATE]');
 let unlisten = null;
 let timer = null;
 
+const getWindowTypeFromPayload = (text) => {
+    if (text === '[INPUT_TRANSLATE]') return '[INPUT_TRANSLATE]';
+    if (text === '[IMAGE_TRANSLATE]') return '[IMAGE_TRANSLATE]';
+    return '[SELECTION_TRANSLATE]';
+};
+
 export default function SourceArea(props) {
     const { pluginList, serviceInstanceConfigMap } = props;
     const [appFontSize] = useConfig('app_font_size', 16);
@@ -54,10 +60,7 @@ export default function SourceArea(props) {
 
     const handleNewText = async (text) => {
         text = text.trim();
-        // Determine window type from text payload
-        const newWindowType = text === '[INPUT_TRANSLATE]' ? '[INPUT_TRANSLATE]'
-            : text === '[IMAGE_TRANSLATE]' ? '[IMAGE_TRANSLATE]'
-            : '[SELECTION_TRANSLATE]';
+        const newWindowType = getWindowTypeFromPayload(text);
         // Clear stale content AND set correct window type synchronously before showing window
         flushSync(() => {
             setDetectLanguage('');
@@ -232,6 +235,30 @@ export default function SourceArea(props) {
             });
         }
     }, [hideWindow]);
+
+    useEffect(() => {
+        const unlistenFocus = listen('tauri://focus', async () => {
+            const stateText = ((await invoke('get_text')) || '').trim();
+            if (stateText === '') return;
+            const stateWindowType = getWindowTypeFromPayload(stateText);
+
+            // Recovery path for missed "new_text" events after hide/show cycles.
+            if (stateWindowType !== windowType) {
+                await handleNewText(stateText);
+                return;
+            }
+
+            if (stateWindowType === '[SELECTION_TRANSLATE]' && sourceText.trim() === '') {
+                await handleNewText(stateText);
+            }
+        });
+
+        return () => {
+            unlistenFocus.then((f) => {
+                f();
+            });
+        };
+    }, [windowType, sourceText, hideWindow]);
 
     useEffect(() => {
         if (ttsServiceList && getServiceSouceType(ttsServiceList[0]) === ServiceSourceType.PLUGIN) {
