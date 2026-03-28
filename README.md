@@ -64,6 +64,11 @@ This project is a fork of [Pot Desktop](https://github.com/pot-app/pot-desktop) 
       <b>Realtime Audio Monitor</b><br/>
       Realtime Audio Monitor with AI suggestions, Submode, and TTS. All services are configurable in the Service settings.<br/>
       <img src="asset/eg7.gif" width="100%"/>
+
+<b>Watch video demo</b>
+
+[![Youtube Video](asset/youtube-demo.png)](https://youtu.be/a8rR6RzHokc)
+
     </td>
   </tr>
 </table>
