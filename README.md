@@ -14,8 +14,6 @@ This project is a fork of [Pot Desktop](https://github.com/pot-app/pot-desktop) 
     <td><img src="docs/images/Translate-Dark.png"></td>
 </tr>
 </table>
-<img src="docs/images/RealtimeMonitorWithAISuggestion.png">
-
 
 # Table of Contents
 
@@ -68,7 +66,6 @@ This project is a fork of [Pot Desktop](https://github.com/pot-app/pot-desktop) 
 <b>Watch video demo</b>
 
 [![Youtube Video](asset/youtube-demo.png)](https://youtu.be/a8rR6RzHokc)
-
     </td>
   </tr>
 </table>

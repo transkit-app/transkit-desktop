@@ -14,7 +14,6 @@ Dự án là bản fork từ [Pot Desktop](https://github.com/pot-app/pot-deskto
     <td><img src="docs/images/Translate-Dark.png"></td>
 </tr>
 </table>
-<img src="docs/images/RealtimeMonitorWithAISuggestion.png">
 
 
 # Mục lục
@@ -68,7 +67,6 @@ Dự án là bản fork từ [Pot Desktop](https://github.com/pot-app/pot-deskto
 <b>Watch video demo</b>
 
 [![Youtube Video](asset/youtube-demo.png)](https://youtu.be/a8rR6RzHokc)
-
     </td>
   </tr>
 </table>
