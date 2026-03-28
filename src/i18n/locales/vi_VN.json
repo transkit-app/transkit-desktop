@@ -427,7 +427,10 @@
       "quota_action_upgrade": "Nâng cấp gói của bạn",
       "quota_action_byok": "Hoặc dùng API key của bạn: Cài đặt › {{service}} › {{transcription}}",
       "auth_lock_conflict_title": "Xung đột xác thực — vui lòng thử lại.",
-      "auth_lock_conflict_hint": "Nhiều yêu cầu cùng tranh nhau lấy auth token. Nhấn Start để thử lại."
+      "auth_lock_conflict_hint": "Nhiều yêu cầu cùng tranh nhau lấy auth token. Nhấn Start để thử lại.",
+      "cloud_session_ending_soon": "Còn 2 phút",
+      "cloud_session_last_minute": "Còn 1 phút!",
+      "cloud_session_expired": "Hết thời lượng phiên — đã ngắt kết nối"
     },
     "updater": {
       "title": "Kiểm tra cập nhật",

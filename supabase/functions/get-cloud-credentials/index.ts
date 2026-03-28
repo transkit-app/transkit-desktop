@@ -70,6 +70,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { verifyUser, AuthError } from '../_shared/auth.ts'
 
 const MAX_SESSION_CAP = 1800 // 30 minutes
+// Buffer added to all provider TTLs so they expire slightly after the client-side
+// auto-disconnect fires at T=0 (clean close first, hard provider kill as fallback).
+const SESSION_TTL_BUFFER_SECONDS = 15
 
 const VALID_SERVICE_TYPES = ['stt', 'tts', 'ai'] as const
 type ServiceType = typeof VALID_SERVICE_TYPES[number]
@@ -209,6 +212,7 @@ Deno.serve(async (req: Request) => {
         credentials = await _getGladiaSession(masterKey, providerMeta, options, {
           sessionId,
           userId: user.id,
+          debitedSeconds,
         })
         break
       default:
@@ -259,7 +263,7 @@ async function _getDeepgramToken(
       'Authorization': `Token ${masterKey}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ time_to_live_in_seconds: ttlSeconds }),
+    body: JSON.stringify({ time_to_live_in_seconds: ttlSeconds + SESSION_TTL_BUFFER_SECONDS }),
   })
 
   if (!res.ok) {
@@ -290,7 +294,7 @@ async function _getSonioxKey(
     },
     body: JSON.stringify({
       usage_type: 'transcribe_websocket',
-      expires_in_seconds: ttlSeconds,
+      expires_in_seconds: ttlSeconds + SESSION_TTL_BUFFER_SECONDS,
       client_reference_id: referenceId,
     }),
   })
@@ -320,7 +324,7 @@ async function _getGladiaSession(
   masterKey: string,
   providerMeta: Record<string, string>,
   options: Record<string, unknown>,
-  session: { sessionId: string; userId: string }
+  session: { sessionId: string; userId: string; debitedSeconds: number }
 ): Promise<{ url: string }> {
   const sourceLanguage = options.sourceLanguage as string | undefined
   const targetLanguage = options.targetLanguage as string | undefined
@@ -341,6 +345,7 @@ async function _getGladiaSession(
     model: providerMeta.model ?? 'solaria-1',
     endpointing,
     maximum_duration_without_endpointing: 5,
+    maximum_audio_duration: session.debitedSeconds + SESSION_TTL_BUFFER_SECONDS,
     pre_processing: { speech_threshold: speechThreshold },
     // WebSocket messages config (what the client receives over the WS connection)
     messages_config: {

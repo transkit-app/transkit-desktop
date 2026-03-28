@@ -428,7 +428,10 @@
       "quota_action_upgrade": "Upgrade your plan",
       "quota_action_byok": "Or use your own API key: Settings › {{service}} › {{transcription}}",
       "auth_lock_conflict_title": "Authentication conflict — please try again.",
-      "auth_lock_conflict_hint": "Multiple requests competed for the auth token at the same time. Click Start to retry."
+      "auth_lock_conflict_hint": "Multiple requests competed for the auth token at the same time. Click Start to retry.",
+      "cloud_session_ending_soon": "Ending in 2 min",
+      "cloud_session_last_minute": "Last minute!",
+      "cloud_session_expired": "Session time reached — disconnected"
     },
     "updater": {
       "title": "Check Update",

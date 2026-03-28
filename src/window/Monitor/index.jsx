@@ -205,6 +205,7 @@ export default function Monitor() {
     // Cloud session tracking (used when BYO key is absent)
     const cloudSessionRef = useRef(null); // { id, startTime, remainingSeconds }
     const [cloudCountdown, setCloudCountdown] = useState(null); // seconds remaining
+    const [cloudWarningLevel, setCloudWarningLevel] = useState(null); // null | 'warning' | 'danger'
     const countdownTimerRef = useRef(null);
 
     // ── Backward migration: old context keys → new format ────────────────────
@@ -563,6 +564,7 @@ export default function Monitor() {
             cloudSessionRef.current = null;
             clearInterval(countdownTimerRef.current);
             setCloudCountdown(null);
+            setCloudWarningLevel(null);
             reportUsage(id, durationSeconds); // fire-and-forget
         }
 
@@ -586,6 +588,18 @@ export default function Monitor() {
             }
         }
     }, [finalizeTranscript]);
+
+    // ── Cloud session expiry: warn at 2 min / 1 min, auto-stop at 0 ──────────
+    useEffect(() => {
+        if (cloudCountdown === null) return;
+        if (cloudCountdown === 0) {
+            stop();
+        } else if (cloudCountdown === 120) {
+            setCloudWarningLevel('warning');
+        } else if (cloudCountdown === 60) {
+            setCloudWarningLevel('danger');
+        }
+    }, [cloudCountdown, stop]);
 
     const toggleTTS = useCallback(() => {
         const next = !isTTSEnabled;
@@ -1136,8 +1150,14 @@ export default function Monitor() {
                         </span>
                     )}
                     {!cloudConnecting && cloudCountdown !== null && isRunning && (
-                        <span className={`text-[10px] font-mono ${cloudCountdown <= 60 ? 'text-danger' : 'text-default-400'}`}>
+                        <span className={`text-[10px] font-mono ${
+                            cloudWarningLevel === 'danger'  ? 'text-danger' :
+                            cloudWarningLevel === 'warning' ? 'text-warning' :
+                            'text-default-400'
+                        }`}>
                             · {`${Math.floor(cloudCountdown / 60)}:${String(cloudCountdown % 60).padStart(2, '0')}`}
+                            {cloudWarningLevel === 'warning' && ` · ${t('monitor.cloud_session_ending_soon')}`}
+                            {cloudWarningLevel === 'danger'  && ` · ${t('monitor.cloud_session_last_minute')}`}
                         </span>
                     )}
                     {/* TTS — only when enabled */}
