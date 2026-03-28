@@ -29,7 +29,11 @@ export function Config(props) {
 
     const [config, setConfig] = useConfig(
         instanceKey,
-        { [INSTANCE_NAME_CONFIG_KEY]: t(`${BASE}.title`) },
+        {
+            [INSTANCE_NAME_CONFIG_KEY]: t(`${BASE}.title`),
+            endpointing: 0.3,
+            speechThreshold: 0.3,
+        },
         { sync: false }
     );
 
@@ -183,6 +187,45 @@ export function Config(props) {
                         <p className='text-xs text-default-400'>
                             {t(`${BASE}.auto_provider_note`)}
                         </p>
+
+                        {/* Advanced provider settings */}
+                        <div className='flex flex-col gap-3 pt-1 border-t border-default-100'>
+                            <p className='text-xs text-default-500 font-medium'>{t(`${BASE}.advanced_settings`)}</p>
+
+                            {/* Endpointing */}
+                            <div className='flex flex-col gap-1'>
+                                <p className='text-sm'>{t(`${BASE}.endpointing`)}</p>
+                                <div className='flex items-center gap-3'>
+                                    <input
+                                        type='range' min={0.1} max={3.0} step={0.1}
+                                        value={config.endpointing ?? 0.3}
+                                        onChange={e => setConfig({ ...config, endpointing: parseFloat(e.target.value) })}
+                                        className='flex-1 accent-warning'
+                                    />
+                                    <span className='text-xs text-default-500 w-12 text-right font-mono'>
+                                        {(config.endpointing ?? 0.3).toFixed(1)}s
+                                    </span>
+                                </div>
+                                <p className='text-xs text-default-400'>{t(`${BASE}.endpointing_hint`)}</p>
+                            </div>
+
+                            {/* Speech threshold */}
+                            <div className='flex flex-col gap-1'>
+                                <p className='text-sm'>{t(`${BASE}.speech_threshold`)}</p>
+                                <div className='flex items-center gap-3'>
+                                    <input
+                                        type='range' min={0.1} max={0.9} step={0.05}
+                                        value={config.speechThreshold ?? 0.3}
+                                        onChange={e => setConfig({ ...config, speechThreshold: parseFloat(e.target.value) })}
+                                        className='flex-1 accent-warning'
+                                    />
+                                    <span className='text-xs text-default-500 w-12 text-right font-mono'>
+                                        {(config.speechThreshold ?? 0.3).toFixed(2)}
+                                    </span>
+                                </div>
+                                <p className='text-xs text-default-400'>{t(`${BASE}.speech_threshold_hint`)}</p>
+                            </div>
+                        </div>
                     </div>
                 )}
 

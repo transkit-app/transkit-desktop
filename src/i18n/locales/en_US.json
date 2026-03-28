@@ -855,7 +855,12 @@
           "auto_provider_note": "The active STT provider is configured by Transkit and may change at any time to deliver the best quality. You do not need to manage any API keys.",
           "min_label": "min",
           "loading_usage": "Loading usage data…",
-          "not_available": "Transkit Cloud is not available in this build."
+          "not_available": "Transkit Cloud is not available in this build.",
+          "advanced_settings": "Advanced Settings",
+          "endpointing": "Endpointing",
+          "endpointing_hint": "Silence duration that triggers utterance completion. Lower = faster response, higher = more complete sentences. Applied when the active provider supports it.",
+          "speech_threshold": "Speech Threshold",
+          "speech_threshold_hint": "Minimum confidence to detect speech activity. Higher = fewer false triggers. Applied when the active provider supports it."
         }
       }
     },

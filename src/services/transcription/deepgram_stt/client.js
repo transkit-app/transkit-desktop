@@ -69,6 +69,7 @@ export class DeepgramClient {
             model = 'nova-3',
             endpointing = 100,
             speakerDiarization = true,
+            customContext,
         } = this._config;
 
         // Use accessToken for cloud trial tokens, apiKey for BYOK
@@ -87,6 +88,12 @@ export class DeepgramClient {
             endpointing,
         };
         if (speakerDiarization) options.diarize = true;
+
+        // Custom vocabulary via keyterm (Deepgram Nova-2+)
+        const terms = (customContext?.terms ?? []).filter(t => t?.trim());
+        if (terms.length > 0) {
+            options.keyterm = terms.map(t => t.trim());
+        }
 
         try {
             const socket = await sdk.listen.v1.createConnection(options);

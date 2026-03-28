@@ -379,6 +379,15 @@ async function _getGladiaSession(
     body.language_config = { languages: [sourceLanguage], code_switching: false }
   }
 
+  // Custom vocabulary — top-level, applies regardless of translation
+  const terms = (context?.terms ?? []).filter(
+    (t): t is string => typeof t === 'string' && t.trim() !== ''
+  )
+  if (terms.length > 0) {
+    body.custom_vocabulary = true
+    body.custom_vocabulary_config = { vocabulary: terms.map(t => ({ value: t.trim() })) }
+  }
+
   if (targetLanguage) {
     const translationConfig: Record<string, unknown> = {
       target_languages: [targetLanguage],
@@ -392,15 +401,6 @@ async function _getGladiaSession(
     }
 
     body.realtime_processing = { translation: true, translation_config: translationConfig }
-
-    const terms = (context?.terms ?? []).filter(
-      (t): t is string => typeof t === 'string' && t.trim() !== ''
-    )
-    if (terms.length > 0) {
-      const rp = body.realtime_processing as Record<string, unknown>
-      rp.custom_vocabulary = true
-      rp.custom_vocabulary_config = { vocabulary: terms.map(t => ({ value: t.trim() })) }
-    }
   }
 
   const res = await fetch('https://api.gladia.io/v2/live', {

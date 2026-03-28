@@ -108,6 +108,15 @@ export class GladiaClient {
             };
         }
 
+        // Custom vocabulary — top-level, applies regardless of translation
+        const terms = (customContext?.terms ?? []).filter(t => t?.trim());
+        if (terms.length > 0) {
+            body.custom_vocabulary = true;
+            body.custom_vocabulary_config = {
+                vocabulary: terms.map(t => ({ value: t.trim() })),
+            };
+        }
+
         // Translation
         if (targetLanguage) {
             const translationConfig = {
@@ -127,15 +136,6 @@ export class GladiaClient {
                 translation: true,
                 translation_config: translationConfig,
             };
-
-            // Map custom vocabulary terms
-            const terms = (customContext?.terms ?? []).filter(t => t?.trim());
-            if (terms.length > 0) {
-                body.realtime_processing.custom_vocabulary = true;
-                body.realtime_processing.custom_vocabulary_config = {
-                    vocabulary: terms.map(t => ({ value: t.trim() })),
-                };
-            }
         }
 
         console.log('[Gladia] Init session — endpointing:', resolvedEndpointing, 's | max_duration:', body.maximum_duration_without_endpointing, 's | speech_threshold:', body.pre_processing.speech_threshold);

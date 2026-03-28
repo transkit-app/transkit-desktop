@@ -854,7 +854,12 @@
           "auto_provider_note": "Provider STT đang hoạt động do Transkit cấu hình và có thể thay đổi bất cứ lúc nào để đảm bảo chất lượng tốt nhất. Bạn không cần quản lý API key.",
           "min_label": "phút",
           "loading_usage": "Đang tải dữ liệu sử dụng…",
-          "not_available": "Transkit Cloud không khả dụng trong bản build này."
+          "not_available": "Transkit Cloud không khả dụng trong bản build này.",
+          "advanced_settings": "Cài đặt nâng cao",
+          "endpointing": "Endpointing",
+          "endpointing_hint": "Khoảng lặng tối thiểu để xác nhận kết thúc câu. Thấp hơn = phản hồi nhanh hơn, cao hơn = câu đầy đủ hơn. Áp dụng khi provider hỗ trợ.",
+          "speech_threshold": "Ngưỡng nhận giọng",
+          "speech_threshold_hint": "Độ nhạy tối thiểu để phát hiện giọng nói. Cao hơn = ít false trigger hơn. Áp dụng khi provider hỗ trợ."
         }
       }
     },

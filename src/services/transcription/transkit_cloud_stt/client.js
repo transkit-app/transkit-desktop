@@ -141,8 +141,13 @@ export class TranskitCloudSTTClient {
         switch (result.provider) {
             case 'deepgram':
                 innerClient = new DeepgramClient();
-                // Deepgram: use the temporary token, clear any BYOK key
-                connectConfig = { ...config, token: result.credentials.token, apiKey: '' };
+                // Cloud config stores endpointing in seconds; DeepgramClient expects ms
+                connectConfig = {
+                    ...config,
+                    token: result.credentials.token,
+                    apiKey: '',
+                    endpointing: Math.round((config.endpointing ?? 0.3) * 1000),
+                };
                 break;
 
             case 'soniox':
