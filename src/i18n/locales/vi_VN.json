@@ -787,6 +787,19 @@
         }
       },
       "transcription": {
+        "custom_stt": {
+          "title": "Custom STT Provider",
+          "ws_url": "WebSocket URL",
+          "ws_url_hint": "URL điểm cuối WebSocket (vd: wss://your-provider.com/transcribe)",
+          "api_key": "API Key",
+          "api_key_hint": "Được gửi dưới dạng api_key trong tin nhắn cấu hình kết nối.",
+          "endpoint_delay": "Endpoint delay (ms)",
+          "endpoint_delay_hint": "Thời gian provider chờ thêm âm thanh trước khi xác nhận câu.",
+          "batch_interval": "Chu kỳ gửi audio (ms)",
+          "batch_interval_hint": "Tần suất gửi dữ liệu âm thanh. Thấp hơn = độ trễ thấp hơn, cao hơn = ít cuộc gọi mạng hơn.",
+          "speaker_diarization": "Phân biệt giọng nói",
+          "speaker_diarization_hint": "Nhận dạng và gán nhãn từng người nói. Tắt để giảm độ trễ."
+        },
         "soniox_stt": {
           "title": "Soniox",
           "api_key": "API Key",

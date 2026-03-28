@@ -788,6 +788,19 @@
         }
       },
       "transcription": {
+        "custom_stt": {
+          "title": "Custom STT Provider",
+          "ws_url": "WebSocket URL",
+          "ws_url_hint": "WebSocket endpoint URL (e.g. wss://your-provider.com/transcribe)",
+          "api_key": "API Key",
+          "api_key_hint": "Sent as api_key in the connection config message.",
+          "endpoint_delay": "Endpoint delay (ms)",
+          "endpoint_delay_hint": "How long the provider waits for more audio before finalizing a segment.",
+          "batch_interval": "Audio batch interval (ms)",
+          "batch_interval_hint": "How often audio chunks are sent. Lower = lower latency, higher = fewer network calls.",
+          "speaker_diarization": "Speaker diarization",
+          "speaker_diarization_hint": "Identify and label different speakers. Disable to reduce latency."
+        },
         "soniox_stt": {
           "title": "Soniox",
           "api_key": "API Key",

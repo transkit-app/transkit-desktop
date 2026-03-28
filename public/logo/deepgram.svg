@@ -1,8 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-  <rect width="24" height="24" rx="5" fill="#101014"/>
-  <rect x="4" y="9" width="2.2" height="6" rx="1.1" fill="white"/>
-  <rect x="7.4" y="6" width="2.2" height="12" rx="1.1" fill="white"/>
-  <rect x="10.8" y="4" width="2.2" height="16" rx="1.1" fill="#13EF93"/>
-  <rect x="14.2" y="6" width="2.2" height="12" rx="1.1" fill="white"/>
-  <rect x="17.6" y="9" width="2.2" height="6" rx="1.1" fill="white"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48px" height="48px">
+  <!-- Outer D shape -->
+  <path d="M10 6 L22 6 C35 6 42 13 42 24 C42 35 35 42 22 42 L10 42 Z" fill="#0d0d0d"/>
+  <!-- Inner cutout (white hole of the D) -->
+  <path d="M18 14 L22 14 C30 14 34 18 34 24 C34 30 30 34 22 34 L18 34 Z" fill="white"/>
 </svg>
