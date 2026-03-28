@@ -1,5 +1,20 @@
 # Changelog
 
+## 3.2.2 (2026-03-28)
+
+### Audio Monitor & STT Enhancements:
+- **Custom Vocabulary Support**: Added support for custom vocabulary in **Deepgram** and **Gladia** to improve recognition of specialized terms.
+- **Advanced Controls**: Exposed endpointing and threshold controls for **Transkit Cloud** transcription.
+- **Improved Auto-save UX**: New labels and tooltips for auto-save status; added quick-open actions for saved transcript files and folders.
+
+### UI & Core Fixes:
+- **Source Area Redesign**: Refactored the translation source area with improved focus handling, state recovery, and variable name transformation.
+- **Font & Style Adjustments**: Standardized source text font size to 14px and optimized configuration row spacing.
+- **Stability Fixes**: Normalized boolean configuration values and improved window event synchronization.
+
+### Documentation:
+- **Visual Guides**: Added the "Realtime Audio Monitor" featured row and updated example GIFs in all README files.
+
 ## 3.2.1 (2026-03-27)
 
 ### Transkit Cloud & Account:
