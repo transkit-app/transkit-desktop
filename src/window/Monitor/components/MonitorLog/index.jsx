@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MdMicNone, MdVolumeUp, MdVolumeOff, MdAutoAwesome, MdClose, MdKeyboardArrowDown, MdBookmark, MdBookmarkBorder, MdPlayCircle, MdTune } from 'react-icons/md';
+import { MdMicNone, MdVolumeUp, MdVolumeOff, MdAutoAwesome, MdClose, MdKeyboardArrowDown, MdBookmark, MdBookmarkBorder, MdPlayCircle, MdTune, MdRefresh } from 'react-icons/md';
 import { motion, AnimatePresence } from 'framer-motion';
 import { writeTextFile } from '@tauri-apps/api/fs';
 import { generateAiSuggestion } from '../../../../utils/generateAiSuggestion';
@@ -66,9 +66,140 @@ function Tooltip({ label, children, placement = 'top' }) {
 
 // ── AI Suggestion card ────────────────────────────────────────────────────────
 
-function AiSuggestionCard({ state, onDismiss, fontSize, t }) {
+function AiSuggestionCard({ state, onDismiss, onRegenerate, onFontSizeChange, fontSize, t }) {
+    const [collapsed, setCollapsed] = useState(false);
     if (state.status === 'idle') return null;
     const fs = fontSize ?? 16;
+    const r = state.result;
+    const modes = r?.modes ?? ['suggest_answer'];
+    const isLoading = state.status === 'loading';
+
+    // Sections render in fixed order; each only shows if mode is active AND has content
+    const has = (m) => modes.includes(m);
+
+    const sections = [];
+
+    if (state.status === 'done' && r) {
+        if (has('suggest_answer') && r.research) {
+            sections.push(
+                <div key='research' className='px-4 py-3 border-b border-secondary/10'>
+                    <p className='text-[10px] font-bold text-secondary/70 uppercase tracking-widest mb-2'>
+                        📖 {t('monitor.ai_suggestion_research')}
+                    </p>
+                    <p className='text-default-700 dark:text-default-300 leading-relaxed whitespace-pre-wrap' style={{ fontSize: fs }}>
+                        {r.research}
+                        {r.research_t && <span className='block text-default-400 mt-0.5 whitespace-pre-wrap' style={{ fontSize: fs - 1 }}>{r.research_t}</span>}
+                    </p>
+                </div>
+            );
+        }
+
+        if (has('suggest_answer') && (r.suggestedAnswerSource || r.suggestedAnswerTarget)) {
+            const rl = r.responseLang ?? 'both';
+            const showSource = (rl === 'source' || rl === 'both') && r.suggestedAnswerSource;
+            const showTarget = rl === 'target' && r.suggestedAnswerTarget;
+            sections.push(
+                <div key='answer' className='px-4 py-3 border-b border-secondary/10'>
+                    <p className='text-[10px] font-bold text-secondary/70 uppercase tracking-widest mb-2'>
+                        💬 {t('monitor.ai_suggestion_answer')}
+                    </p>
+                    {showSource && (
+                        <p className='text-default-700 dark:text-default-300 leading-relaxed whitespace-pre-wrap pl-3 border-l-2 border-secondary/40' style={{ fontSize: fs }}>
+                            {r.suggestedAnswerSource}
+                            {rl === 'both' && r.suggestedAnswerTarget && (
+                                <span className='block text-default-400 mt-0.5' style={{ fontSize: fs - 1 }}>{r.suggestedAnswerTarget}</span>
+                            )}
+                        </p>
+                    )}
+                    {showTarget && (
+                        <p className='text-default-700 dark:text-default-300 leading-relaxed whitespace-pre-wrap pl-3 border-l-2 border-primary/40' style={{ fontSize: fs }}>
+                            {r.suggestedAnswerTarget}
+                        </p>
+                    )}
+                </div>
+            );
+        }
+
+        if (has('quick_insight') && (r.key_point || r.suggested_next_step)) {
+            sections.push(
+                <div key='insight' className='px-4 py-3 flex flex-col gap-3 border-b border-secondary/10'>
+                    {r.key_point && (
+                        <div>
+                            <p className='text-[10px] font-bold text-secondary/70 uppercase tracking-widest mb-1.5'>
+                                💡 {t('monitor.ci_key_point')}
+                            </p>
+                            <p className='text-default-700 dark:text-default-300 leading-relaxed' style={{ fontSize: fs }}>
+                                {r.key_point}
+                                {r.key_point_t && <span className='block text-default-400 mt-0.5' style={{ fontSize: fs - 1 }}>{r.key_point_t}</span>}
+                            </p>
+                        </div>
+                    )}
+                    {r.suggested_next_step && (
+                        <div>
+                            <p className='text-[10px] font-bold text-secondary/70 uppercase tracking-widest mb-1.5'>
+                                → {t('monitor.ci_next_step')}
+                            </p>
+                            <p className='text-default-700 dark:text-default-300 leading-relaxed' style={{ fontSize: fs }}>
+                                {r.suggested_next_step}
+                                {r.suggested_next_step_t && <span className='block text-default-400 mt-0.5' style={{ fontSize: fs - 1 }}>{r.suggested_next_step_t}</span>}
+                            </p>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        if (has('summarize') && r.bullet_points?.length > 0) {
+            sections.push(
+                <div key='summary' className='px-4 py-3 border-b border-secondary/10'>
+                    <p className='text-[10px] font-bold text-secondary/70 uppercase tracking-widest mb-2'>
+                        📋 {t('monitor.ci_summary_points')}
+                    </p>
+                    <ul className='flex flex-col gap-1.5'>
+                        {r.bullet_points.map((pt, i) => (
+                            <li key={i} className='flex gap-2 text-default-700 dark:text-default-300 leading-relaxed' style={{ fontSize: fs }}>
+                                <span className='text-secondary/50 flex-shrink-0 mt-0.5'>·</span>
+                                <span>
+                                    {pt}
+                                    {r.bullet_points_t?.[i] && <span className='block text-default-400' style={{ fontSize: fs - 1 }}>{r.bullet_points_t[i]}</span>}
+                                </span>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            );
+        }
+
+        if (has('follow_up') && r.questions?.length > 0) {
+            sections.push(
+                <div key='followup' className='px-4 py-3 border-b border-secondary/10'>
+                    <p className='text-[10px] font-bold text-secondary/70 uppercase tracking-widest mb-2'>
+                        ❓ {t('monitor.ci_questions')}
+                    </p>
+                    <ul className='flex flex-col gap-1.5'>
+                        {r.questions.map((q, i) => (
+                            <li key={i} className='flex gap-2 text-default-700 dark:text-default-300 leading-relaxed' style={{ fontSize: fs }}>
+                                <span className='text-secondary/50 flex-shrink-0 font-semibold'>{i + 1}.</span>
+                                <span>
+                                    {q}
+                                    {r.questions_t?.[i] && <span className='block text-default-400' style={{ fontSize: fs - 1 }}>{r.questions_t[i]}</span>}
+                                </span>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            );
+        }
+    }
+
+    // Strip trailing border from last section
+    const renderedSections = sections.map((s, i) =>
+        i === sections.length - 1
+            ? React.cloneElement(s, { className: s.props.className.replace(' border-b border-secondary/10', '') })
+            : s
+    );
+
+    const btnCls = 'text-default-400 hover:text-default-600 transition-colors p-0.5 rounded disabled:opacity-40 disabled:cursor-not-allowed';
 
     return (
         <motion.div
@@ -79,83 +210,66 @@ function AiSuggestionCard({ state, onDismiss, fontSize, t }) {
             className='mt-2 ml-2 rounded-xl border border-secondary/30 overflow-hidden'
             style={{ background: 'rgba(120, 80, 220, 0.06)' }}
         >
-            {/* Header */}
-            <div className='flex items-center justify-between px-3 py-2 border-b border-secondary/20'
-                style={{ background: 'rgba(120, 80, 220, 0.10)' }}>
+            {/* Header — click to collapse/expand */}
+            <div
+                className='flex items-center justify-between px-3 py-2 border-b border-secondary/20 cursor-pointer select-none'
+                style={{ background: 'rgba(120, 80, 220, 0.10)' }}
+                onClick={() => setCollapsed(c => !c)}
+            >
                 <div className='flex items-center gap-1.5'>
-                    <MdAutoAwesome className='text-secondary text-[14px]' />
+                    <MdAutoAwesome className='text-secondary text-[14px] flex-shrink-0' />
                     <span className='text-[11px] font-bold text-secondary uppercase tracking-widest'>AI Suggestion</span>
                 </div>
-                <Tooltip label={t('monitor.ai_suggestion_dismiss')}>
-                    <button onClick={onDismiss} className='text-default-400 hover:text-default-600 transition-colors p-0.5 rounded'>
-                        <MdClose className='text-[14px]' />
-                    </button>
-                </Tooltip>
+                <div className='flex items-center gap-0.5' onClick={e => e.stopPropagation()}>
+                    <Tooltip label='A−'>
+                        <button className={btnCls} onClick={() => onFontSizeChange?.(Math.max(10, fs - 1))}>
+                            <span className='text-[10px] font-bold leading-none'>A−</span>
+                        </button>
+                    </Tooltip>
+                    <Tooltip label='A+'>
+                        <button className={btnCls} onClick={() => onFontSizeChange?.(Math.min(28, fs + 1))}>
+                            <span className='text-[11px] font-bold leading-none'>A+</span>
+                        </button>
+                    </Tooltip>
+                    <Tooltip label={t('monitor.ai_suggestion_regenerate')}>
+                        <button className={btnCls} onClick={() => onRegenerate?.()} disabled={isLoading}>
+                            <MdRefresh className={`text-[14px] ${isLoading ? 'animate-spin' : ''}`} />
+                        </button>
+                    </Tooltip>
+                    <Tooltip label={t('monitor.ai_suggestion_dismiss')}>
+                        <button className={btnCls} onClick={onDismiss}>
+                            <MdClose className='text-[14px]' />
+                        </button>
+                    </Tooltip>
+                    <MdKeyboardArrowDown
+                        className='text-default-400 text-[14px] ml-0.5 transition-transform'
+                        style={{ transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}
+                    />
+                </div>
             </div>
 
-            {/* Loading */}
-            {state.status === 'loading' && (
-                <div className='flex items-center gap-2 px-4 py-4'>
-                    <MdAutoAwesome className='text-secondary text-[16px] animate-spin' />
-                    <span style={{ fontSize: fs - 2 }} className='text-default-500'>{t('monitor.ai_suggestion_loading')}</span>
-                </div>
-            )}
-
-            {/* Error */}
-            {state.status === 'error' && (
-                <div className='px-4 py-3'>
-                    <p style={{ fontSize: fs - 2 }} className='text-danger'>{state.error || t('monitor.ai_suggestion_error')}</p>
-                </div>
-            )}
-
-            {/* Result */}
-            {state.status === 'done' && state.result && (
-                <div className='flex flex-col'>
-                    {state.result.research && (
-                        <div className='px-4 py-3 border-b border-secondary/10'>
-                            <p className='text-[10px] font-bold text-secondary/70 uppercase tracking-widest mb-2'>
-                                📖 {t('monitor.ai_suggestion_research')}
-                            </p>
-                            <p className='text-default-700 dark:text-default-300 leading-relaxed whitespace-pre-wrap' style={{ fontSize: fs }}>
-                                {state.result.research}
-                            </p>
+            {!collapsed && (
+                <>
+                    {/* Loading */}
+                    {isLoading && (
+                        <div className='flex items-center gap-2 px-4 py-4'>
+                            <MdAutoAwesome className='text-secondary text-[16px] animate-spin' />
+                            <span style={{ fontSize: fs - 2 }} className='text-default-500'>{t('monitor.ai_suggestion_loading')}</span>
                         </div>
                     )}
-                    {(state.result.suggestedAnswerSource || state.result.suggestedAnswerTarget) && (
+
+                    {/* Error */}
+                    {state.status === 'error' && (
                         <div className='px-4 py-3'>
-                            <p className='text-[10px] font-bold text-secondary/70 uppercase tracking-widest mb-3'>
-                                💬 {t('monitor.ai_suggestion_answer')}
-                            </p>
-                            <div className='flex flex-col gap-4'>
-                                {state.result.suggestedAnswerSource && (
-                                    <div className='flex flex-col gap-1.5'>
-                                        <span className='text-[9px] font-semibold text-default-400 uppercase tracking-wider'>
-                                            {t('monitor.ai_suggestion_source_lang')}
-                                        </span>
-                                        <p className='text-default-700 dark:text-default-300 leading-relaxed whitespace-pre-wrap pl-3 border-l-2 border-secondary/40'
-                                            style={{ fontSize: fs }}>
-                                            {state.result.suggestedAnswerSource}
-                                        </p>
-                                    </div>
-                                )}
-                                {state.result.suggestedAnswerSource && state.result.suggestedAnswerTarget && (
-                                    <div className='border-t border-secondary/10' />
-                                )}
-                                {state.result.suggestedAnswerTarget && (
-                                    <div className='flex flex-col gap-1.5'>
-                                        <span className='text-[9px] font-semibold text-default-400 uppercase tracking-wider'>
-                                            {t('monitor.ai_suggestion_target_lang')}
-                                        </span>
-                                        <p className='text-default-700 dark:text-default-300 leading-relaxed whitespace-pre-wrap pl-3 border-l-2 border-primary/40'
-                                            style={{ fontSize: fs }}>
-                                            {state.result.suggestedAnswerTarget}
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
+                            <p style={{ fontSize: fs - 2 }} className='text-danger'>{state.error || t('monitor.ai_suggestion_error')}</p>
                         </div>
                     )}
-                </div>
+
+                    {/* Result sections (may show stale result while reloading) */}
+                    {(state.status === 'done' || (isLoading && r)) && renderedSections.length > 0 && (
+                        <div className={`flex flex-col ${isLoading ? 'opacity-50' : ''}`}>{renderedSections}</div>
+                    )}
+                </>
             )}
         </motion.div>
     );
@@ -347,6 +461,7 @@ export default function MonitorLog({
     aiSuggestionContextLines = 10,
     aiSuggestionResponseLang = 'both',
     aiSuggestionFontSize = 16,
+    aiSuggestionModes = ['suggest_answer'],
     userProfile = {},
     sourceLang = 'auto',
     targetLang = 'vi',
@@ -359,6 +474,7 @@ export default function MonitorLog({
     onSetTtsService,
     ttsServiceList = [],
     isTTSEnabled = false,
+    onSetAiSuggestionFontSize,
 }) {
     const { t } = useTranslation();
     const scrollRef = useRef(null);
@@ -429,7 +545,7 @@ export default function MonitorLog({
     }, []);
 
     // ── AI Suggestion ─────────────────────────────────────────────────────────
-    const handleAiSuggest = useCallback(async (entry) => {
+    const handleAiSuggest = useCallback(async (entry, regen = false) => {
         if (!aiSuggestionService) return;
 
         // Lock viewport at current position — prevent auto-scroll to latest
@@ -439,7 +555,10 @@ export default function MonitorLog({
         // Auto-bookmark the entry when requesting a suggestion
         setBookmarks(prev => new Set([...prev, entry.id]));
 
-        setSuggestions(prev => ({ ...prev, [entry.id]: { status: 'loading', result: null, error: null } }));
+        setSuggestions(prev => ({
+            ...prev,
+            [entry.id]: { status: 'loading', result: regen ? (prev[entry.id]?.result ?? null) : null, error: null },
+        }));
 
         const entryIdx = entries.findIndex(e => e.id === entry.id);
         const contextEntries = entries
@@ -450,20 +569,25 @@ export default function MonitorLog({
             const result = await generateAiSuggestion({
                 entry, contextEntries, userProfile,
                 aiServiceKey: aiSuggestionService,
+                modes: aiSuggestionModes,
                 responseLang: aiSuggestionResponseLang,
                 sourceLang, targetLang,
             });
 
             setSuggestions(prev => ({ ...prev, [entry.id]: { status: 'done', result, error: null } }));
 
-            if (transcriptFileRef?.current && (result.research || result.suggestedAnswerSource || result.suggestedAnswerTarget)) {
+            if (transcriptFileRef?.current) {
                 const lines = [
                     `\n\n> ✨ **AI Suggestion** for: "${entry.translation}"`,
                     result.research ? `> 📖 Research: ${result.research}` : null,
                     result.suggestedAnswerSource ? `> 💬 [Source] ${result.suggestedAnswerSource}` : null,
                     result.suggestedAnswerTarget ? `> 💬 [Target] ${result.suggestedAnswerTarget}` : null,
+                    result.key_point ? `> 💡 Key point: ${result.key_point}` : null,
+                    result.suggested_next_step ? `> → Next step: ${result.suggested_next_step}` : null,
+                    ...(result.bullet_points ?? []).map(pt => `> · ${pt}`),
+                    ...(result.questions ?? []).map((q, i) => `> ${i + 1}. ${q}`),
                 ].filter(Boolean).join('\n');
-                writeTextFile(transcriptFileRef.current, lines, { append: true }).catch(() => {});
+                if (lines.trim()) writeTextFile(transcriptFileRef.current, lines, { append: true }).catch(() => {});
             }
         } catch (err) {
             const msg = err.message === 'no_service'
@@ -472,7 +596,7 @@ export default function MonitorLog({
             setSuggestions(prev => ({ ...prev, [entry.id]: { status: 'error', result: null, error: msg } }));
         }
     }, [entries, aiSuggestionService, aiSuggestionContextLines, aiSuggestionResponseLang,
-        userProfile, sourceLang, targetLang, transcriptFileRef, t]);
+        aiSuggestionModes, userProfile, sourceLang, targetLang, transcriptFileRef, t]);
 
     const dismissSuggestion = useCallback((entryId) => {
         setSuggestions(prev => { const n = { ...prev }; delete n[entryId]; return n; });
@@ -733,11 +857,14 @@ export default function MonitorLog({
                                             <AiSuggestionCard
                                                 state={suggestion}
                                                 onDismiss={() => dismissSuggestion(entry.id)}
+                                                onRegenerate={() => handleAiSuggest(entry, true)}
+                                                onFontSizeChange={onSetAiSuggestionFontSize}
                                                 fontSize={aiSuggestionFontSize}
                                                 t={t}
                                             />
                                         )}
                                     </AnimatePresence>
+
                                 </motion.div>
                             );
                         })}

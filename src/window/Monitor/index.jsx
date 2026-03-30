@@ -16,6 +16,7 @@ import { getServiceName } from '../../utils/service_instance';
 import MonitorToolbar from './components/MonitorToolbar';
 import MonitorLog from './components/MonitorLog';
 import ContextPanel from './components/ContextPanel';
+import AIPanel from './components/AIPanel';
 import * as transcriptionServices from '../../services/transcription';
 import { getTTSQueue } from './tts';
 import { reportUsage, CLOUD_ENABLED } from '../../lib/transkit-cloud';
@@ -149,10 +150,12 @@ export default function Monitor() {
     const [aiServiceList] = useConfig('ai_service_list', []);
 
     // AI Suggestion config
-    const [aiSuggestionService] = useConfig('monitor_ai_suggestion_service', '');
-    const [aiSuggestionContextLines] = useConfig('monitor_ai_suggestion_context_lines', 10);
-    const [aiSuggestionResponseLang] = useConfig('monitor_ai_suggestion_response_lang', 'both');
-    const [aiSuggestionFontSize] = useConfig('monitor_ai_suggestion_font_size', 16);
+    const [aiSuggestionService, setAiSuggestionService] = useConfig('monitor_ai_suggestion_service', '');
+    const [aiSuggestionContextLines, setAiSuggestionContextLines] = useConfig('monitor_ai_suggestion_context_lines', 10);
+    const [aiSuggestionResponseLang, setAiSuggestionResponseLang] = useConfig('monitor_ai_suggestion_response_lang', 'both');
+    const [aiSuggestionFontSize, setAiSuggestionFontSize] = useConfig('monitor_ai_suggestion_font_size', 16);
+    const [aiSuggestionModes, setAiSuggestionModes] = useConfig('monitor_ai_suggestion_modes', ['suggest_answer']);
+    const [showAIPanel, setShowAIPanel] = useState(false);
 
     // User profile (for AI suggestion context)
     const [userProfile] = useConfig('user_profile', {});
@@ -627,6 +630,8 @@ export default function Monitor() {
         setShowContextPanel(prev => !prev);
     }, []);
 
+    const toggleAIPanel = useCallback(() => setShowAIPanel(v => !v), []);
+
     const openAudioConfig = useCallback(() => {
         invoke('open_config_window');
     }, []);
@@ -997,6 +1002,8 @@ export default function Monitor() {
                 onToggleContextPanel={toggleContextPanel}
                 sortOrder={sortOrder}
                 onToggleSortOrder={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                showAIPanel={showAIPanel}
+                onToggleAIPanel={toggleAIPanel}
             />
 
             {/* Context panel — absolute overlay, does not affect window size */}
@@ -1020,6 +1027,31 @@ export default function Monitor() {
                         />
                     </div>
                 </div>
+            )}
+
+            {/* AI Panel overlay */}
+            {showAIPanel && !isSubMode && (
+                <>
+                    {/* Backdrop — click outside to close */}
+                    <div className='absolute inset-0 z-40' onClick={() => setShowAIPanel(false)} />
+                    <div className='absolute left-2 right-2 z-50 overflow-y-auto rounded-lg border border-content3/40 shadow-xl'
+                        style={{ top: '72px', maxHeight: 'calc(100% - 72px)', background: 'hsl(var(--nextui-content2))' }}
+                    >
+                    <div className='p-3'>
+                        <AIPanel
+                            aiSuggestionModes={aiSuggestionModes}
+                            aiSuggestionContextLines={aiSuggestionContextLines}
+                            aiSuggestionResponseLang={aiSuggestionResponseLang}
+                            aiServiceKey={aiSuggestionService || (aiServiceList?.[0] ?? '')}
+                            aiServiceList={aiServiceList ?? []}
+                            onSetAiService={setAiSuggestionService}
+                            onSetModes={setAiSuggestionModes}
+                            onSetContextLines={setAiSuggestionContextLines}
+                            onSetResponseLang={setAiSuggestionResponseLang}
+                        />
+                    </div>
+                </div>
+                </>
             )}
 
             {/* Saved notification */}
@@ -1118,6 +1150,7 @@ export default function Monitor() {
                 aiSuggestionContextLines={aiSuggestionContextLines ?? 10}
                 aiSuggestionResponseLang={aiSuggestionResponseLang ?? 'both'}
                 aiSuggestionFontSize={aiSuggestionFontSize ?? 16}
+                onSetAiSuggestionFontSize={setAiSuggestionFontSize}
                 userProfile={userProfile ?? {}}
                 sourceLang={sourceLang ?? 'auto'}
                 targetLang={targetLang ?? 'vi'}
@@ -1131,6 +1164,7 @@ export default function Monitor() {
                 onSetTtsService={setActiveTtsService}
                 ttsServiceList={ttsServiceList ?? []}
                 isTTSEnabled={isTTSEnabled}
+                aiSuggestionModes={aiSuggestionModes}
             />
 
             {/* ── Bottom status bar ────────────────────────────────────────── */}

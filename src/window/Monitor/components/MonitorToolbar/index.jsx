@@ -1,5 +1,5 @@
 import { Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Tooltip } from '@nextui-org/react';
-import { MdMic, MdSpeaker, MdPlayArrow, MdStop, MdSubtitles, MdDeleteOutline, MdVolumeUp, MdVolumeOff, MdTune, MdTextFields, MdBlurOn, MdVerticalAlignBottom, MdVerticalAlignTop } from 'react-icons/md';
+import { MdMic, MdSpeaker, MdPlayArrow, MdStop, MdSubtitles, MdDeleteOutline, MdVolumeUp, MdVolumeOff, MdTune, MdTextFields, MdBlurOn, MdVerticalAlignBottom, MdVerticalAlignTop, MdAutoAwesome } from 'react-icons/md';
 import { HiSwitchHorizontal } from 'react-icons/hi';
 import { useTranslation } from 'react-i18next';
 import React from 'react';
@@ -54,6 +54,8 @@ export default function MonitorToolbar({
     onToggleContextPanel,
     sortOrder = 'asc',
     onToggleSortOrder,
+    showAIPanel,
+    onToggleAIPanel,
 }) {
     const { t } = useTranslation();
     const opacity = bgOpacity ?? 100;
@@ -215,6 +217,19 @@ export default function MonitorToolbar({
                     onPress={onToggleContextPanel}
                 >
                     <MdTune className='text-[14px]' />
+                </Button>
+            </Tooltip>
+
+            {/* AI Panel toggle */}
+            <Tooltip content={t('monitor.ai_panel')} size='sm' placement='bottom'>
+                <Button
+                    isIconOnly size='sm'
+                    variant={showAIPanel ? 'solid' : 'light'}
+                    color={showAIPanel ? 'primary' : 'default'}
+                    className='h-7 w-7 min-w-0'
+                    onPress={onToggleAIPanel}
+                >
+                    <MdAutoAwesome className='text-[14px]' />
                 </Button>
             </Tooltip>
 
