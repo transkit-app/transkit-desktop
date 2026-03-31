@@ -464,8 +464,11 @@
       "narration_test_failed": "Failed",
       "narration_test": "Test",
       "narration_checklist_item1": "① Zoom mic → {{device}}",
-      "narration_checklist_item2": "② Mute your real mic in Zoom (participants hear BlackHole, not your real mic)",
-      "narration_checklist_item3": "③ Press & hold \"Hold to Speak\" to narrate"
+      "narration_checklist_item2": "② Mute your real mic in Zoom (participants hear {{device}}, not your real mic)",
+      "narration_checklist_item3": "③ Press & hold \"Hold to Speak\" to narrate",
+      "narration_win_install_hint": "Install VB-Cable (free) to use narration:",
+      "narration_win_install_link": "Download VB-Cable →",
+      "narration_win_zoom_hint": "After install & reboot, select \"CABLE Output\" as mic in Zoom/Teams."
     },
     "updater": {
       "title": "Check Update",

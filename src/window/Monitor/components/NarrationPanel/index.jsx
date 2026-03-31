@@ -4,8 +4,10 @@ import { Select, SelectItem, Switch } from '@nextui-org/react';
 import { useTranslation } from 'react-i18next';
 import { open as openShell } from '@tauri-apps/api/shell';
 import { MdGraphicEq } from 'react-icons/md';
+import { osType } from '../../../../utils/env';
 
-const BLACKHOLE_URL = 'https://github.com/ExistentialAudio/BlackHole/releases';
+const BLACKHOLE_URL  = 'https://github.com/ExistentialAudio/BlackHole/releases';
+const VBCABLE_URL    = 'https://vb-audio.com/Cable/';
 
 export default function NarrationPanel({
     isNarrationActive,
@@ -33,8 +35,9 @@ export default function NarrationPanel({
     }, []);
 
     const displayDevices = showAllDevices ? allDevices : virtualDevices;
-    const hasVirtual     = virtualDevices.length > 0;
-    const isMac          = navigator.userAgent.includes('Mac');
+    const hasVirtual  = virtualDevices.length > 0;
+    const isMac       = osType === 'Darwin';
+    const isWindows   = osType === 'Windows_NT';
 
     async function handleSetDevice(name) {
         if (!name) return;
@@ -222,7 +225,7 @@ export default function NarrationPanel({
                 <p className='text-[10px] text-danger/80'>{error}</p>
             )}
 
-            {/* Install hint — macOS only when no virtual device found */}
+            {/* Install hint — macOS: BlackHole */}
             {!hasVirtual && isMac && (
                 <div className='rounded-lg bg-content3/30 p-2 space-y-1'>
                     <p className='text-[11px] text-default-500'>
@@ -244,6 +247,28 @@ export default function NarrationPanel({
                 </div>
             )}
 
+            {/* Install hint — Windows: VB-Cable */}
+            {!hasVirtual && isWindows && (
+                <div className='rounded-lg bg-content3/30 p-2 space-y-1'>
+                    <p className='text-[11px] text-default-500'>
+                        {t('monitor.narration_win_install_hint', {
+                            defaultValue: 'Install VB-Cable (free) to use narration:',
+                        })}
+                    </p>
+                    <button
+                        className='text-[11px] text-primary underline'
+                        onClick={() => openShell(VBCABLE_URL)}
+                    >
+                        {t('monitor.narration_win_install_link', { defaultValue: 'Download VB-Cable →' })}
+                    </button>
+                    <p className='text-[10px] text-default-400'>
+                        {t('monitor.narration_win_zoom_hint', {
+                            defaultValue: 'After install & reboot, select "CABLE Output" as mic in Zoom/Teams.',
+                        })}
+                    </p>
+                </div>
+            )}
+
             {/* Zoom setup checklist */}
             {narrationDeviceName && (
                 <div className='rounded-lg bg-content3/20 border border-content3/30 p-2 space-y-1'>
@@ -258,7 +283,8 @@ export default function NarrationPanel({
                     </p>
                     <p className='text-[10px] text-default-400'>
                         {t('monitor.narration_checklist_item2', {
-                            defaultValue: '② Mute your real mic in Zoom (participants hear BlackHole, not your real mic)',
+                            defaultValue: '② Mute your real mic in Zoom (participants hear {{device}}, not your real mic)',
+                            device: narrationDeviceName,
                         })}
                     </p>
                     <p className='text-[10px] text-default-400'>

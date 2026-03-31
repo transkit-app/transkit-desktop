@@ -31,6 +31,16 @@ const KNOWN_VIRTUAL_DEVICES: &[&str] = &[
     "VB-Cable",
 ];
 
+/// Known virtual audio device names to auto-detect (Windows)
+#[cfg(target_os = "windows")]
+const KNOWN_VIRTUAL_DEVICES: &[&str] = &[
+    "CABLE Input",          // VB-Cable (primary recommendation)
+    "VB-Audio",             // any VB-Audio product
+    "VoiceMeeter",          // Voicemeeter VAIO variants
+    "Virtual Audio Cable",  // VAC (paid)
+    "Synchronous Audio Router", // SAR (open source)
+];
+
 /// Name used when auto-creating the virtual sink on Linux
 #[cfg(target_os = "linux")]
 pub const LINUX_SINK_NAME: &str = "TranskitNarration";
@@ -75,6 +85,16 @@ pub fn detect_virtual_devices() -> Vec<String> {
         })
         .collect();
 
+    #[cfg(target_os = "windows")]
+    return all
+        .into_iter()
+        .filter(|name| {
+            KNOWN_VIRTUAL_DEVICES
+                .iter()
+                .any(|k| name.to_lowercase().contains(&k.to_lowercase()))
+        })
+        .collect();
+
     #[cfg(target_os = "linux")]
     return all
         .into_iter()
@@ -85,7 +105,7 @@ pub fn detect_virtual_devices() -> Vec<String> {
         })
         .collect();
 
-    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+    #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
     vec![]
 }
 

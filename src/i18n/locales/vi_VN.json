@@ -463,8 +463,11 @@
       "narration_test_failed": "Thất bại",
       "narration_test": "Test",
       "narration_checklist_item1": "① Mic Zoom → {{device}}",
-      "narration_checklist_item2": "② Tắt tiếng mic thật trong Zoom (người nghe sẽ nghe BlackHole, không phải mic thật)",
-      "narration_checklist_item3": "③ Nhấn giữ \"Hold to Speak\" để tường thuật"
+      "narration_checklist_item2": "② Tắt tiếng mic thật trong Zoom (người nghe sẽ nghe {{device}}, không phải mic thật)",
+      "narration_checklist_item3": "③ Nhấn giữ \"Hold to Speak\" để tường thuật",
+      "narration_win_install_hint": "Cài VB-Cable (miễn phí) để dùng tính năng tường thuật:",
+      "narration_win_install_link": "Tải VB-Cable →",
+      "narration_win_zoom_hint": "Sau khi cài và khởi động lại, chọn \"CABLE Output\" làm mic trong Zoom/Teams."
     },
     "updater": {
       "title": "Kiểm tra cập nhật",
