@@ -1,5 +1,29 @@
 # Changelog
 
+## 3.2.3 (2026-03-31)
+
+### Narration & Audio Routing:
+- **Narration Mode (PTT) — Now supporting macOS & Windows**: Integrated Push-To-Talk support for virtual microphone output—perfect for translating and narrating directly into Zoom, Google Meet, Teams, etc.
+- **Virtual Audio Setup**: Step-by-step guide and test tone generator for routing audio via virtual drivers (e.g., BlackHole on macOS, VB-Audio on Windows).
+- **Virtual Mic Checklist**: New guides for routing conference mic to Transkit's virtual output.
+
+### AI Assistant & Context Insights:
+- **Expanded AI Assistant Panel**: Added a dedicated sidebar for real-time analysis with **Smart Context Insights**:
+  - **Modes**: Suggest Answer, Quick Insight, Summarize, and Follow-up.
+  - **Analysis**: Automatic extraction of **Key Points**, **Next Steps**, and **Questions to Ask** from conversations.
+- **Improved AI Regeneration**: Support for regenerating suggestions on the fly.
+- **Language Flexible AI**: AI can now reply in both languages (Source/Target) for better cross-cultural understanding.
+
+### Source Area & Dev Productivity:
+- **Redesigned Source Area**: Refactored the core translation input component for improved performance, synchronous state recovery, and smarter focus handling.
+- **Variable Name Transformer**: New shortcut (**Alt+Shift+U**) to instantly toggle selected text between `snake_case`, `kebab-case`, `camelCase`, `PascalCase`, and more.
+- **Custom STT Provider**: Support for arbitrary WebSocket-based transcription services with custom connection parameters (WS URL, API Key, Delay).
+
+### Visual & Stability Polish:
+- **GIF Demonstrations**: Updated READMEs with high-quality animated guides for Clipboard Listening, Screenshot OCR, and Translation.
+- **Improved Auto-save UX**: Added "Open saved file" and "Open transcripts folder" actions trực tiếp từ Monitor toolbar.
+- **Cloud Infrastructure**: Deployed stable `get-cloud-credentials` edge functions for seamless Transkit Cloud session management.
+
 ## 3.2.2 (2026-03-28)
 
 ### Audio Monitor & STT Enhancements:
