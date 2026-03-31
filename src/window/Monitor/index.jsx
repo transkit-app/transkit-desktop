@@ -3,11 +3,12 @@ import { listen } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/tauri';
 import { documentDir, join } from '@tauri-apps/api/path';
 import { open as openPath } from '@tauri-apps/api/shell';
+import { save as saveDialog } from '@tauri-apps/api/dialog';
 import { writeTextFile, createDir, exists } from '@tauri-apps/api/fs';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@nextui-org/react';
 import { BsPinFill } from 'react-icons/bs';
-import { MdOpenInFull, MdBlurOn, MdVolumeUp, MdVolumeOff, MdSettings, MdSave, MdSaveAlt, MdFolderOpen, MdClose, MdRemove, MdMic } from 'react-icons/md';
+import { MdOpenInFull, MdBlurOn, MdVolumeUp, MdVolumeOff, MdSettings, MdSave, MdSaveAlt, MdFolderOpen, MdDownload, MdClose, MdRemove, MdMic } from 'react-icons/md';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useConfig } from '../../hooks';
 import { osType } from '../../utils/env';
@@ -955,6 +956,21 @@ export default function Monitor() {
         setProvisional('');
     }, [isRunning, autosaveEnabled, t]);
 
+    const handleExport = useCallback(async () => {
+        if (entries.length === 0) return;
+        const header = `# Transcript\n\n**Exported:** ${new Date().toLocaleString()}\n\n---\n\n`;
+        const content = header + entries.map(formatEntryMarkdown).join('\n\n');
+        const now = new Date();
+        const ts = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}`;
+        const filePath = await saveDialog({
+            defaultPath: `transcript_${ts}.md`,
+            filters: [{ name: 'Markdown', extensions: ['md'] }],
+        });
+        if (!filePath) return;
+        await writeTextFile(filePath, content);
+        setSavedNotification({ path: filePath });
+    }, [entries]);
+
     const toggleOriginal = useCallback(() => setShowOriginal(!(showOriginal ?? true)), [showOriginal, setShowOriginal]);
     const toggleOriginalSub = useCallback(() => setShowOriginalSub(!(showOriginalSub ?? false)), [showOriginalSub, setShowOriginalSub]);
 
@@ -1253,6 +1269,17 @@ export default function Monitor() {
 
                 {/* Right: auto-save toggle + Config + Pin + Close */}
                 <div className='flex items-center gap-0.5'>
+                    <Button
+                        isIconOnly
+                        size='sm'
+                        variant='light'
+                        className='h-[26px] w-[26px] min-w-0 bg-transparent'
+                        onPress={handleExport}
+                        isDisabled={entries.length === 0}
+                        title={t('monitor.export_snapshot')}
+                    >
+                        <MdDownload className='text-[16px] text-default-400' />
+                    </Button>
                     <Button
                         isIconOnly
                         size='sm'

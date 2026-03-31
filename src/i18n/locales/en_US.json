@@ -408,6 +408,7 @@
       "autosave_disabled_warning": "Auto-save: OFF",
       "autosave_open_file": "Open saved file",
       "autosave_open_folder": "Open transcripts folder",
+      "export_snapshot": "Export transcript",
       "ai_suggestion_hint": "Get AI suggestion for this line",
       "ai_suggestion_dismiss": "Dismiss AI suggestion",
       "ai_suggestion_regenerate": "Regenerate suggestion",

@@ -407,6 +407,7 @@
       "autosave_disabled_warning": "Tự động lưu: TẮT",
       "autosave_open_file": "Mở file đã lưu",
       "autosave_open_folder": "Mở thư mục bản ghi",
+      "export_snapshot": "Xuất bản ghi",
       "ai_suggestion_hint": "Gợi ý AI cho dòng này",
       "ai_suggestion_dismiss": "Đóng gợi ý AI",
       "ai_suggestion_regenerate": "Tạo lại gợi ý",
