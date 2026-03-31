@@ -503,6 +503,8 @@ export class TTSQueue {
         // We need a temporary AudioContext just for decoding
         const ctx = new AudioContext();
         try {
+            // WKWebView may create AudioContext in 'suspended' state — must resume before decoding.
+            if (ctx.state === 'suspended') await ctx.resume();
             const audioBuffer = await ctx.decodeAudioData(bufferCopy);
             const channelData = audioBuffer.getChannelData(0); // mono
             const sampleRate = audioBuffer.sampleRate;
@@ -732,10 +734,16 @@ export class TTSQueue {
     // ── private: Google HTMLAudioElement playback ──────────────────────────
 
     async _playViaElement(buffer, mime = 'audio/mpeg', rate = 1.0, volumeOverride) {
-        const blob = new Blob([buffer], { type: mime });
-        const url  = URL.createObjectURL(blob);
-        if (this._blobUrl) URL.revokeObjectURL(this._blobUrl);
-        this._blobUrl = url;
+        // WKWebView (Tauri macOS) silently fails to load blob: URLs from HTMLAudioElement.
+        // Convert to a data: URL via FileReader to bypass this restriction.
+        const url = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(new Blob([buffer], { type: mime }));
+        });
+        if (this._blobUrl?.startsWith('blob:')) URL.revokeObjectURL(this._blobUrl);
+        this._blobUrl = null; // data URLs need no revocation
 
         const audio = this._audio || new Audio();
         this._audio        = audio;
@@ -762,10 +770,10 @@ export class TTSQueue {
             this._audio.onerror = null;
             try { this._audio.pause(); } catch (_) {}
         }
-        if (this._blobUrl) {
+        if (this._blobUrl?.startsWith('blob:')) {
             URL.revokeObjectURL(this._blobUrl);
-            this._blobUrl = null;
         }
+        this._blobUrl = null;
     }
 
     // ── private: AudioContext ──────────────────────────────────────────────
