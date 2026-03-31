@@ -174,6 +174,7 @@ export default function Monitor() {
     const narrationBusyRef = useRef(false);
     // Separate STT client for PTT narration (mirror direction), keeps main client untouched
     const narrationClientRef = useRef(null);
+    const narrationClientKeyRef = useRef('');
     const narrationConfigRef = useRef(null); // { serviceName, config }
     const pttActiveRef = useRef(false);
 
@@ -398,8 +399,15 @@ export default function Monitor() {
         }
         const service = transcriptionServices[cfg.serviceName];
         if (!service?.createClient) return;
+        const nextClientKey = `${cfg.serviceName}|${reverseSourceLang}|${reverseTargetLang}`;
+
+        if (narrationClientRef.current && narrationClientKeyRef.current === nextClientKey) {
+            return true;
+        }
 
         narrationClientRef.current?.disconnect();
+        narrationClientRef.current = null;
+        narrationClientKeyRef.current = '';
         const client = service.createClient();
 
         client.onOriginal = (text, speaker) => {
@@ -434,8 +442,18 @@ export default function Monitor() {
         });
 
         narrationClientRef.current = client;
+        narrationClientKeyRef.current = nextClientKey;
         return true;
     }, [sourceLang, targetLang, t]);
+
+    const waitNarrationClientConnected = useCallback(async (timeoutMs = 3500) => {
+        const deadline = Date.now() + timeoutMs;
+        while (Date.now() < deadline) {
+            if (narrationClientRef.current?.isConnected) return true;
+            await new Promise(resolve => setTimeout(resolve, 60));
+        }
+        return !!narrationClientRef.current?.isConnected;
+    }, []);
 
     // ── PTT handlers ─────────────────────────────────────────────────────────
     const restartCaptureWithSource = useCallback(async (source) => {
@@ -477,6 +495,12 @@ export default function Monitor() {
         // Ensure narration STT client is ready with mirrored language pair
         const narrationReady = startNarrationClient();
         if (!narrationReady) return;
+        const connected = await waitNarrationClientConnected();
+        if (!connected) {
+            setErrorMsg('[PTT] Narration STT is still connecting. Please hold and try again.');
+            setTimeout(() => setErrorMsg(''), 3000);
+            return;
+        }
 
         // Switch audio capture to microphone
         if (isRunning && sourceAudioRef.current !== 'microphone') {
@@ -489,7 +513,7 @@ export default function Monitor() {
 
         pttActiveRef.current = true;
         setNarrationPttActive(true);
-    }, [narrationDeviceName, isRunning, restartCaptureWithSource, startNarrationClient, clearPttDrainTimer, clearPttRestoreCaptureTimer]);
+    }, [narrationDeviceName, isRunning, restartCaptureWithSource, startNarrationClient, waitNarrationClientConnected, clearPttDrainTimer, clearPttRestoreCaptureTimer]);
 
     const handlePttEnd = useCallback(async () => {
         const prev = prevSourceAudioRef.current;
@@ -497,6 +521,7 @@ export default function Monitor() {
         prevSourceAudioRef.current = null;
         clearPttDrainTimer();
         clearPttRestoreCaptureTimer();
+        narrationClientRef.current?.finalize?.();
 
         // Always keep narration route alive when a device is configured so the full
         // STT → translate → TTS fetch → narration_inject_audio pipeline has time to
@@ -855,6 +880,7 @@ export default function Monitor() {
         transcriptionClientRef.current?.client?.disconnect();
         narrationClientRef.current?.disconnect();
         narrationClientRef.current = null;
+        narrationClientKeyRef.current = '';
         if (unlistenAudioRef.current) {
             unlistenAudioRef.current();
             unlistenAudioRef.current = null;

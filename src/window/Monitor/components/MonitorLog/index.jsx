@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MdMicNone, MdVolumeUp, MdVolumeOff, MdAutoAwesome, MdClose, MdKeyboardArrowDown, MdBookmark, MdBookmarkBorder, MdPlayCircle, MdTune, MdRefresh } from 'react-icons/md';
+import { MdMicNone, MdVolumeUp, MdVolumeOff, MdAutoAwesome, MdClose, MdKeyboardArrowDown, MdBookmark, MdBookmarkBorder, MdPlayCircle, MdTune, MdRefresh, MdEdit, MdPerson } from 'react-icons/md';
 import { motion, AnimatePresence } from 'framer-motion';
 import { writeTextFile } from '@tauri-apps/api/fs';
 import { generateAiSuggestion } from '../../../../utils/generateAiSuggestion';
@@ -445,6 +445,69 @@ function ServiceChipGroup({ label, icon, items, activeKey, onSelect, getLabel, a
     );
 }
 
+// ── Speaker label (clickable rename) ─────────────────────────────────────────
+
+function SpeakerLabel({ speakerId, displayName, color, onRename }) {
+    const [editing, setEditing] = useState(false);
+    const [draft, setDraft] = useState('');
+    const inputRef = useRef(null);
+
+    const startEdit = () => {
+        setDraft(displayName);
+        setEditing(true);
+    };
+
+    const commit = () => {
+        const name = draft.trim();
+        if (name) onRename(speakerId, name);
+        setEditing(false);
+    };
+
+    const Avatar = () => (
+        <div
+            className='w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0'
+            style={{ background: `${color}28`, border: `1.5px solid ${color}55` }}
+        >
+            <MdPerson style={{ fontSize: 11, color }} />
+        </div>
+    );
+
+    if (editing) {
+        return (
+            <div className='flex items-center gap-1.5'>
+                <Avatar />
+                <input
+                    ref={inputRef}
+                    value={draft}
+                    onChange={e => setDraft(e.target.value)}
+                    onBlur={commit}
+                    onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false); }}
+                    className='text-[11px] font-bold uppercase tracking-wide bg-transparent border-b outline-none'
+                    style={{ color, borderColor: color, width: Math.max(80, draft.length * 7 + 16) }}
+                    autoFocus
+                />
+            </div>
+        );
+    }
+
+    return (
+        <button
+            className='flex items-center gap-1.5 group/label opacity-80 hover:opacity-100 transition-opacity'
+            onClick={startEdit}
+            title='Click to rename'
+        >
+            <Avatar />
+            <span className='text-[11px] font-bold uppercase tracking-wide' style={{ color }}>
+                {displayName}
+            </span>
+            <MdEdit
+                className='opacity-0 group-hover/label:opacity-60 transition-opacity'
+                style={{ fontSize: 11, color }}
+            />
+        </button>
+    );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function MonitorLog({
@@ -486,6 +549,7 @@ export default function MonitorLog({
     const [isUserScrolled, setIsUserScrolled] = useState(false);
     const [suggestions, setSuggestions] = useState({});
     const [bookmarks, setBookmarks] = useState(new Set());
+    const [speakerNames, setSpeakerNames] = useState({});
 
     // ── Reset scroll lock and jump to latest when sort order flips.
     useEffect(() => {
@@ -740,21 +804,40 @@ export default function MonitorLog({
                         )}
 
                         <AnimatePresence initial={false}>
-                        {(sortOrder === 'desc' ? [...entries].reverse() : entries).map((entry) => {
+                        {(sortOrder === 'desc' ? [...entries].reverse() : entries).map((entry, _idx, _arr) => {
                             const isMeEntry = Boolean(entry.isMe) || String(entry.speaker ?? '').toLowerCase() === 'me';
-                            const speakerLabel = isMeEntry
+                            const rawSpeakerLabel = isMeEntry
                                 ? t('monitor.speaker_me', { defaultValue: 'Me' })
                                 : formatSpeaker(entry.speaker);
+                            const speakerKey = entry.speaker ?? (isMeEntry ? '__me__' : '__unknown__');
+                            const speakerLabel = speakerNames[speakerKey] ?? rawSpeakerLabel;
                             const speakerColor = isMeEntry
                                 ? 'hsl(var(--nextui-primary))'
                                 : getSpeakerColor(entry.speaker);
-                            const speakerBadgeBg = isMeEntry
-                                ? 'hsl(var(--nextui-primary) / 0.16)'
-                                : (speakerColor ? `${speakerColor}22` : undefined);
                             const isThisPlaying = entry.translation && entry.translation === playingText;
                             const suggestion = suggestions[entry.id];
                             const hasSuggestion = suggestion && suggestion.status !== 'idle';
                             const isBookmarked = bookmarks.has(entry.id);
+
+                            // Show speaker header only when speaker changes
+                            const prevEntry = _arr[_idx - 1];
+                            const prevIsMeEntry = prevEntry
+                                ? (Boolean(prevEntry.isMe) || String(prevEntry.speaker ?? '').toLowerCase() === 'me')
+                                : null;
+                            const isFirstInGroup = !prevEntry
+                                || prevEntry.speaker !== entry.speaker
+                                || prevIsMeEntry !== isMeEntry;
+
+                            // Bubble background/border tinted by speaker color
+                            const bubbleBg = isMeEntry
+                                ? 'linear-gradient(145deg, #0084ff, #006fe6)'
+                                : speakerColor ? `${speakerColor}28` : 'hsl(var(--nextui-content2))';
+                            const bubbleBorder = isMeEntry
+                                ? 'transparent'
+                                : speakerColor ? `${speakerColor}45` : 'hsl(var(--nextui-content3))';
+                            const bubbleShadow = isMeEntry
+                                ? '0 3px 14px rgba(0,132,255,0.40), 0 1px 4px rgba(0,132,255,0.25)'
+                                : speakerColor ? `0 2px 10px ${speakerColor}22` : undefined;
 
                             return (
                                 <motion.div
@@ -764,183 +847,134 @@ export default function MonitorLog({
                                     exit={{ opacity: 0, transition: { duration: 0.15 } }}
                                     transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
                                     ref={el => { if (el) entryRefs.current[entry.id] = el; else delete entryRefs.current[entry.id]; }}
-                                    className={`w-full flex flex-col gap-0.5 rounded-lg transition-colors ${isBookmarked ? 'bg-secondary/5' : ''}`}
-                                    style={isBookmarked ? { padding: '2px 4px' } : undefined}
+                                    className={`w-full flex flex-col ${isFirstInGroup ? 'mt-3' : 'mt-1'}`}
                                 >
-                                    <div className={`w-full ${isMeEntry ? 'text-right' : 'text-left'}`}>
-                                        {showOriginal && entry.original ? (
-                                            <p className='text-default-500 leading-relaxed' style={{ fontSize: fontSize - 1 }}>
-                                                {speakerLabel && !isMeEntry && (
-                                                    <span
-                                                        className='font-semibold rounded px-1.5 py-0.5 whitespace-nowrap inline-block mr-1'
-                                                        style={{
-                                                            color: speakerColor,
-                                                            backgroundColor: speakerBadgeBg,
-                                                        }}
-                                                    >
-                                                        {speakerLabel}:
-                                                    </span>
-                                                )}
-                                                {entry.original}
-                                                {speakerLabel && isMeEntry && (
-                                                    <span
-                                                        className='font-semibold rounded px-1.5 py-0.5 whitespace-nowrap inline-block ml-1'
-                                                        style={{
-                                                            color: speakerColor,
-                                                            backgroundColor: speakerBadgeBg,
-                                                        }}
-                                                    >
-                                                        {speakerLabel}
-                                                    </span>
-                                                )}
-                                            </p>
-                                        ) : speakerLabel ? (
-                                            <span
-                                                className='font-semibold rounded px-1.5 py-0.5 whitespace-nowrap inline-block'
-                                                style={{
-                                                    fontSize: Math.max(8, fontSize - 3),
-                                                    color: speakerColor,
-                                                    backgroundColor: speakerBadgeBg,
-                                                }}
-                                            >
-                                                {speakerLabel}
-                                            </span>
-                                        ) : null}
-                                    </div>
-
-                                    {entry.translation && (
-                                        <div className={`group/entry flex items-center gap-1.5 w-full justify-between ${isMeEntry ? 'pr-2' : 'pl-2'}`}
-                                            style={{ borderLeft: isMeEntry ? undefined : `2px solid ${speakerColor ?? 'rgba(var(--nextui-primary)/0.4)'}`, borderRight: isMeEntry ? `2px solid ${speakerColor ?? 'rgba(var(--nextui-primary)/0.4)'}` : undefined }}>
-                                            {isMeEntry && (
-                                                <div className='flex items-center gap-0.5 flex-shrink-0'>
-                                                    <Tooltip label={t('monitor.tts_replay')} placement='bottom'>
-                                                        <button
-                                                            className={`rounded p-0.5 transition-opacity
-                                                                ${isThisPlaying ? 'opacity-100' : 'opacity-0 group-hover/entry:opacity-50 hover:!opacity-100'}`}
-                                                            onClick={() => onReplayEntry?.(entry.translation)}
-                                                        >
-                                                            <MdVolumeUp
-                                                                className={isThisPlaying ? 'text-secondary animate-pulse' : 'text-default-400'}
-                                                                style={{ fontSize: Math.max(12, fontSize) }}
-                                                            />
-                                                        </button>
-                                                    </Tooltip>
-                                                    <Tooltip label={isBookmarked ? t('monitor.bookmark_remove') : t('monitor.bookmark_add')} placement='bottom'>
-                                                        <button
-                                                            className={`rounded p-0.5 transition-all
-                                                                ${isBookmarked
-                                                                    ? 'opacity-100 text-secondary'
-                                                                    : 'opacity-0 group-hover/entry:opacity-50 hover:!opacity-100 text-default-400 hover:text-secondary'
-                                                                }`}
-                                                            onClick={() => toggleBookmark(entry.id)}
-                                                        >
-                                                            {isBookmarked
-                                                                ? <MdBookmark style={{ fontSize: Math.max(12, fontSize) }} />
-                                                                : <MdBookmarkBorder style={{ fontSize: Math.max(12, fontSize) }} />
-                                                            }
-                                                        </button>
-                                                    </Tooltip>
-                                                </div>
-                                            )}
-
-                                            <div className={`flex-1 min-w-0 ${isMeEntry ? 'text-right' : 'text-left'}`}>
-                                                {aiSuggestionService && isMeEntry && (
-                                                    <button
-                                                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border transition-all mr-1.5
-                                                            ${hasSuggestion
-                                                                ? 'border-secondary/40 text-secondary bg-secondary/8'
-                                                                : 'border-transparent opacity-0 group-hover/entry:opacity-60 hover:!opacity-100 text-default-400 hover:text-secondary hover:border-secondary/30 hover:bg-secondary/5'
-                                                            } ${suggestion?.status === 'loading' ? 'cursor-wait' : 'cursor-pointer'}`}
-                                                        style={{ fontSize: 10, verticalAlign: 'middle' }}
-                                                        onClick={() => hasSuggestion ? dismissSuggestion(entry.id) : handleAiSuggest(entry)}
-                                                        disabled={suggestion?.status === 'loading'}
-                                                    >
-                                                        <MdAutoAwesome
-                                                            className={suggestion?.status === 'loading' ? 'animate-spin' : ''}
-                                                            style={{ fontSize: 11 }}
-                                                        />
-                                                        <span className='font-semibold'>
-                                                            {suggestion?.status === 'loading'
-                                                                ? t('monitor.ai_suggestion_loading')
-                                                                : hasSuggestion
-                                                                    ? t('monitor.ai_suggestion_dismiss')
-                                                                    : 'AI Suggest'}
-                                                        </span>
-                                                    </button>
-                                                )}
-                                                <span className='text-foreground font-medium leading-relaxed' style={{ fontSize }}>
-                                                    {entry.translation}
-                                                </span>
-                                                {aiSuggestionService && !isMeEntry && (
-                                                    <button
-                                                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border transition-all ml-1.5
-                                                            ${hasSuggestion
-                                                                ? 'border-secondary/40 text-secondary bg-secondary/8'
-                                                                : 'border-transparent opacity-0 group-hover/entry:opacity-60 hover:!opacity-100 text-default-400 hover:text-secondary hover:border-secondary/30 hover:bg-secondary/5'
-                                                            } ${suggestion?.status === 'loading' ? 'cursor-wait' : 'cursor-pointer'}`}
-                                                        style={{ fontSize: 10, verticalAlign: 'middle' }}
-                                                        onClick={() => hasSuggestion ? dismissSuggestion(entry.id) : handleAiSuggest(entry)}
-                                                        disabled={suggestion?.status === 'loading'}
-                                                    >
-                                                        <MdAutoAwesome
-                                                            className={suggestion?.status === 'loading' ? 'animate-spin' : ''}
-                                                            style={{ fontSize: 11 }}
-                                                        />
-                                                        <span className='font-semibold'>
-                                                            {suggestion?.status === 'loading'
-                                                                ? t('monitor.ai_suggestion_loading')
-                                                                : hasSuggestion
-                                                                    ? t('monitor.ai_suggestion_dismiss')
-                                                                    : 'AI Suggest'}
-                                                        </span>
-                                                    </button>
-                                                )}
-                                            </div>
-
-                                            {!isMeEntry && (
-                                                <div className='flex items-center gap-0.5 flex-shrink-0'>
-                                                    <Tooltip label={isBookmarked ? t('monitor.bookmark_remove') : t('monitor.bookmark_add')} placement='top'>
-                                                        <button
-                                                            className={`rounded p-0.5 transition-all
-                                                                ${isBookmarked
-                                                                    ? 'opacity-100 text-secondary'
-                                                                    : 'opacity-0 group-hover/entry:opacity-50 hover:!opacity-100 text-default-400 hover:text-secondary'
-                                                                }`}
-                                                            onClick={() => toggleBookmark(entry.id)}
-                                                        >
-                                                            {isBookmarked
-                                                                ? <MdBookmark style={{ fontSize: Math.max(12, fontSize) }} />
-                                                                : <MdBookmarkBorder style={{ fontSize: Math.max(12, fontSize) }} />
-                                                            }
-                                                        </button>
-                                                    </Tooltip>
-                                                    <Tooltip label={t('monitor.tts_replay')} placement='top'>
-                                                        <button
-                                                            className={`rounded p-0.5 transition-opacity
-                                                                ${isThisPlaying ? 'opacity-100' : 'opacity-0 group-hover/entry:opacity-50 hover:!opacity-100'}`}
-                                                            onClick={() => onReplayEntry?.(entry.translation)}
-                                                        >
-                                                            <MdVolumeUp
-                                                                className={isThisPlaying ? 'text-secondary animate-pulse' : 'text-default-400'}
-                                                                style={{ fontSize: Math.max(12, fontSize) }}
-                                                            />
-                                                        </button>
-                                                    </Tooltip>
-                                                </div>
-                                            )}
+                                    {/* Speaker header — only first in group */}
+                                    {isFirstInGroup && speakerLabel && (
+                                        <div className={`mb-1 px-1 ${isMeEntry ? 'self-end' : 'self-start'}`}>
+                                            <SpeakerLabel
+                                                speakerId={speakerKey}
+                                                displayName={speakerLabel}
+                                                color={speakerColor}
+                                                onRename={(key, name) => setSpeakerNames(prev => ({ ...prev, [key]: name }))}
+                                            />
                                         </div>
                                     )}
 
+                                    {/* Bubble row: bubble + action buttons */}
+                                    <div className={`group/entry flex items-end gap-1.5 max-w-[75%] ${isMeEntry ? 'flex-row-reverse ml-auto' : ''}`}>
+                                        {/* Chat bubble */}
+                                        <div
+                                            className={`flex flex-col px-3 py-2 rounded-2xl border ${
+                                                isMeEntry ? 'rounded-tr-sm' : 'rounded-tl-sm'
+                                            } ${isBookmarked ? 'ring-1 ring-secondary/30' : ''}`}
+                                            style={{ background: bubbleBg, borderColor: bubbleBorder, boxShadow: bubbleShadow, minWidth: 60 }}
+                                        >
+                                            {/* Original text */}
+                                            {showOriginal && entry.original && (
+                                                <p
+                                                    className={`leading-relaxed mb-0.5 ${isMeEntry ? 'text-right' : ''}`}
+                                                    style={{
+                                                        fontSize: fontSize - 1,
+                                                        color: isMeEntry ? 'rgba(255,255,255,0.65)' : 'hsl(var(--nextui-default-500))',
+                                                    }}
+                                                >
+                                                    {entry.original}
+                                                </p>
+                                            )}
+
+                                            {/* Translation */}
+                                            {entry.translation && (
+                                                <div className='flex items-center gap-1.5'>
+                                                    {isMeEntry && aiSuggestionService && (
+                                                        <button
+                                                            className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border transition-all flex-shrink-0
+                                                                ${hasSuggestion
+                                                                    ? 'border-white/40 bg-white/10'
+                                                                    : 'border-transparent opacity-0 group-hover/entry:opacity-60 hover:!opacity-100 hover:border-white/30 hover:bg-white/10'
+                                                                } ${suggestion?.status === 'loading' ? 'cursor-wait' : 'cursor-pointer'}`}
+                                                            style={{ fontSize: 10, color: 'rgba(255,255,255,0.85)' }}
+                                                            onClick={() => hasSuggestion ? dismissSuggestion(entry.id) : handleAiSuggest(entry)}
+                                                            disabled={suggestion?.status === 'loading'}
+                                                        >
+                                                            <MdAutoAwesome
+                                                                className={suggestion?.status === 'loading' ? 'animate-spin' : ''}
+                                                                style={{ fontSize: 11 }}
+                                                            />
+                                                        </button>
+                                                    )}
+                                                    <span
+                                                        className={`font-medium leading-relaxed ${isMeEntry ? 'flex-1 text-right' : ''}`}
+                                                        style={{
+                                                            fontSize,
+                                                            color: isMeEntry ? 'rgba(255,255,255,0.95)' : 'hsl(var(--nextui-foreground))',
+                                                        }}
+                                                    >
+                                                        {entry.translation}
+                                                    </span>
+                                                    {!isMeEntry && aiSuggestionService && (
+                                                        <button
+                                                            className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border transition-all flex-shrink-0
+                                                                ${hasSuggestion
+                                                                    ? 'border-secondary/40 text-secondary bg-secondary/8'
+                                                                    : 'border-transparent opacity-0 group-hover/entry:opacity-60 hover:!opacity-100 text-default-400 hover:text-secondary hover:border-secondary/30 hover:bg-secondary/5'
+                                                                } ${suggestion?.status === 'loading' ? 'cursor-wait' : 'cursor-pointer'}`}
+                                                            style={{ fontSize: 10 }}
+                                                            onClick={() => hasSuggestion ? dismissSuggestion(entry.id) : handleAiSuggest(entry)}
+                                                            disabled={suggestion?.status === 'loading'}
+                                                        >
+                                                            <MdAutoAwesome
+                                                                className={suggestion?.status === 'loading' ? 'animate-spin' : ''}
+                                                                style={{ fontSize: 11 }}
+                                                            />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Action buttons — outside bubble, visible on hover */}
+                                        <div className='flex flex-col gap-0.5 opacity-0 group-hover/entry:opacity-100 transition-opacity'>
+                                            <Tooltip label={t('monitor.tts_replay')} placement={isMeEntry ? 'left' : 'right'}>
+                                                <button
+                                                    className='rounded p-0.5'
+                                                    onClick={() => onReplayEntry?.(entry.translation)}
+                                                >
+                                                    <MdVolumeUp
+                                                        className={isThisPlaying ? 'text-secondary animate-pulse' : 'text-default-400'}
+                                                        style={{ fontSize: Math.max(12, fontSize) }}
+                                                    />
+                                                </button>
+                                            </Tooltip>
+                                            <Tooltip label={isBookmarked ? t('monitor.bookmark_remove') : t('monitor.bookmark_add')} placement={isMeEntry ? 'left' : 'right'}>
+                                                <button
+                                                    className={`rounded p-0.5 transition-colors ${
+                                                        isBookmarked ? 'text-secondary' : 'text-default-400 hover:text-secondary'
+                                                    }`}
+                                                    onClick={() => toggleBookmark(entry.id)}
+                                                >
+                                                    {isBookmarked
+                                                        ? <MdBookmark style={{ fontSize: Math.max(12, fontSize) }} />
+                                                        : <MdBookmarkBorder style={{ fontSize: Math.max(12, fontSize) }} />
+                                                    }
+                                                </button>
+                                            </Tooltip>
+                                        </div>
+                                    </div>
+
+                                    {/* AI Suggestion card — full width below bubble */}
                                     <AnimatePresence>
                                         {hasSuggestion && (
-                                            <AiSuggestionCard
-                                                state={suggestion}
-                                                onDismiss={() => dismissSuggestion(entry.id)}
-                                                onRegenerate={() => handleAiSuggest(entry, true)}
-                                                onFontSizeChange={onSetAiSuggestionFontSize}
-                                                fontSize={aiSuggestionFontSize}
-                                                t={t}
-                                            />
+                                            <div className='w-full mt-1'>
+                                                <AiSuggestionCard
+                                                    state={suggestion}
+                                                    onDismiss={() => dismissSuggestion(entry.id)}
+                                                    onRegenerate={() => handleAiSuggest(entry, true)}
+                                                    onFontSizeChange={onSetAiSuggestionFontSize}
+                                                    fontSize={aiSuggestionFontSize}
+                                                    t={t}
+                                                />
+                                            </div>
                                         )}
                                     </AnimatePresence>
                                 </motion.div>
