@@ -384,14 +384,10 @@ async function _getGladiaSession(
     body.language_config = { languages: [sourceLanguage], code_switching: false }
   }
 
-  // Custom vocabulary — top-level, applies regardless of translation
-  const terms = (context?.terms ?? []).filter(
-    (t): t is string => typeof t === 'string' && t.trim() !== ''
-  )
-  if (terms.length > 0) {
-    body.custom_vocabulary = true
-    body.custom_vocabulary_config = { vocabulary: terms.map(t => ({ value: t.trim() })) }
-  }
+  // NOTE:
+  // Gladia /v2/live currently rejects `custom_vocabulary` and
+  // `custom_vocabulary_config` (400 validation error), so we intentionally do
+  // not send these fields from cloud sessions either.
 
   if (targetLanguage) {
     const translationConfig: Record<string, unknown> = {

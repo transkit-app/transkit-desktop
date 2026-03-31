@@ -108,14 +108,11 @@ export class GladiaClient {
             };
         }
 
-        // Custom vocabulary — top-level, applies regardless of translation
-        const terms = (customContext?.terms ?? []).filter(t => t?.trim());
-        if (terms.length > 0) {
-            body.custom_vocabulary = true;
-            body.custom_vocabulary_config = {
-                vocabulary: terms.map(t => ({ value: t.trim() })),
-            };
-        }
+        // NOTE:
+        // Gladia /v2/live currently rejects `custom_vocabulary` and
+        // `custom_vocabulary_config` (400 validation error). Keep request body
+        // limited to the officially accepted live fields.
+        // We still pass free-form background context through translation_config.
 
         // Translation
         if (targetLanguage) {
