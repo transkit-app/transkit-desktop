@@ -1,5 +1,5 @@
 import { Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Tooltip } from '@nextui-org/react';
-import { MdMic, MdSpeaker, MdPlayArrow, MdStop, MdSubtitles, MdDeleteOutline, MdVolumeUp, MdVolumeOff, MdTune, MdTextFields, MdBlurOn, MdVerticalAlignBottom, MdVerticalAlignTop, MdAutoAwesome } from 'react-icons/md';
+import { MdMic, MdSpeaker, MdPlayArrow, MdStop, MdSubtitles, MdDeleteOutline, MdVolumeUp, MdVolumeOff, MdTune, MdTextFields, MdBlurOn, MdVerticalAlignBottom, MdVerticalAlignTop, MdAutoAwesome, MdRecordVoiceOver } from 'react-icons/md';
 import { HiSwitchHorizontal } from 'react-icons/hi';
 import { useTranslation } from 'react-i18next';
 import React from 'react';
@@ -56,11 +56,18 @@ export default function MonitorToolbar({
     onToggleSortOrder,
     showAIPanel,
     onToggleAIPanel,
+    showNarrationPanel,
+    onToggleNarrationPanel,
+    isNarrationActive,
+    showPttButton,
+    isPttActive,
+    isPttEnabled,
+    onPttStart,
+    onPttEnd,
 }) {
     const { t } = useTranslation();
     const opacity = bgOpacity ?? 100;
     const isTransparent = opacity < 100;
-
     return (
         <div className='flex items-center gap-1 px-2 py-1 border-b border-content3/50 flex-wrap'>
             {/* Audio source toggle */}
@@ -230,6 +237,23 @@ export default function MonitorToolbar({
                     onPress={onToggleAIPanel}
                 >
                     <MdAutoAwesome className='text-[14px]' />
+                </Button>
+            </Tooltip>
+
+            {/* Narration toggle */}
+            <Tooltip
+                content={t('monitor.narration_panel', { defaultValue: 'Narration (spoken translation)' })}
+                size='sm'
+                placement='bottom'
+            >
+                <Button
+                    isIconOnly size='sm'
+                    variant={showNarrationPanel ? 'solid' : 'light'}
+                    color={isNarrationActive ? 'success' : (showNarrationPanel ? 'primary' : 'default')}
+                    className='h-7 w-7 min-w-0'
+                    onPress={onToggleNarrationPanel}
+                >
+                    <MdRecordVoiceOver className='text-[14px]' />
                 </Button>
             </Tooltip>
 

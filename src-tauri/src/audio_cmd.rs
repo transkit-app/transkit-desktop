@@ -179,17 +179,43 @@ pub fn start_audio_capture(
     state: State<'_, AudioState>,
     batch_interval_ms: Option<u64>,
 ) -> Result<(), String> {
+    let source_label = source.clone();
+    let batch_ms = batch_interval_ms.unwrap_or(100).clamp(20, 1000);
+    log::info!(
+        "[AudioCapture] start requested: source='{}', batch_interval_ms={}",
+        source_label,
+        batch_ms
+    );
+
     // Stop any existing capture first
     stop_capture_inner(&state);
 
     let receiver: mpsc::Receiver<Vec<u8>> = match source.as_str() {
         "microphone" => {
             let mut mic = state.microphone.lock().map_err(|e| e.to_string())?;
-            mic.start()?
+            match mic.start() {
+                Ok(rx) => {
+                    log::info!("[AudioCapture] microphone capture started");
+                    rx
+                }
+                Err(err) => {
+                    log::error!("[AudioCapture] microphone capture failed: {}", err);
+                    return Err(err);
+                }
+            }
         }
         "system" => {
             let sys = state.system_audio.lock().map_err(|e| e.to_string())?;
-            sys.start()?
+            match sys.start() {
+                Ok(rx) => {
+                    log::info!("[AudioCapture] system capture started");
+                    rx
+                }
+                Err(err) => {
+                    log::error!("[AudioCapture] system capture failed: {}", err);
+                    return Err(err);
+                }
+            }
         }
         _ => {
             return Err(format!("Unsupported audio source: '{}'", source))
@@ -199,18 +225,20 @@ pub fn start_audio_capture(
     let stop_flag = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
     let stop_flag_clone = stop_flag.clone();
 
-    let batch_ms = batch_interval_ms.unwrap_or(100).clamp(20, 1000);
     std::thread::spawn(move || {
         let mut buffer: Vec<u8> = Vec::with_capacity(32000); // ~1 sec at 16kHz s16le
         let batch_interval = std::time::Duration::from_millis(batch_ms);
         let mut last_flush = std::time::Instant::now();
+        let mut flush_count: u64 = 0;
 
         loop {
             if stop_flag_clone.load(std::sync::atomic::Ordering::SeqCst) {
                 if !buffer.is_empty() {
                     let encoded = STANDARD.encode(&buffer);
                     let _ = window.emit("audio_chunk", encoded);
+                    flush_count += 1;
                 }
+                log::info!("[AudioCapture] capture stopped, emitted {} chunk(s)", flush_count);
                 break;
             }
 
@@ -231,10 +259,15 @@ pub fn start_audio_capture(
             if last_flush.elapsed() >= batch_interval && !buffer.is_empty() {
                 let encoded = STANDARD.encode(&buffer);
                 if window.emit("audio_chunk", encoded).is_err() {
+                    log::warn!("[AudioCapture] failed to emit audio_chunk, stopping capture thread");
                     break;
                 }
                 buffer.clear();
                 last_flush = std::time::Instant::now();
+                flush_count += 1;
+                if flush_count == 1 {
+                    log::info!("[AudioCapture] first audio_chunk emitted");
+                }
             }
         }
     });
@@ -247,6 +280,7 @@ pub fn start_audio_capture(
 
 #[tauri::command]
 pub fn stop_audio_capture(state: State<'_, AudioState>) -> Result<(), String> {
+    log::info!("[AudioCapture] stop requested");
     stop_capture_inner(&state);
     Ok(())
 }

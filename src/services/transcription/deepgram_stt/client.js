@@ -79,7 +79,6 @@ export class DeepgramClient {
 
         const options = {
             model,
-            language: sourceLanguage || 'en',
             encoding: 'linear16',
             sample_rate: 16000,
             channels: 1,
@@ -87,6 +86,12 @@ export class DeepgramClient {
             punctuate: true,
             endpointing,
         };
+        if (sourceLanguage) {
+            options.language = sourceLanguage;
+        } else {
+            // In auto mode, don't force English; let Deepgram detect language.
+            options.detect_language = true;
+        }
         if (speakerDiarization) options.diarize = true;
 
         // Custom vocabulary via keyterm (Deepgram Nova-2+)

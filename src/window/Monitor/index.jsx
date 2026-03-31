@@ -24,9 +24,9 @@ import { reportUsage, CLOUD_ENABLED } from '../../lib/transkit-cloud';
 
 const MAX_ENTRIES = 100;
 const SUB_MODE_HEIGHT = 190;
-const NORMAL_HEIGHT = 400;
+const NORMAL_HEIGHT = 750;
 const CONTEXT_PANEL_HEIGHT = 110;
-const WINDOW_WIDTH = 720;
+const WINDOW_WIDTH = 1160;
 const SUB_FONT_MIN = 6;
 const SUB_FONT_MAX = 72;
 
@@ -161,16 +161,21 @@ export default function Monitor() {
     // Narration (spoken translation → virtual mic)
     const [narrationEnabled, setNarrationEnabled]     = useConfig('narration_enabled', false);
     const [narrationDeviceName, setNarrationDeviceName] = useConfig('narration_device_name', '');
+    const [narrationMonitorAudio, setNarrationMonitorAudio] = useConfig('narration_monitor_audio', false);
+    const [narrationPttFabSize, setNarrationPttFabSize] = useConfig('narration_ptt_fab_size', 52);
     const [showNarrationPanel, setShowNarrationPanel] = useState(false);
     const [narrationPttActive, setNarrationPttActive] = useState(false);
     const [narrationDrainActive, setNarrationDrainActive] = useState(false);
     const prevSourceAudioRef = useRef(null);
-    const prevTtsEnabledRef = useRef(false);
-    const pttForcedTtsRef = useRef(false);
     const pttDrainTimerRef = useRef(null);
     const pttReleaseDeadlineRef = useRef(0);
     const pttRestoreCaptureTimerRef = useRef(null);
     const pttAwaitingTranslationRef = useRef(false);
+    const narrationBusyRef = useRef(false);
+    // Separate STT client for PTT narration (mirror direction), keeps main client untouched
+    const narrationClientRef = useRef(null);
+    const narrationConfigRef = useRef(null); // { serviceName, config }
+    const pttActiveRef = useRef(false);
 
     // User profile (for AI suggestion context)
     const [userProfile] = useConfig('user_profile', {});
@@ -194,6 +199,9 @@ export default function Monitor() {
     const [subWidth, setSubWidth] = useConfig('monitor_sub_width', WINDOW_WIDTH);
     const [subHeight, setSubHeight] = useConfig('monitor_sub_height', SUB_MODE_HEIGHT);
     const [showContextPanel, setShowContextPanel] = useState(false);
+    const [normalWindowWidth, setNormalWindowWidth] = useConfig('monitor_window_width', WINDOW_WIDTH);
+    const [normalWindowHeight, setNormalWindowHeight] = useConfig('monitor_window_height', NORMAL_HEIGHT);
+    const didInitWindowSizeRef = useRef(false);
 
     const [isPinned, setIsPinned] = useState(true); // mirrors alwaysOnTop:true in tauri.conf.json
     const [isTTSEnabled, setIsTTSEnabled] = useState(false);
@@ -335,13 +343,14 @@ export default function Monitor() {
     useEffect(() => {
         const tts = getTTSQueue();
         tts.narrationEnabled = narrationEffectivelyActive;
+        tts.muteWhenNarrating = !narrationMonitorAudio;
         if (narrationEffectivelyActive && narrationDeviceName) {
             invoke('narration_start', { deviceName: narrationDeviceName })
                 .catch(err => console.error('[Narration] start failed:', err));
         } else {
             invoke('narration_stop').catch(() => {});
         }
-    }, [narrationEffectivelyActive, narrationDeviceName]);
+    }, [narrationEffectivelyActive, narrationDeviceName, narrationMonitorAudio]);
 
     const clearPttDrainTimer = useCallback(() => {
         if (pttDrainTimerRef.current) {
@@ -362,6 +371,10 @@ export default function Monitor() {
         clearPttRestoreCaptureTimer();
     }, [clearPttDrainTimer, clearPttRestoreCaptureTimer]);
 
+    useEffect(() => {
+        narrationBusyRef.current = narrationPttActive || narrationDrainActive;
+    }, [narrationPttActive, narrationDrainActive]);
+
     const handleNarrationSetDevice = useCallback((deviceName) => {
         setNarrationDeviceName(deviceName);
     }, [setNarrationDeviceName]);
@@ -369,6 +382,60 @@ export default function Monitor() {
     const toggleNarration = useCallback(() => {
         setNarrationEnabled(!narrationEnabled);
     }, [narrationEnabled, setNarrationEnabled]);
+
+    // ── Narration STT client (mirror of monitor language pair) ─────────────────
+    const startNarrationClient = useCallback(({ quiet = false } = {}) => {
+        const cfg = narrationConfigRef.current;
+        if (!cfg) return;
+        const reverseSourceLang = targetLang ?? 'vi';
+        const reverseTargetLang = sourceLang;
+        if (!reverseTargetLang || reverseTargetLang === 'auto') {
+            if (!quiet) {
+                setErrorMsg(t('monitor.narration_ptt_requires_fixed_source'));
+                setTimeout(() => setErrorMsg(''), 5000);
+            }
+            return false;
+        }
+        const service = transcriptionServices[cfg.serviceName];
+        if (!service?.createClient) return;
+
+        narrationClientRef.current?.disconnect();
+        const client = service.createClient();
+
+        client.onOriginal = (text, speaker) => {
+            pendingOriginalRef.current = { text, speaker };
+        };
+        client.onTranslation = (text) => {
+            pttAwaitingTranslationRef.current = false;
+            const pending = pendingOriginalRef.current;
+            pendingOriginalRef.current = null;
+            const entry = {
+                id: `${Date.now()}-${Math.random()}`,
+                original: pending?.text ?? '',
+                translation: text,
+                speaker: 'me',
+                isMe: true,
+            };
+            setEntries(prev => {
+                const next = [...prev, entry];
+                return next.length > MAX_ENTRIES ? next.slice(-MAX_ENTRIES) : next;
+            });
+            setProvisional('');
+            getTTSQueue().enqueue(text, { injectNarration: true, force: true });
+        };
+        client.onProvisional = (text) => setProvisional(text || '');
+        client.onStatusChange = () => {};
+        client.onError = (err) => console.warn('[Narration STT]', err);
+
+        client.connect({
+            ...cfg.config,
+            sourceLanguage: reverseSourceLang === 'auto' ? null : reverseSourceLang,
+            targetLanguage: reverseTargetLang,
+        });
+
+        narrationClientRef.current = client;
+        return true;
+    }, [sourceLang, targetLang, t]);
 
     // ── PTT handlers ─────────────────────────────────────────────────────────
     const restartCaptureWithSource = useCallback(async (source) => {
@@ -407,37 +474,22 @@ export default function Monitor() {
         pttAwaitingTranslationRef.current = false;
         prevSourceAudioRef.current = sourceAudioRef.current;
 
-        // Snapshot TTS state BEFORE any await so handlePttEnd (which may fire
-        // during the await) reads the correct wasForced value.
-        const tts = getTTSQueue();
-        prevTtsEnabledRef.current = tts.enabled;
-        if (!tts.enabled) {
-            pttForcedTtsRef.current = true;
-            setIsTTSEnabled(true);
-            tts.setEnabled(true);
-            console.log(`[PTT-TTS] ${Date.now()} handlePttStart — TTS forced ON`);
-        } else {
-            pttForcedTtsRef.current = false;
-            console.log(`[PTT-TTS] ${Date.now()} handlePttStart — TTS already ON`);
-        }
+        // Ensure narration STT client is ready with mirrored language pair
+        const narrationReady = startNarrationClient();
+        if (!narrationReady) return;
 
-        // Restart audio capture on microphone source (bypass persisted sourceAudio)
+        // Switch audio capture to microphone
         if (isRunning && sourceAudioRef.current !== 'microphone') {
             const switched = await restartCaptureWithSource('microphone');
             if (!switched) {
                 prevSourceAudioRef.current = null;
-                // Undo TTS enable if capture failed
-                if (pttForcedTtsRef.current) {
-                    pttForcedTtsRef.current = false;
-                    setIsTTSEnabled(false);
-                    tts.setEnabled(false);
-                }
                 return;
             }
         }
 
+        pttActiveRef.current = true;
         setNarrationPttActive(true);
-    }, [narrationDeviceName, isRunning, restartCaptureWithSource, clearPttDrainTimer, clearPttRestoreCaptureTimer]);
+    }, [narrationDeviceName, isRunning, restartCaptureWithSource, startNarrationClient, clearPttDrainTimer, clearPttRestoreCaptureTimer]);
 
     const handlePttEnd = useCallback(async () => {
         const prev = prevSourceAudioRef.current;
@@ -450,7 +502,6 @@ export default function Monitor() {
         // STT → translate → TTS fetch → narration_inject_audio pipeline has time to
         // complete even after the PTT button is released.
         const tts = getTTSQueue();
-        const wasForced = pttForcedTtsRef.current && !prevTtsEnabledRef.current;
 
         if (narrationDeviceName) {
             setNarrationDrainActive(true);
@@ -469,26 +520,13 @@ export default function Monitor() {
                     return;
                 }
                 pttDrainTimerRef.current = null;
-                pttForcedTtsRef.current = false;
                 setNarrationDrainActive(false);
-                // Only disable TTS if PTT had forced it on; leave it on if user had it enabled.
-                if (wasForced) {
-                    setIsTTSEnabled(false);
-                    tts.setEnabled(false);
-                }
             };
 
             finishWhenDrained();
         } else {
             pttAwaitingTranslationRef.current = false;
-            if (wasForced) {
-                pttForcedTtsRef.current = false;
-                setNarrationDrainActive(false);
-                setIsTTSEnabled(false);
-                tts.setEnabled(false);
-            } else {
-                setNarrationDrainActive(false);
-            }
+            setNarrationDrainActive(false);
         }
 
         // Restore audio capture to original source with a short delay so STT can
@@ -503,9 +541,13 @@ export default function Monitor() {
                     return;
                 }
                 pttRestoreCaptureTimerRef.current = null;
+                // Stop routing to narration client before switching capture back to system
+                pttActiveRef.current = false;
                 restartCaptureWithSource(prev);
             };
             pttRestoreCaptureTimerRef.current = setTimeout(tryRestoreCapture, 2500);
+        } else {
+            pttActiveRef.current = false;
         }
     }, [isRunning, narrationDeviceName, restartCaptureWithSource, clearPttDrainTimer, clearPttRestoreCaptureTimer]);
 
@@ -586,7 +628,12 @@ export default function Monitor() {
             const binary = atob(event.payload);
             const bytes = new Uint8Array(binary.length);
             for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-            transcriptionClientRef.current?.client?.sendAudio(bytes.buffer);
+            const buffer = bytes.buffer;
+            if (pttActiveRef.current && narrationClientRef.current) {
+                narrationClientRef.current.sendAudio(buffer);
+            } else {
+                transcriptionClientRef.current?.client?.sendAudio(buffer);
+            }
         });
         unlistenAudioRef.current = unlisten;
     }, []);
@@ -634,6 +681,10 @@ export default function Monitor() {
         const batchInterval = transcriptionConfig.batchIntervalMs ?? 100;
         batchIntervalRef.current = batchInterval;
 
+        // Store config for narration client (same service + API key, different lang)
+        narrationConfigRef.current = { serviceName, config: transcriptionConfig };
+        if (narrationDeviceName) startNarrationClient({ quiet: true });
+
         // Tracks remaining seconds shown in the trial notice popup (populated via onCloudSession).
         let pendingRemainingSeconds = null;
 
@@ -653,23 +704,18 @@ export default function Monitor() {
         }
 
         client.onOriginal = (text, speaker) => {
-            console.debug('[NarrationDebug STT onOriginal:', {
-                chars: text?.length ?? 0,
-                speaker: speaker ?? null,
-            });
             pendingOriginalRef.current = { text, speaker };
         };
         client.onTranslation = (text) => {
-            pttAwaitingTranslationRef.current = false;
-            const tts = getTTSQueue();
-            console.log(`[PTT-TTS] ${Date.now()} onTranslation — text:"${text?.slice(0, 40)}" tts.enabled:${tts.enabled} tts.narrationEnabled:${tts.narrationEnabled} narrationPttActive:${narrationPttActive} narrationEffectivelyActive:${narrationEffectivelyActive}`);
             const pending = pendingOriginalRef.current;
             pendingOriginalRef.current = null;
+            const isMicSource = sourceAudioRef.current === 'microphone';
             const entry = {
                 id: `${Date.now()}-${Math.random()}`,
                 original: pending?.text ?? '',
                 translation: text,
-                speaker: pending?.speaker ?? null,
+                speaker: isMicSource ? 'me' : (pending?.speaker ?? null),
+                isMe: isMicSource,
             };
             setEntries(prev => {
                 const next = [...prev, entry];
@@ -680,8 +726,9 @@ export default function Monitor() {
                 saveQueueRef.current.push(entry);
                 flushSaveQueue();
             }
-            console.log(`[PTT-TTS] ${Date.now()} → calling getTTSQueue().enqueue()`);
-            getTTSQueue().enqueue(text);
+            if (!narrationBusyRef.current) {
+                getTTSQueue().enqueue(text, { injectNarration: false });
+            }
         };
         client.onProvisional = (text) => setProvisional(text || '');
         client.onStatusChange = (s) => {
@@ -785,7 +832,7 @@ export default function Monitor() {
             }
             transcriptFileRef.current = null;
         }
-    }, [activeTranscriptionService, sourceLang, targetLang, sourceAudio, transcriptionContext, autosaveEnabled, addAudioChunkListener, getOrCreateTranscriptionClient, flushSaveQueue, t]);
+    }, [activeTranscriptionService, sourceLang, targetLang, sourceAudio, transcriptionContext, autosaveEnabled, narrationDeviceName, addAudioChunkListener, getOrCreateTranscriptionClient, startNarrationClient, flushSaveQueue, t]);
 
     const stop = useCallback(async (silent = false) => {
         setIsRunning(false);
@@ -803,8 +850,11 @@ export default function Monitor() {
             reportUsage(id, durationSeconds); // fire-and-forget
         }
 
+        pttActiveRef.current = false;
         try { await invoke('stop_audio_capture'); } catch (_) {}
         transcriptionClientRef.current?.client?.disconnect();
+        narrationClientRef.current?.disconnect();
+        narrationClientRef.current = null;
         if (unlistenAudioRef.current) {
             unlistenAudioRef.current();
             unlistenAudioRef.current = null;
@@ -896,17 +946,47 @@ export default function Monitor() {
     const [subX, setSubX] = useConfig('monitor_sub_x', null);
     const [subY, setSubY] = useConfig('monitor_sub_y', null);
 
+    useEffect(() => {
+        if (didInitWindowSizeRef.current || isSubMode) return;
+        const width = normalWindowWidth ?? WINDOW_WIDTH;
+        const height = normalWindowHeight ?? NORMAL_HEIGHT;
+        if (!Number.isFinite(width) || !Number.isFinite(height)) return;
+        didInitWindowSizeRef.current = true;
+        appWindow.setSize(new LogicalSize(width, height)).catch(() => {});
+    }, [normalWindowWidth, normalWindowHeight, isSubMode]);
+
+    useEffect(() => {
+        const unlistenPromise = appWindow.onResized(async () => {
+            if (isSubMode) return;
+            try {
+                const scale = await appWindow.scaleFactor();
+                const physical = await appWindow.innerSize();
+                setNormalWindowWidth(Math.round(physical.width / scale));
+                setNormalWindowHeight(Math.round(physical.height / scale));
+            } catch (_) {}
+        });
+        return () => { unlistenPromise.then(f => f()); };
+    }, [isSubMode, setNormalWindowWidth, setNormalWindowHeight]);
+
     const toggleSubMode = useCallback(async () => {
         const entering = !isSubMode;
         setIsSubMode(entering);
         try {
             if (entering) {
+                // Sub mode is display-only: force-stop any active PTT/narration runtime state.
+                pttActiveRef.current = false;
+                pttAwaitingTranslationRef.current = false;
+                clearPttDrainTimer();
+                clearPttRestoreCaptureTimer();
+                setNarrationPttActive(false);
+                setNarrationDrainActive(false);
+                setShowNarrationPanel(false);
+                narrationClientRef.current?.disconnect();
+                narrationClientRef.current = null;
+                invoke('narration_stop').catch(() => {});
                 await invoke('set_window_buttons_hidden', { hidden: true });
                 await appWindow.setSize(new LogicalSize(subWidth ?? WINDOW_WIDTH, subHeight ?? SUB_MODE_HEIGHT));
-                if (subX != null && subY != null) {
-                    const { LogicalPosition } = await import('@tauri-apps/api/window');
-                    await appWindow.setPosition(new LogicalPosition(subX, subY));
-                }
+                await appWindow.center();
                 await appWindow.setAlwaysOnTop(true);
             } else {
                 try {
@@ -918,7 +998,10 @@ export default function Monitor() {
                     setSubX(Math.round(pos.x / scale));
                     setSubY(Math.round(pos.y / scale));
                 } catch (_) {}
-                await appWindow.setSize(new LogicalSize(WINDOW_WIDTH, NORMAL_HEIGHT));
+                await appWindow.setSize(new LogicalSize(
+                    normalWindowWidth ?? WINDOW_WIDTH,
+                    normalWindowHeight ?? NORMAL_HEIGHT
+                ));
                 await appWindow.center();
                 await appWindow.setAlwaysOnTop(isPinned);
                 await invoke('set_window_buttons_hidden', { hidden: false });
@@ -926,7 +1009,7 @@ export default function Monitor() {
         } catch (e) {
             console.error('Failed to toggle sub mode:', e);
         }
-    }, [isSubMode, isPinned, subWidth, subHeight, subX, subY, setSubWidth, setSubHeight, setSubX, setSubY]);
+    }, [isSubMode, isPinned, subWidth, subHeight, subX, subY, normalWindowWidth, normalWindowHeight, clearPttDrainTimer, clearPttRestoreCaptureTimer, setSubWidth, setSubHeight, setSubX, setSubY]);
 
     useEffect(() => {
         return () => { stop(true); };
@@ -1239,7 +1322,7 @@ export default function Monitor() {
                 showNarrationPanel={showNarrationPanel}
                 onToggleNarrationPanel={() => setShowNarrationPanel(v => !v)}
                 isNarrationActive={narrationEffectivelyActive}
-                showPttButton={Boolean(narrationDeviceName)}
+                showPttButton={false}
                 isPttActive={narrationPttActive}
                 isPttEnabled={Boolean(narrationDeviceName) && isRunning}
                 onPttStart={handlePttStart}
@@ -1310,6 +1393,10 @@ export default function Monitor() {
                                 onToggleNarration={toggleNarration}
                                 isPttActive={narrationPttActive}
                                 onTestSignal={handleNarrationTestSignal}
+                                monitorAudio={narrationMonitorAudio ?? false}
+                                onToggleMonitorAudio={() => setNarrationMonitorAudio(!narrationMonitorAudio)}
+                                pttFabSize={narrationPttFabSize ?? 52}
+                                onSetPttFabSize={setNarrationPttFabSize}
                             />
                         </div>
                     </div>
@@ -1428,6 +1515,44 @@ export default function Monitor() {
                 isTTSEnabled={isTTSEnabled}
                 aiSuggestionModes={aiSuggestionModes}
             />
+
+            {/* Floating PTT button (Siri-style) */}
+            {Boolean(narrationDeviceName) && (
+                <div className='absolute right-3 bottom-10 z-30'>
+                    <button
+                        className={`relative rounded-full flex items-center justify-center select-none touch-none transition-all
+                            ${isRunning
+                                ? narrationPttActive
+                                    ? 'bg-success text-success-foreground shadow-lg shadow-success/30'
+                                    : 'bg-primary/20 text-primary hover:bg-primary/30 border border-primary/35'
+                                : 'bg-content2 text-default-400 border border-content3/40 cursor-not-allowed'
+                            }`}
+                        style={{
+                            width: Math.min(Math.max(narrationPttFabSize ?? 52, 36), 88),
+                            height: Math.min(Math.max(narrationPttFabSize ?? 52, 36), 88),
+                        }}
+                        disabled={!isRunning}
+                        onPointerDown={(e) => {
+                            if (!isRunning) return;
+                            e.currentTarget.setPointerCapture(e.pointerId);
+                            handlePttStart();
+                        }}
+                        onPointerUp={() => handlePttEnd()}
+                        onPointerCancel={() => handlePttEnd()}
+                        title={isRunning
+                            ? t('monitor.narration_ptt_hold', { defaultValue: 'Hold to Speak' })
+                            : t('monitor.start')}
+                    >
+                        {narrationPttActive && (
+                            <>
+                                <span className='absolute inset-0 rounded-full border border-success/60 animate-ping' />
+                                <span className='absolute -inset-1 rounded-full border border-success/30 animate-pulse' />
+                            </>
+                        )}
+                        <MdMic className='relative z-10' style={{ fontSize: Math.max(16, (narrationPttFabSize ?? 52) * 0.38) }} />
+                    </button>
+                </div>
+            )}
 
             {/* ── Bottom status bar ────────────────────────────────────────── */}
             <div className='flex items-center justify-between px-2 h-[22px] border-t border-content2/60 flex-shrink-0 select-none'>

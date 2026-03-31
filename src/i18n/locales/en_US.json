@@ -414,6 +414,8 @@
       "ai_suggestion_loading": "Thinking...",
       "ai_suggestion_error": "AI suggestion failed. Check your AI service settings.",
       "ai_suggestion_no_service": "No AI service configured for suggestions. Go to Settings > Audio Translate.",
+      "speaker_me": "Me",
+      "narration_ptt_requires_fixed_source": "PTT reverse mode needs a fixed Source language (not Auto). Example: Japanese → Vietnamese.",
       "ai_suggestion_research": "Research",
       "ai_suggestion_answer": "Suggested Answer",
       "scroll_to_latest": "Latest",
@@ -452,7 +454,17 @@
       "ci_next_step": "Next Step",
       "ci_questions": "Questions to Ask",
       "ci_summary_points": "Summary",
-      "ci_hint": "Click ✨ on any line to run AI analysis"
+      "ci_hint": "Click ✨ on any line to run AI analysis",
+      "narration_title": "Narration",
+      "narration_virtual_mic_aria": "Virtual mic device",
+      "narration_test_tone_title": "Send 440 Hz test tone to virtual device",
+      "narration_test_testing": "Testing…",
+      "narration_test_ok": "OK ✓",
+      "narration_test_failed": "Failed",
+      "narration_test": "Test",
+      "narration_checklist_item1": "① Zoom mic → {{device}}",
+      "narration_checklist_item2": "② Mute your real mic in Zoom (participants hear BlackHole, not your real mic)",
+      "narration_checklist_item3": "③ Press & hold \"Hold to Speak\" to narrate"
     },
     "updater": {
       "title": "Check Update",

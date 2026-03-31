@@ -413,6 +413,8 @@
       "ai_suggestion_loading": "Đang phân tích...",
       "ai_suggestion_error": "Gợi ý AI thất bại. Kiểm tra cài đặt dịch vụ AI.",
       "ai_suggestion_no_service": "Chưa cấu hình AI để gợi ý. Vào Cài đặt > Audio Translate.",
+      "speaker_me": "Tôi",
+      "narration_ptt_requires_fixed_source": "PTT đảo chiều cần Source language cố định (không để Auto). Ví dụ: Nhật Bản → Việt Nam.",
       "ai_suggestion_research": "Tìm hiểu",
       "ai_suggestion_answer": "Đề xuất câu trả lời",
       "scroll_to_latest": "Mới nhất",
@@ -451,7 +453,17 @@
       "ci_next_step": "Bước tiếp theo",
       "ci_questions": "Câu hỏi cần hỏi",
       "ci_summary_points": "Tóm tắt",
-      "ci_hint": "Click ✨ vào từng dòng để chạy phân tích AI"
+      "ci_hint": "Click ✨ vào từng dòng để chạy phân tích AI",
+      "narration_title": "Tường thuật",
+      "narration_virtual_mic_aria": "Thiết bị micro ảo",
+      "narration_test_tone_title": "Gửi âm test 440 Hz tới thiết bị ảo",
+      "narration_test_testing": "Đang kiểm tra…",
+      "narration_test_ok": "OK ✓",
+      "narration_test_failed": "Thất bại",
+      "narration_test": "Test",
+      "narration_checklist_item1": "① Mic Zoom → {{device}}",
+      "narration_checklist_item2": "② Tắt tiếng mic thật trong Zoom (người nghe sẽ nghe BlackHole, không phải mic thật)",
+      "narration_checklist_item3": "③ Nhấn giữ \"Hold to Speak\" để tường thuật"
     },
     "updater": {
       "title": "Kiểm tra cập nhật",

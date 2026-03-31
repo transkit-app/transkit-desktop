@@ -5,6 +5,16 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use super::TARGET_SAMPLE_RATE;
 
+fn is_virtual_input_device(name: &str) -> bool {
+    let n = name.to_lowercase();
+    n.contains("blackhole")
+        || n.contains("loopback")
+        || n.contains("zoomaudiodevice")
+        || n.contains("vb-cable")
+        || n.contains("cable input")
+        || n.contains("virtual")
+}
+
 /// Microphone capture using cpal.
 /// Captures from the default input device and converts to PCM s16le 16kHz mono.
 pub struct MicCapture {
@@ -41,22 +51,54 @@ impl MicCapture {
         let input_devices: Vec<String> = host.input_devices()
             .map(|devs| devs.filter_map(|d| d.name().ok()).collect())
             .unwrap_or_default();
-        println!("[Mic] Available input devices: {:?}", input_devices);
+        log::info!("[Mic] Available input devices: {:?}", input_devices);
 
         if input_devices.is_empty() {
             return Err("No microphone found. Connect an external microphone or headset.".to_string());
         }
 
-        let device = host
+        let default_device = host
             .default_input_device()
             .ok_or("No default microphone found. Connect an external microphone or headset.")?;
+        let default_name = default_device.name().unwrap_or_default();
+        log::info!("[Mic] Default input device: {:?}", default_name);
 
-        println!("[Mic] Device: {:?}", device.name().unwrap_or_default());
+        // If system default is a virtual route (e.g. BlackHole), prefer a physical mic
+        // so PTT captures the user's voice instead of loopback/virtual silence.
+        let device = if is_virtual_input_device(&default_name) {
+            log::warn!(
+                "[Mic] Default input '{}' is virtual. Searching for a physical microphone fallback.",
+                default_name
+            );
+            let fallback = host
+                .input_devices()
+                .ok()
+                .and_then(|mut devs| {
+                    devs.find(|d| {
+                        d.name()
+                            .map(|n| !is_virtual_input_device(&n))
+                            .unwrap_or(false)
+                    })
+                });
+
+            if let Some(d) = fallback {
+                log::info!("[Mic] Using fallback input device: {:?}", d.name().unwrap_or_default());
+                d
+            } else {
+                log::warn!(
+                    "[Mic] No physical fallback found; continuing with default virtual input '{}'",
+                    default_name
+                );
+                default_device
+            }
+        } else {
+            default_device
+        };
 
         // Try default config first, fallback to supported configs
         let default_config = device.default_input_config()
             .or_else(|e| {
-                println!("[Mic] default_input_config failed: {}, trying supported configs", e);
+                log::warn!("[Mic] default_input_config failed: {}, trying supported configs", e);
                 // Fallback: find a supported config
                 let mut configs = device.supported_input_configs()
                     .map_err(|e2| format!("No supported input configs: {}", e2))?;
@@ -80,7 +122,7 @@ impl MicCapture {
             })
             .map_err(|e| format!("Failed to get default input config: {}", e))?;
 
-        println!("[Mic] Config: rate={}, channels={}, format={:?}",
+        log::info!("[Mic] Config: rate={}, channels={}, format={:?}",
             default_config.sample_rate().0,
             default_config.channels(),
             default_config.sample_format());
@@ -100,7 +142,7 @@ impl MicCapture {
         };
 
         let target_rate = TARGET_SAMPLE_RATE;
-        let err_fn = |err| eprintln!("Microphone input error: {}", err);
+        let err_fn = |err| log::error!("[Mic] input stream error: {}", err);
 
         let stream = match default_config.sample_format() {
             cpal::SampleFormat::F32 => {

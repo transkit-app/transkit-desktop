@@ -11,6 +11,7 @@ mod config;
 mod edge_tts;
 mod error;
 mod hotkey;
+mod narration;
 mod screenshot;
 mod server;
 mod system_ocr;
@@ -19,6 +20,10 @@ mod updater;
 mod window;
 
 use audio_cmd::*;
+use narration::{
+    narration_detect_devices, narration_get_status, narration_inject_audio, narration_list_devices,
+    narration_setup, narration_start, narration_stop, NarrationState,
+};
 use auth::start_oauth_server;
 use backup::*;
 use clipboard::*;
@@ -101,6 +106,7 @@ fn main() {
                 system_audio: Mutex::new(crate::audio::SystemAudioCapture::new()),
                 stop_flag: Mutex::new(None),
             });
+            app.manage(NarrationState::new());
             // Update Tray Menu
             update_tray(app.app_handle(), "".to_string(), "".to_string());
             // Start http server
@@ -170,7 +176,14 @@ fn main() {
             synthesize_edge_tts,
             open_config_window,
             restart_app,
-            start_oauth_server
+            start_oauth_server,
+            narration_list_devices,
+            narration_detect_devices,
+            narration_setup,
+            narration_start,
+            narration_inject_audio,
+            narration_stop,
+            narration_get_status
         ])
         .on_system_tray_event(tray_event_handler)
         .build(tauri::generate_context!())

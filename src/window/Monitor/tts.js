@@ -122,6 +122,8 @@ export class TTSQueue {
         // ── narration (virtual mic injection) ─────────────────────────────
         /** Set to true to also inject TTS audio into the virtual mic via narration_inject_audio */
         this.narrationEnabled = false;
+        /** Mute speaker output when narrating to prevent system-audio feedback loop */
+        this.muteWhenNarrating = true;
 
         // ── config ─────────────────────────────────────────────────────────
         this.sampleRate    = 24000;
@@ -238,25 +240,27 @@ export class TTSQueue {
 
     // ── enqueue ────────────────────────────────────────────────────────────
 
-    enqueue(text) {
-        if (!this.enabled || !text?.trim()) {
+    enqueue(text, options = {}) {
+        const force = Boolean(options?.force);
+        if ((!this.enabled && !force) || !text?.trim()) {
             console.log(`[PTT-TTS] ${Date.now()} enqueue SKIPPED — enabled:${this.enabled} hasText:${!!text?.trim()}`);
             return;
         }
+        const { injectNarration } = options;
         const trimmed = text.trim();
         console.log(`[PTT-TTS] ${Date.now()} enqueue START — apiType:${this.apiType} text:"${trimmed.slice(0, 40)}"`);
 
         if (this.apiType === 'google') {
-            this._enqueueGoogle(trimmed);
+            this._enqueueGoogle(trimmed, injectNarration, force);
             return;
         }
 
         if (this.apiType === 'elevenlabs') {
-            this._enqueueElevenLabs(trimmed);
+            this._enqueueElevenLabs(trimmed, injectNarration, force);
             return;
         }
 
-        this._enqueueScheduled(trimmed);
+        this._enqueueScheduled(trimmed, injectNarration, force);
     }
 
     // ── replay ─────────────────────────────────────────────────────────────
@@ -314,7 +318,7 @@ export class TTSQueue {
      * The resulting MP3 buffer feeds into the shared _playQueue via the same
      * _orderChain + _advancePlayQueue machinery so playback is always serial.
      */
-    _enqueueElevenLabs(text) {
+    _enqueueElevenLabs(text, injectNarration, force = false) {
         if (!this.elevenLabsApiKey) {
             console.warn('[TTS] ElevenLabs: no API key configured');
             return;
@@ -332,6 +336,7 @@ export class TTSQueue {
         if (!this.isPlaying) this.isPlaying = true;
 
         const queueGen = this._generation;
+        const forcePlayback = Boolean(force);
         this._pendingCount++;
 
         // ElevenLabs delivers a single ArrayBuffer per text item.
@@ -349,9 +354,9 @@ export class TTSQueue {
                     return;
                 }
 
-                if (!buffer || !this.enabled || this._generation !== queueGen) return;
+                if (!buffer || (!this.enabled && !forcePlayback) || this._generation !== queueGen) return;
 
-                this._playQueue.push({ buffer, mime: 'audio/mpeg', text, rate: this._calcRate() });
+                this._playQueue.push({ buffer, mime: 'audio/mpeg', text, rate: this._calcRate(), injectNarration });
                 if (!this._playQueueActive) this._advancePlayQueue();
             })
             .catch(err => {
@@ -377,12 +382,13 @@ export class TTSQueue {
      * always reach _playQueue in enqueue order even when fetch N+1 is faster
      * than fetch N.
      */
-    _enqueueScheduled(text) {
+    _enqueueScheduled(text, injectNarration, force = false) {
         const chunks = this.apiType === 'edge_tts'
             ? this._splitTextChunks(text)
             : [text];
 
         const queueGen = this._generation;
+        const forcePlayback = Boolean(force);
         if (!this.isPlaying) this.isPlaying = true;
 
         console.log(`[PTT-TTS] ${Date.now()} _enqueueScheduled — chunks:${chunks.length} apiType:${this.apiType}`);
@@ -417,8 +423,8 @@ export class TTSQueue {
 
                     const genOk = this._generation === queueGen;
                     console.log(`[PTT-TTS] ${Date.now()} orderChain[${i}] result — mime:${result?.mime ?? 'null'} enabled:${this.enabled} genOk:${genOk}`);
-                    if (!result || !this.enabled || !genOk) {
-                        console.warn(`[PTT-TTS] ${Date.now()} orderChain[${i}] DROPPED — result:${!!result} enabled:${this.enabled} genOk:${genOk}`);
+                    if (!result || ((!this.enabled && !forcePlayback)) || !genOk) {
+                        console.warn(`[PTT-TTS] ${Date.now()} orderChain[${i}] DROPPED — result:${!!result} enabled:${this.enabled} force:${forcePlayback} genOk:${genOk}`);
                         return;
                     }
 
@@ -430,7 +436,7 @@ export class TTSQueue {
                     }
 
                     console.log(`[PTT-TTS] ${Date.now()} orderChain[${i}] → playQueue — mime:${mime} queueActive:${this._playQueueActive} queueLen:${this._playQueue.length}`);
-                    this._playQueue.push({ buffer, mime, text, rate: this._calcRate() });
+                    this._playQueue.push({ buffer, mime, text, rate: this._calcRate(), injectNarration });
 
                     // Start the player if it's idle.
                     if (!this._playQueueActive) this._advancePlayQueue();
@@ -464,29 +470,23 @@ export class TTSQueue {
 
         this._playQueueActive = true;
 
-        const { buffer, mime, text, rate } = this._playQueue.shift();
+        const { buffer, mime, text, rate, injectNarration } = this._playQueue.shift();
         const gen = this._generation;
-
-        console.log(`[PTT-TTS] ${Date.now()} _advancePlayQueue — mime:${mime} rate:${rate?.toFixed(2)} narrationEnabled:${this.narrationEnabled}`);
+        const shouldInjectNarration = injectNarration ?? this.narrationEnabled;
 
         this.playingText = text;
         this.onPlayStart?.(text);
 
-        // Narration: decode and inject into virtual mic (fire-and-forget, parallel with playback)
-        if (this.narrationEnabled) {
-            console.log(`[PTT-TTS] ${Date.now()} _injectNarration START`);
+        // Narration: inject into virtual mic (BlackHole → Zoom)
+        if (shouldInjectNarration) {
             this._injectNarration(buffer.slice(0), mime)
-                .then(() => console.log(`[PTT-TTS] ${Date.now()} _injectNarration DONE`))
-                .catch(err => console.error(`[PTT-TTS] ${Date.now()} _injectNarration ERROR — ${err}`));
-        } else {
-            console.warn(`[PTT-TTS] ${Date.now()} _advancePlayQueue — narrationEnabled=false, skip inject`);
+                .catch(err => console.error('[Narration] inject error:', err));
         }
 
-        const t0play = Date.now();
-        console.log(`[PTT-TTS] ${t0play} _playViaElement START`);
-        this._playViaElement(buffer, mime, rate)
-            .then(ok => console.log(`[PTT-TTS] ${Date.now()} _playViaElement DONE (+${Date.now() - t0play}ms) ok:${ok}`))
-            .catch(err => console.error(`[PTT-TTS] ${Date.now()} _playViaElement ERROR — ${err?.name}: ${err?.message}`))
+        // Speaker playback — muted when narrating to prevent system-audio feedback
+        const playVolume = (shouldInjectNarration && this.muteWhenNarrating) ? 0 : undefined;
+        this._playViaElement(buffer, mime, rate, playVolume)
+            .catch(err => console.error('[TTS] playback error:', err?.message))
             .finally(() => {
                 if (this._generation !== gen) return;
                 this.playingText = null;
@@ -506,11 +506,6 @@ export class TTSQueue {
             const audioBuffer = await ctx.decodeAudioData(bufferCopy);
             const channelData = audioBuffer.getChannelData(0); // mono
             const sampleRate = audioBuffer.sampleRate;
-            console.debug('[NarrationDebug TTS decoded for inject', {
-                sampleRate,
-                frames: channelData.length,
-                mime,
-            });
 
             // Float32 → PCM16
             const pcm16 = new Int16Array(channelData.length);
@@ -525,14 +520,7 @@ export class TTSQueue {
             for (let i = 0; i < bytes.length; i += CHUNK) {
                 bin += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
             }
-            const pcm16Base64 = btoa(bin);
-
-            console.debug('[NarrationDebug invoke narration_inject_audio', {
-                sampleRate,
-                base64Len: pcm16Base64.length,
-            });
-            await invoke('narration_inject_audio', { pcm16Base64, sampleRate });
-            console.debug('[NarrationDebug narration_inject_audio success');
+            await invoke('narration_inject_audio', { pcm16Base64: btoa(bin), sampleRate });
         } finally {
             ctx.close().catch(() => {});
         }
@@ -568,12 +556,12 @@ export class TTSQueue {
 
     // ── private: Google TTS path (HTMLAudioElement, sequential) ───────────
 
-    _enqueueGoogle(text) {
+    _enqueueGoogle(text, injectNarration, force = false) {
         const promise = this._fetchGoogle(text).catch(err => {
             console.error('[TTS] Google prefetch failed:', String(err));
             return null;
         });
-        this._googleQueue.push({ text, promise });
+        this._googleQueue.push({ text, promise, injectNarration, force: Boolean(force) });
         if (!this._googlePlaying) this._playNextGoogle();
     }
 
@@ -589,12 +577,13 @@ export class TTSQueue {
         this.isPlaying      = true;
 
         const gen = this._generation;
-        const { text, promise } = this._googleQueue.shift();
+        const { text, promise, injectNarration, force } = this._googleQueue.shift();
+        const shouldInjectNarration = injectNarration ?? this.narrationEnabled;
 
         try {
             const result = await promise;
             if (this._generation !== gen) return;
-            if (!result || !this.enabled) {
+            if (!result || (!this.enabled && !force)) {
                 if (this._googleQueue.length > 0) this._playNextGoogle();
                 else { this._googlePlaying = false; this.isPlaying = false; }
                 return;
@@ -602,7 +591,12 @@ export class TTSQueue {
 
             this.playingText = text;
             this.onPlayStart?.(text);
-            await this._playViaElement(result.buffer, result.mime);
+            if (shouldInjectNarration) {
+                this._injectNarration(result.buffer.slice(0), result.mime)
+                    .catch(err => console.error('[Narration] inject error:', err));
+            }
+            const playVolume = (shouldInjectNarration && this.muteWhenNarrating) ? 0 : undefined;
+            await this._playViaElement(result.buffer, result.mime, 1.0, playVolume);
 
             if (this._generation !== gen) return;
             this.playingText = null;
@@ -737,7 +731,7 @@ export class TTSQueue {
 
     // ── private: Google HTMLAudioElement playback ──────────────────────────
 
-    async _playViaElement(buffer, mime = 'audio/mpeg', rate = 1.0) {
+    async _playViaElement(buffer, mime = 'audio/mpeg', rate = 1.0, volumeOverride) {
         const blob = new Blob([buffer], { type: mime });
         const url  = URL.createObjectURL(blob);
         if (this._blobUrl) URL.revokeObjectURL(this._blobUrl);
@@ -747,7 +741,7 @@ export class TTSQueue {
         this._audio        = audio;
         audio.src          = url;
         audio.playbackRate = Math.min(Math.max(rate || 1.0, 0.1), 4.0);
-        audio.volume       = Math.min(Math.max(this.volume ?? 1.0, 0.0), 1.0);
+        audio.volume       = Math.min(Math.max(volumeOverride ?? this.volume ?? 1.0, 0.0), 1.0);
 
         try {
             await new Promise((resolve, reject) => {
