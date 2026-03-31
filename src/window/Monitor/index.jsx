@@ -17,6 +17,7 @@ import MonitorToolbar from './components/MonitorToolbar';
 import MonitorLog from './components/MonitorLog';
 import ContextPanel from './components/ContextPanel';
 import AIPanel from './components/AIPanel';
+import NarrationPanel from './components/NarrationPanel';
 import * as transcriptionServices from '../../services/transcription';
 import { getTTSQueue } from './tts';
 import { reportUsage, CLOUD_ENABLED } from '../../lib/transkit-cloud';
@@ -156,6 +157,20 @@ export default function Monitor() {
     const [aiSuggestionFontSize, setAiSuggestionFontSize] = useConfig('monitor_ai_suggestion_font_size', 16);
     const [aiSuggestionModes, setAiSuggestionModes] = useConfig('monitor_ai_suggestion_modes', ['suggest_answer']);
     const [showAIPanel, setShowAIPanel] = useState(false);
+
+    // Narration (spoken translation → virtual mic)
+    const [narrationEnabled, setNarrationEnabled]     = useConfig('narration_enabled', false);
+    const [narrationDeviceName, setNarrationDeviceName] = useConfig('narration_device_name', '');
+    const [showNarrationPanel, setShowNarrationPanel] = useState(false);
+    const [narrationPttActive, setNarrationPttActive] = useState(false);
+    const [narrationDrainActive, setNarrationDrainActive] = useState(false);
+    const prevSourceAudioRef = useRef(null);
+    const prevTtsEnabledRef = useRef(false);
+    const pttForcedTtsRef = useRef(false);
+    const pttDrainTimerRef = useRef(null);
+    const pttReleaseDeadlineRef = useRef(0);
+    const pttRestoreCaptureTimerRef = useRef(null);
+    const pttAwaitingTranslationRef = useRef(false);
 
     // User profile (for AI suggestion context)
     const [userProfile] = useConfig('user_profile', {});
@@ -310,6 +325,215 @@ export default function Monitor() {
         }
     }, [isTTSEnabled]);
 
+    // ── Narration: sync enabled flag to TTSQueue + manage stream ─────────────
+    // Only active when source = microphone (user's own speech → translate → BlackHole)
+    // When source = system audio, TTS is for user to hear others — must NOT go to BlackHole
+    const narrationEffectivelyActive =
+        narrationPttActive
+        || narrationDrainActive
+        || (narrationEnabled && sourceAudio === 'microphone');
+    useEffect(() => {
+        const tts = getTTSQueue();
+        tts.narrationEnabled = narrationEffectivelyActive;
+        if (narrationEffectivelyActive && narrationDeviceName) {
+            invoke('narration_start', { deviceName: narrationDeviceName })
+                .catch(err => console.error('[Narration] start failed:', err));
+        } else {
+            invoke('narration_stop').catch(() => {});
+        }
+    }, [narrationEffectivelyActive, narrationDeviceName]);
+
+    const clearPttDrainTimer = useCallback(() => {
+        if (pttDrainTimerRef.current) {
+            clearTimeout(pttDrainTimerRef.current);
+            pttDrainTimerRef.current = null;
+        }
+    }, []);
+
+    const clearPttRestoreCaptureTimer = useCallback(() => {
+        if (pttRestoreCaptureTimerRef.current) {
+            clearTimeout(pttRestoreCaptureTimerRef.current);
+            pttRestoreCaptureTimerRef.current = null;
+        }
+    }, []);
+
+    useEffect(() => () => {
+        clearPttDrainTimer();
+        clearPttRestoreCaptureTimer();
+    }, [clearPttDrainTimer, clearPttRestoreCaptureTimer]);
+
+    const handleNarrationSetDevice = useCallback((deviceName) => {
+        setNarrationDeviceName(deviceName);
+    }, [setNarrationDeviceName]);
+
+    const toggleNarration = useCallback(() => {
+        setNarrationEnabled(!narrationEnabled);
+    }, [narrationEnabled, setNarrationEnabled]);
+
+    // ── PTT handlers ─────────────────────────────────────────────────────────
+    const restartCaptureWithSource = useCallback(async (source) => {
+        if (!isRunning) return true;
+        await invoke('stop_audio_capture').catch(() => {});
+
+        const startOnce = () => invoke('start_audio_capture', {
+            source,
+            batchIntervalMs: batchIntervalRef.current,
+        });
+
+        try {
+            await startOnce();
+            return true;
+        } catch (firstErr) {
+            // Retry once to avoid transient switch races between cpal streams.
+            await new Promise(resolve => setTimeout(resolve, 120));
+            try {
+                await startOnce();
+                return true;
+            } catch (secondErr) {
+                const message = `[PTT] Failed to switch capture to '${source}': ${String(secondErr || firstErr)}`;
+                console.error(message);
+                setErrorMsg(message);
+                setTimeout(() => setErrorMsg(''), 5000);
+                return false;
+            }
+        }
+    }, [isRunning]);
+
+    const handlePttStart = useCallback(async () => {
+        if (!narrationDeviceName) return;
+        clearPttDrainTimer();
+        clearPttRestoreCaptureTimer();
+        setNarrationDrainActive(false);
+        pttAwaitingTranslationRef.current = false;
+        prevSourceAudioRef.current = sourceAudioRef.current;
+
+        // Snapshot TTS state BEFORE any await so handlePttEnd (which may fire
+        // during the await) reads the correct wasForced value.
+        const tts = getTTSQueue();
+        prevTtsEnabledRef.current = tts.enabled;
+        if (!tts.enabled) {
+            pttForcedTtsRef.current = true;
+            setIsTTSEnabled(true);
+            tts.setEnabled(true);
+            console.log(`[PTT-TTS] ${Date.now()} handlePttStart — TTS forced ON`);
+        } else {
+            pttForcedTtsRef.current = false;
+            console.log(`[PTT-TTS] ${Date.now()} handlePttStart — TTS already ON`);
+        }
+
+        // Restart audio capture on microphone source (bypass persisted sourceAudio)
+        if (isRunning && sourceAudioRef.current !== 'microphone') {
+            const switched = await restartCaptureWithSource('microphone');
+            if (!switched) {
+                prevSourceAudioRef.current = null;
+                // Undo TTS enable if capture failed
+                if (pttForcedTtsRef.current) {
+                    pttForcedTtsRef.current = false;
+                    setIsTTSEnabled(false);
+                    tts.setEnabled(false);
+                }
+                return;
+            }
+        }
+
+        setNarrationPttActive(true);
+    }, [narrationDeviceName, isRunning, restartCaptureWithSource, clearPttDrainTimer, clearPttRestoreCaptureTimer]);
+
+    const handlePttEnd = useCallback(async () => {
+        const prev = prevSourceAudioRef.current;
+        setNarrationPttActive(false);
+        prevSourceAudioRef.current = null;
+        clearPttDrainTimer();
+        clearPttRestoreCaptureTimer();
+
+        // Always keep narration route alive when a device is configured so the full
+        // STT → translate → TTS fetch → narration_inject_audio pipeline has time to
+        // complete even after the PTT button is released.
+        const tts = getTTSQueue();
+        const wasForced = pttForcedTtsRef.current && !prevTtsEnabledRef.current;
+
+        if (narrationDeviceName) {
+            setNarrationDrainActive(true);
+            // Hard cap: 30 s covers STT latency + translation + ElevenLabs synthesis + playback.
+            // The drain exits early once TTS finishes AND translation has arrived.
+            pttReleaseDeadlineRef.current = Date.now() + 30_000;
+            pttAwaitingTranslationRef.current = true;
+
+            const finishWhenDrained = () => {
+                const withinHardCap = Date.now() < pttReleaseDeadlineRef.current;
+                // Keep alive while:
+                //   a) TTS is playing (must finish before tearing down narration route)
+                //   b) Translation hasn't arrived yet (up to hard cap)
+                if (tts.isPlaying || (pttAwaitingTranslationRef.current && withinHardCap)) {
+                    pttDrainTimerRef.current = setTimeout(finishWhenDrained, 160);
+                    return;
+                }
+                pttDrainTimerRef.current = null;
+                pttForcedTtsRef.current = false;
+                setNarrationDrainActive(false);
+                // Only disable TTS if PTT had forced it on; leave it on if user had it enabled.
+                if (wasForced) {
+                    setIsTTSEnabled(false);
+                    tts.setEnabled(false);
+                }
+            };
+
+            finishWhenDrained();
+        } else {
+            pttAwaitingTranslationRef.current = false;
+            if (wasForced) {
+                pttForcedTtsRef.current = false;
+                setNarrationDrainActive(false);
+                setIsTTSEnabled(false);
+                tts.setEnabled(false);
+            } else {
+                setNarrationDrainActive(false);
+            }
+        }
+
+        // Restore audio capture to original source with a short delay so STT can
+        // finalize the just-spoken utterance after pointer release.
+        if (isRunning && prev && prev !== 'microphone') {
+            const releaseAt = Date.now();
+            const maxWaitMs = 6000;
+            const tryRestoreCapture = () => {
+                const waited = Date.now() - releaseAt;
+                if (pttAwaitingTranslationRef.current && waited < maxWaitMs) {
+                    pttRestoreCaptureTimerRef.current = setTimeout(tryRestoreCapture, 180);
+                    return;
+                }
+                pttRestoreCaptureTimerRef.current = null;
+                restartCaptureWithSource(prev);
+            };
+            pttRestoreCaptureTimerRef.current = setTimeout(tryRestoreCapture, 2500);
+        }
+    }, [isRunning, narrationDeviceName, restartCaptureWithSource, clearPttDrainTimer, clearPttRestoreCaptureTimer]);
+
+    // ── Narration test signal (440 Hz, 1 s) ──────────────────────────────────
+    const handleNarrationTestSignal = useCallback(async () => {
+        if (!narrationDeviceName) throw new Error('No device configured');
+        const wasActive = narrationEffectivelyActive;
+        if (!wasActive) {
+            await invoke('narration_start', { deviceName: narrationDeviceName });
+        }
+        const sampleRate = 44100;
+        const numSamples = sampleRate; // 1 second
+        const pcm16 = new Int16Array(numSamples);
+        for (let i = 0; i < numSamples; i++) {
+            pcm16[i] = Math.round(Math.sin(2 * Math.PI * 440 * i / sampleRate) * 16383);
+        }
+        const bytes = new Uint8Array(pcm16.buffer);
+        let bin = '';
+        const CHUNK = 8192;
+        for (let i = 0; i < bytes.length; i += CHUNK) {
+            bin += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+        }
+        await invoke('narration_inject_audio', { pcm16Base64: btoa(bin), sampleRate });
+        if (!wasActive) {
+            setTimeout(() => invoke('narration_stop').catch(() => {}), 1300);
+        }
+    }, [narrationDeviceName, narrationEffectivelyActive]);
+
     // Keep ref in sync so close handler can read it without stale closure
     useEffect(() => { autosaveEnabledRef.current = autosaveEnabled; }, [autosaveEnabled]);
 
@@ -429,9 +653,16 @@ export default function Monitor() {
         }
 
         client.onOriginal = (text, speaker) => {
+            console.debug('[NarrationDebug STT onOriginal:', {
+                chars: text?.length ?? 0,
+                speaker: speaker ?? null,
+            });
             pendingOriginalRef.current = { text, speaker };
         };
         client.onTranslation = (text) => {
+            pttAwaitingTranslationRef.current = false;
+            const tts = getTTSQueue();
+            console.log(`[PTT-TTS] ${Date.now()} onTranslation — text:"${text?.slice(0, 40)}" tts.enabled:${tts.enabled} tts.narrationEnabled:${tts.narrationEnabled} narrationPttActive:${narrationPttActive} narrationEffectivelyActive:${narrationEffectivelyActive}`);
             const pending = pendingOriginalRef.current;
             pendingOriginalRef.current = null;
             const entry = {
@@ -449,6 +680,7 @@ export default function Monitor() {
                 saveQueueRef.current.push(entry);
                 flushSaveQueue();
             }
+            console.log(`[PTT-TTS] ${Date.now()} → calling getTTSQueue().enqueue()`);
             getTTSQueue().enqueue(text);
         };
         client.onProvisional = (text) => setProvisional(text || '');
@@ -1004,6 +1236,14 @@ export default function Monitor() {
                 onToggleSortOrder={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
                 showAIPanel={showAIPanel}
                 onToggleAIPanel={toggleAIPanel}
+                showNarrationPanel={showNarrationPanel}
+                onToggleNarrationPanel={() => setShowNarrationPanel(v => !v)}
+                isNarrationActive={narrationEffectivelyActive}
+                showPttButton={Boolean(narrationDeviceName)}
+                isPttActive={narrationPttActive}
+                isPttEnabled={Boolean(narrationDeviceName) && isRunning}
+                onPttStart={handlePttStart}
+                onPttEnd={handlePttEnd}
             />
 
             {/* Context panel — absolute overlay, does not affect window size */}
@@ -1051,6 +1291,28 @@ export default function Monitor() {
                         />
                     </div>
                 </div>
+                </>
+            )}
+
+            {/* Narration Panel overlay */}
+            {showNarrationPanel && !isSubMode && (
+                <>
+                    <div className='absolute inset-0 z-40' onClick={() => setShowNarrationPanel(false)} />
+                    <div
+                        className='absolute left-2 right-2 z-50 overflow-y-auto rounded-lg border border-content3/40 shadow-xl'
+                        style={{ top: '72px', maxHeight: 'calc(100% - 72px)', background: 'hsl(var(--nextui-content2))' }}
+                    >
+                        <div className='p-3'>
+                            <NarrationPanel
+                                isNarrationActive={narrationEffectivelyActive}
+                                narrationDeviceName={narrationDeviceName ?? ''}
+                                onSetDevice={handleNarrationSetDevice}
+                                onToggleNarration={toggleNarration}
+                                isPttActive={narrationPttActive}
+                                onTestSignal={handleNarrationTestSignal}
+                            />
+                        </div>
+                    </div>
                 </>
             )}
 

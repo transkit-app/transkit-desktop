@@ -119,6 +119,10 @@ export class TTSQueue {
         this.onPlayStart = null;  // (text: string) => void
         this.onPlayEnd   = null;  // () => void
 
+        // ── narration (virtual mic injection) ─────────────────────────────
+        /** Set to true to also inject TTS audio into the virtual mic via narration_inject_audio */
+        this.narrationEnabled = false;
+
         // ── config ─────────────────────────────────────────────────────────
         this.sampleRate    = 24000;
         this.apiType       = 'vieneu_stream';
@@ -222,7 +226,8 @@ export class TTSQueue {
     }
 
     setEnabled(enabled) {
-        console.debug('[TTS] setEnabled:', enabled, '| apiType:', this.apiType);
+        console.log(`[PTT-TTS] ${Date.now()} setEnabled(${enabled}) apiType:${this.apiType}`);
+        if (!enabled) console.trace('[PTT-TTS] setEnabled(false) — call stack:');
         this.enabled = enabled;
         if (enabled) {
             this._unlockAudio();
@@ -235,11 +240,11 @@ export class TTSQueue {
 
     enqueue(text) {
         if (!this.enabled || !text?.trim()) {
-            console.debug('[TTS] enqueue skipped — enabled:', this.enabled, 'text:', !!text?.trim());
+            console.log(`[PTT-TTS] ${Date.now()} enqueue SKIPPED — enabled:${this.enabled} hasText:${!!text?.trim()}`);
             return;
         }
         const trimmed = text.trim();
-        console.debug('[TTS] enqueue →', this.apiType, JSON.stringify(trimmed.slice(0, 30)));
+        console.log(`[PTT-TTS] ${Date.now()} enqueue START — apiType:${this.apiType} text:"${trimmed.slice(0, 40)}"`);
 
         if (this.apiType === 'google') {
             this._enqueueGoogle(trimmed);
@@ -380,28 +385,42 @@ export class TTSQueue {
         const queueGen = this._generation;
         if (!this.isPlaying) this.isPlaying = true;
 
+        console.log(`[PTT-TTS] ${Date.now()} _enqueueScheduled — chunks:${chunks.length} apiType:${this.apiType}`);
+
         // ── Parallel fetch ──────────────────────────────────────────────────
-        const fetchPromises = chunks.map(chunk =>
-            this._fetchAudio(chunk).catch(err => {
-                console.error('[TTS] prefetch failed:', String(err));
-                return null;
-            }),
-        );
+        const fetchPromises = chunks.map((chunk, i) => {
+            const t0 = Date.now();
+            console.log(`[PTT-TTS] ${t0} fetch[${i}] START — "${chunk.slice(0, 40)}"`);
+            return this._fetchAudio(chunk)
+                .then(r => {
+                    console.log(`[PTT-TTS] ${Date.now()} fetch[${i}] DONE (+${Date.now() - t0}ms) — mime:${r?.mime ?? 'null'} bytes:${r?.buffer?.byteLength ?? 0}`);
+                    return r;
+                })
+                .catch(err => {
+                    console.error(`[PTT-TTS] ${Date.now()} fetch[${i}] ERROR (+${Date.now() - t0}ms) — ${err}`);
+                    return null;
+                });
+        });
 
         this._pendingCount += chunks.length;
 
         // ── Serial enqueue ──────────────────────────────────────────────────
         // Each iteration appends to _orderChain, ensuring strict ordering.
-        for (const fetchPromise of fetchPromises) {
+        for (const [i, fetchPromise] of fetchPromises.entries()) {
             this._orderChain = this._orderChain
                 .then(async () => {
+                    console.log(`[PTT-TTS] ${Date.now()} orderChain[${i}] awaiting fetch…`);
                     const result = await fetchPromise;
 
                     // Always decrement so _calcRate() stays accurate.
                     this._pendingCount = Math.max(0, this._pendingCount - 1);
 
-                    console.debug('[TTS] fetch result:', result ? result.mime : 'null', '| enabled:', this.enabled, '| gen ok:', this._generation === queueGen);
-                    if (!result || !this.enabled || this._generation !== queueGen) return;
+                    const genOk = this._generation === queueGen;
+                    console.log(`[PTT-TTS] ${Date.now()} orderChain[${i}] result — mime:${result?.mime ?? 'null'} enabled:${this.enabled} genOk:${genOk}`);
+                    if (!result || !this.enabled || !genOk) {
+                        console.warn(`[PTT-TTS] ${Date.now()} orderChain[${i}] DROPPED — result:${!!result} enabled:${this.enabled} genOk:${genOk}`);
+                        return;
+                    }
 
                     // Wrap raw PCM-F32 in a WAV header so HTMLAudioElement can play it.
                     let { buffer, mime } = result;
@@ -410,7 +429,7 @@ export class TTSQueue {
                         mime   = 'audio/wav';
                     }
 
-                    console.debug('[TTS] push to playQueue — mime:', mime, '| queueActive:', this._playQueueActive, '| queueLen:', this._playQueue.length);
+                    console.log(`[PTT-TTS] ${Date.now()} orderChain[${i}] → playQueue — mime:${mime} queueActive:${this._playQueueActive} queueLen:${this._playQueue.length}`);
                     this._playQueue.push({ buffer, mime, text, rate: this._calcRate() });
 
                     // Start the player if it's idle.
@@ -418,7 +437,7 @@ export class TTSQueue {
                 })
                 .catch(err => {
                     this._pendingCount = Math.max(0, this._pendingCount - 1);
-                    console.error('[TTS] order-chain error:', String(err));
+                    console.error(`[PTT-TTS] ${Date.now()} orderChain[${i}] CHAIN ERROR — ${err}`);
                 });
         }
     }
@@ -448,18 +467,75 @@ export class TTSQueue {
         const { buffer, mime, text, rate } = this._playQueue.shift();
         const gen = this._generation;
 
-        console.debug('[TTS] _advancePlayQueue — mime:', mime, '| rate:', rate?.toFixed(2), '| queueLen:', this._playQueue.length);
+        console.log(`[PTT-TTS] ${Date.now()} _advancePlayQueue — mime:${mime} rate:${rate?.toFixed(2)} narrationEnabled:${this.narrationEnabled}`);
 
         this.playingText = text;
         this.onPlayStart?.(text);
 
+        // Narration: decode and inject into virtual mic (fire-and-forget, parallel with playback)
+        if (this.narrationEnabled) {
+            console.log(`[PTT-TTS] ${Date.now()} _injectNarration START`);
+            this._injectNarration(buffer.slice(0), mime)
+                .then(() => console.log(`[PTT-TTS] ${Date.now()} _injectNarration DONE`))
+                .catch(err => console.error(`[PTT-TTS] ${Date.now()} _injectNarration ERROR — ${err}`));
+        } else {
+            console.warn(`[PTT-TTS] ${Date.now()} _advancePlayQueue — narrationEnabled=false, skip inject`);
+        }
+
+        const t0play = Date.now();
+        console.log(`[PTT-TTS] ${t0play} _playViaElement START`);
         this._playViaElement(buffer, mime, rate)
+            .then(ok => console.log(`[PTT-TTS] ${Date.now()} _playViaElement DONE (+${Date.now() - t0play}ms) ok:${ok}`))
+            .catch(err => console.error(`[PTT-TTS] ${Date.now()} _playViaElement ERROR — ${err?.name}: ${err?.message}`))
             .finally(() => {
                 if (this._generation !== gen) return;
                 this.playingText = null;
                 this.onPlayEnd?.();
                 this._advancePlayQueue();
             });
+    }
+
+    /**
+     * Decode audio buffer to PCM16, then send to Rust narration_inject_audio.
+     * Uses AudioContext.decodeAudioData — must receive a copy (buffer.slice(0)) to avoid detach.
+     */
+    async _injectNarration(bufferCopy, mime) {
+        // We need a temporary AudioContext just for decoding
+        const ctx = new AudioContext();
+        try {
+            const audioBuffer = await ctx.decodeAudioData(bufferCopy);
+            const channelData = audioBuffer.getChannelData(0); // mono
+            const sampleRate = audioBuffer.sampleRate;
+            console.debug('[NarrationDebug TTS decoded for inject', {
+                sampleRate,
+                frames: channelData.length,
+                mime,
+            });
+
+            // Float32 → PCM16
+            const pcm16 = new Int16Array(channelData.length);
+            for (let i = 0; i < channelData.length; i++) {
+                pcm16[i] = Math.max(-32768, Math.min(32767, Math.round(channelData[i] * 32767)));
+            }
+
+            // Int16Array → base64
+            const bytes = new Uint8Array(pcm16.buffer);
+            let bin = '';
+            const CHUNK = 8192;
+            for (let i = 0; i < bytes.length; i += CHUNK) {
+                bin += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+            }
+            const pcm16Base64 = btoa(bin);
+
+            console.debug('[NarrationDebug invoke narration_inject_audio', {
+                sampleRate,
+                base64Len: pcm16Base64.length,
+            });
+            await invoke('narration_inject_audio', { pcm16Base64, sampleRate });
+            console.debug('[NarrationDebug narration_inject_audio success');
+        } finally {
+            ctx.close().catch(() => {});
+        }
     }
 
     _calcRate() {
@@ -581,6 +657,8 @@ export class TTSQueue {
         const reqBody = { text, voice_id: this.voiceId || 'NgocHuyen', chunk_size: 100 };
         if (this.model) reqBody.model = this.model;
 
+        const t0v = Date.now();
+        console.log(`[PTT-TTS] ${t0v} vieneu_stream POST ${base}/synthesize voice:${this.voiceId}`);
         const res = await tauriFetch(`${base}/synthesize`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -588,6 +666,7 @@ export class TTSQueue {
             responseType: ResponseType.Binary,
             timeout: 60,
         });
+        console.log(`[PTT-TTS] ${Date.now()} vieneu_stream response (+${Date.now() - t0v}ms) status:${res.status} bytes:${res.data?.length ?? 0}`);
         if (res.status >= 400) throw new Error(`TTS HTTP ${res.status}`);
         const raw = new Uint8Array(res.data);
         const isRiff = raw[0] === 0x52 && raw[1] === 0x49 && raw[2] === 0x46 && raw[3] === 0x46;
@@ -597,7 +676,10 @@ export class TTSQueue {
 
     async _fetchCloudTTS(text) {
         if (!CLOUD_ENABLED) throw new Error('cloud_disabled');
+        const t0c = Date.now();
+        console.log(`[PTT-TTS] ${t0c} _fetchCloudTTS START voice:${this.voiceId} lang:${this.cloudLang}`);
         const arrayBuffer = await callCloudTTS(text, this.voiceId || 'auto', this.cloudLang || 'auto');
+        console.log(`[PTT-TTS] ${Date.now()} _fetchCloudTTS DONE (+${Date.now() - t0c}ms) bytes:${arrayBuffer?.byteLength ?? 0}`);
         return { buffer: arrayBuffer, mime: 'audio/mpeg' };
     }
 
@@ -607,6 +689,9 @@ export class TTSQueue {
         const id = crypto.randomUUID?.()
             ?? Math.random().toString(36).slice(2) + Date.now().toString(36);
 
+        const t0 = Date.now();
+        console.log(`[PTT-TTS] ${t0} _fetchEdgeTTS — id:${id} voice:${this.edgeVoice} text:"${text.slice(0, 40)}"`);
+
         const buffer = await new Promise((resolve, reject) => {
             _edgePending.set(id, { chunks: [], resolve, reject });
             invoke('synthesize_edge_tts', {
@@ -615,12 +700,16 @@ export class TTSQueue {
                 voice: this.edgeVoice || 'vi-VN-HoaiMyNeural',
                 rate:  this.edgeRate  || '+0%',
                 pitch: this.edgePitch || '+0Hz',
-            }).catch(err => {
+            })
+            .then(() => console.log(`[PTT-TTS] ${Date.now()} _fetchEdgeTTS invoke OK (+${Date.now() - t0}ms) — waiting for edge_tts_done event…`))
+            .catch(err => {
+                console.error(`[PTT-TTS] ${Date.now()} _fetchEdgeTTS invoke FAILED — ${err}`);
                 _edgePending.delete(id);
                 reject(new Error(String(err)));
             });
         });
 
+        console.log(`[PTT-TTS] ${Date.now()} _fetchEdgeTTS RESOLVED (+${Date.now() - t0}ms) bytes:${buffer?.byteLength ?? 0}`);
         return { buffer, mime: 'audio/mpeg' };
     }
 
