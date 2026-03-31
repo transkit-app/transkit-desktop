@@ -178,6 +178,7 @@ export default function Monitor() {
     const narrationClientKeyRef = useRef('');
     const narrationConfigRef = useRef(null); // { serviceName, config }
     const pttActiveRef = useRef(false);
+    const narrationEnabledRef = useRef(narrationEnabled);
 
     // User profile (for AI suggestion context)
     const [userProfile] = useConfig('user_profile', {});
@@ -642,6 +643,7 @@ export default function Monitor() {
 
     const sourceAudioRef = useRef(sourceAudio);
     useEffect(() => { sourceAudioRef.current = sourceAudio; }, [sourceAudio]);
+    useEffect(() => { narrationEnabledRef.current = narrationEnabled; }, [narrationEnabled]);
     const batchIntervalRef = useRef(100);
 
 
@@ -655,7 +657,11 @@ export default function Monitor() {
             const bytes = new Uint8Array(binary.length);
             for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
             const buffer = bytes.buffer;
-            if (pttActiveRef.current && narrationClientRef.current) {
+            const routeToNarration = narrationClientRef.current && (
+                pttActiveRef.current ||
+                (narrationEnabledRef.current && sourceAudioRef.current === 'microphone')
+            );
+            if (routeToNarration) {
                 narrationClientRef.current.sendAudio(buffer);
             } else {
                 transcriptionClientRef.current?.client?.sendAudio(buffer);
@@ -709,7 +715,13 @@ export default function Monitor() {
 
         // Store config for narration client (same service + API key, different lang)
         narrationConfigRef.current = { serviceName, config: transcriptionConfig };
-        if (narrationDeviceName) startNarrationClient({ quiet: true });
+        if (narrationDeviceName) {
+            const narrationReady = startNarrationClient({ quiet: true });
+            if (narrationReady === false && sourceLang === 'auto') {
+                setErrorMsg(t('monitor.narration_ptt_requires_fixed_source'));
+                setTimeout(() => setErrorMsg(''), 6000);
+            }
+        }
 
         // Tracks remaining seconds shown in the trial notice popup (populated via onCloudSession).
         let pendingRemainingSeconds = null;

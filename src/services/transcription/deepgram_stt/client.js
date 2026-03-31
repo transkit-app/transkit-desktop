@@ -159,6 +159,19 @@ export class DeepgramClient {
         }
     }
 
+    finalize() {
+        if (!this._socket || !this.isConnected) return;
+        try {
+            if (typeof this._socket.send === 'function') {
+                this._socket.send(JSON.stringify({ type: 'Finalize' }));
+            } else if (typeof this._socket.sendFinalize === 'function') {
+                this._socket.sendFinalize({ type: 'Finalize' });
+            }
+        } catch (err) {
+            console.warn('[Deepgram] finalize failed:', err);
+        }
+    }
+
     disconnect() {
         this._intentionalDisconnect = true;
         this._stopKeepAlive();
@@ -166,7 +179,11 @@ export class DeepgramClient {
 
         if (this._socket) {
             try {
-                this._socket.sendCloseStream();
+                if (typeof this._socket.send === 'function') {
+                    this._socket.send(JSON.stringify({ type: 'CloseStream' }));
+                } else if (typeof this._socket.sendCloseStream === 'function') {
+                    this._socket.sendCloseStream({ type: 'CloseStream' });
+                }
                 this._socket.close();
             } catch (err) {
                 console.error('[Deepgram] Error during disconnect:', err);
@@ -183,7 +200,13 @@ export class DeepgramClient {
     _startKeepAlive(socket) {
         this._stopKeepAlive();
         this._keepAliveTimer = setInterval(() => {
-            try { socket.sendKeepAlive(); } catch (_) {}
+            try {
+                if (typeof socket.send === 'function') {
+                    socket.send(JSON.stringify({ type: 'KeepAlive' }));
+                } else if (typeof socket.sendKeepAlive === 'function') {
+                    socket.sendKeepAlive({ type: 'KeepAlive' });
+                }
+            } catch (_) {}
         }, 8000);
     }
 
@@ -195,6 +218,11 @@ export class DeepgramClient {
     // ─── Message handler ──────────────────────────────────────────────────────
 
     _handleMessage(data) {
+        if (data.type === 'Error') {
+            const msg = data.description || data.message || 'Deepgram error';
+            this.onError?.(msg);
+            return;
+        }
         if (data.type !== 'Results') return;
         const transcript = data.channel?.alternatives?.[0]?.transcript;
         if (!transcript?.trim()) return;
