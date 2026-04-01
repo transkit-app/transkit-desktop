@@ -1,5 +1,23 @@
 # Changelog
 
+## 3.2.4 (2026-04-01)
+
+### UI & UX Enhancements:
+- **Header Theme Toggle**: Added a compact sun/moon switch directly in the Config window header for instant light/dark mode switching.
+- **Config Window Refactor**: Increased sidebar width to **250px** for better readability and improved title/control alignment.
+- **Export Transcript**: New "Export transcript" action in the Monitor window to save your session snapshots.
+- **Improved i18n**: Added "Session expired" handling and refined labels for account usage.
+
+### TTS & Narration Expansion:
+- **Google Cloud TTS (Chirp3-HD)**: Integrated professional-grade TTS support with full control over **Voice**, **Speaking Rate**, and **Pitch**.
+- **Enhanced Windows Narration**:
+  - Full support for **VB-Cable** on Windows to route audio to Zoom, Teams, or Google Meet.
+  - Added step-by-step setup hints and direct download links for VB-Cable in the settings.
+  - Dynamic checklist labels that reflect the selected virtual device (`{{device}}`).
+
+### Documentation & Credits:
+- **README Restructure**: Simplified the top-level description and moved project credits (fork from Pot Desktop) to a dedicated "Credits" section, emphasizing the significant improvements and modifications made.
+
 ## 3.2.3 (2026-03-31)
 
 ### Narration & Audio Routing:
