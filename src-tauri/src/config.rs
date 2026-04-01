@@ -86,22 +86,52 @@ pub fn check_service_available() -> Result<(), Error> {
         "ecdict",
         "lingva",
         "geminipro",
+        "groq",
         "niutrans",
         "ollama",
         "openai",
+        "openrouter",
         "google",
         "tencent",
+        "transkit_cloud_translate",
         "transmart",
         "volcengine",
         "yandex",
         "youdao",
     ];
-    let builtin_tts_list: Vec<&str> = vec!["edge_tts", "google_tts"];
+    let builtin_tts_list: Vec<&str> = vec![
+        "edge_tts",
+        "elevenlabs_tts",
+        "google_tts",
+        "lingva",
+        "openai_tts",
+        "transkit_cloud_tts",
+        "vieneu_tts",
+    ];
+    let builtin_ai_list: Vec<&str> = vec![
+        "gemini_ai",
+        "groq_ai",
+        "ollama_ai",
+        "openai_ai",
+        "openai_compat_ai",
+        "transkit_cloud_ai",
+    ];
+    let builtin_transcription_list: Vec<&str> = vec![
+        "assemblyai_stt",
+        "custom_stt",
+        "deepgram_stt",
+        "gladia_stt",
+        "openai_whisper_stt",
+        "soniox_stt",
+        "transkit_cloud_stt",
+    ];
     let builtin_collection_list: Vec<&str> = vec!["anki", "eudic"];
 
     let plugin_recognize_list: Vec<String> = get_plugin_list("recognize").unwrap_or_default();
     let plugin_translate_list: Vec<String> = get_plugin_list("translate").unwrap_or_default();
     let plugin_tts_list: Vec<String> = get_plugin_list("tts").unwrap_or_default();
+    let plugin_ai_list: Vec<String> = get_plugin_list("ai").unwrap_or_default();
+    let plugin_transcription_list: Vec<String> = get_plugin_list("transcription").unwrap_or_default();
     let plugin_collection_list: Vec<String> = get_plugin_list("collection").unwrap_or_default();
     if let Some(recognize_service_list) = get("recognize_service_list") {
         let recognize_service_list: Vec<String> = serde_json::from_value(recognize_service_list)?;
@@ -132,6 +162,25 @@ pub fn check_service_available() -> Result<(), Error> {
         if fixed != tts_service_list {
             set("tts_service_list", fixed);
         }
+    }
+    if let Some(ai_service_list) = get("ai_service_list") {
+        let ai_service_list: Vec<String> = serde_json::from_value(ai_service_list)?;
+        check_available(
+            ai_service_list,
+            builtin_ai_list,
+            plugin_ai_list,
+            "ai_service_list",
+        );
+    }
+    if let Some(transcription_service_list) = get("transcription_service_list") {
+        let transcription_service_list: Vec<String> =
+            serde_json::from_value(transcription_service_list)?;
+        check_available(
+            transcription_service_list,
+            builtin_transcription_list,
+            plugin_transcription_list,
+            "transcription_service_list",
+        );
     }
     if let Some(collection_service_list) = get("collection_service_list") {
         let collection_service_list: Vec<String> = serde_json::from_value(collection_service_list)?;
