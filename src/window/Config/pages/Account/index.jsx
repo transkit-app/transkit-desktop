@@ -10,6 +10,7 @@ import {
   signInWithGitHub,
   signOut,
   getUser,
+  getSession,
   getUserProfile,
   updateUserProfile,
   onAuthStateChange,
@@ -627,7 +628,16 @@ export default function Account() {
 
   // Auth + initial load (runs once; does not re-run when user object changes)
   useEffect(() => {
-    getUser().then((u) => {
+    getUser().then(async (u) => {
+      if (!u) {
+        // Distinguish "never logged in" from "token expired/invalid"
+        const session = await getSession()
+        if (session) {
+          // Had a session but server rejected it — force clean logout
+          await signOut()
+          toast.error(t('config.account.session_expired'))
+        }
+      }
       userRef.current = u
       setUser(u)
       if (u) refreshProfile()

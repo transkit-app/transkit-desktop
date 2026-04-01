@@ -270,7 +270,8 @@
         "unit_chars": "ký tự",
         "unit_requests": "yêu cầu",
         "translate_label": "Dịch thuật",
-        "powered_by_note": "AI & Dịch thuật: Gemini 2.5 Flash · TTS: ElevenLabs"
+        "powered_by_note": "AI & Dịch thuật: Gemini 2.5 Flash · TTS: ElevenLabs",
+        "session_expired": "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."
       },
       "backup": {
         "label": "Sao lưu",

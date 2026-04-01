@@ -270,7 +270,8 @@
         "unit_chars": "chars",
         "unit_requests": "requests",
         "translate_label": "Translation",
-        "powered_by_note": "AI & Translation: Gemini 2.5 Flash · TTS: ElevenLabs"
+        "powered_by_note": "AI & Translation: Gemini 2.5 Flash · TTS: ElevenLabs",
+        "session_expired": "Session expired. Please sign in again."
       },
       "backup": {
         "label": "Backup",
