@@ -29,10 +29,11 @@
  *   - Catch-up speed — items scheduled when the queue is long play faster
  *
  * Supported API types:
- *   edge_tts       — Rust built-in Edge TTS (Tauri events, streamed MP3)
- *   vieneu_stream  — POST {serverUrl}/synthesize → raw 32-bit float PCM
- *   openai_compat  — POST {serverUrl}/v1/audio/speech → WAV/PCM
- *   google         — GET translate.google.com TTS → MP3 (sequential)
+ *   edge_tts        — Rust built-in Edge TTS (Tauri events, streamed MP3)
+ *   vieneu_stream   — POST {serverUrl}/synthesize → raw 32-bit float PCM
+ *   openai_compat   — POST {serverUrl}/v1/audio/speech → WAV/PCM
+ *   google          — GET translate.google.com TTS → MP3 (sequential)
+ *   google_cloud_tts — POST texttospeech.googleapis.com Chirp3-HD → base64 MP3
  */
 import { fetch as tauriFetch, Body, ResponseType } from '@tauri-apps/api/http';
 import { invoke } from '@tauri-apps/api/tauri';
@@ -146,6 +147,11 @@ export class TTSQueue {
         this.elevenLabsMode    = 'wss'; // 'wss' | 'http'
         // Transkit Cloud TTS
         this.cloudLang = 'auto';
+        // Google Cloud TTS (Chirp3-HD)
+        this.gcpApiKey      = '';
+        this.gcpVoice       = 'Charon';
+        this.gcpSpeakingRate = 1.0;
+        this.gcpPitch       = 0;
 
         // ── ElevenLabs provider ────────────────────────────────────────────
         /** @type {ElevenLabsTTS|null} */
@@ -192,6 +198,7 @@ export class TTSQueue {
         edgeServerUrl, edgeVoice, edgeRate, edgePitch,
         elevenLabsApiKey, elevenLabsVoiceId, elevenLabsModelId, elevenLabsMode,
         cloudLang,
+        gcpApiKey, gcpVoice, gcpSpeakingRate, gcpPitch,
     } = {}) {
         if (serverUrl     !== undefined) this.serverUrl     = serverUrl;
         if (apiType       !== undefined) this.apiType       = apiType;
@@ -216,6 +223,10 @@ export class TTSQueue {
         if (elevenLabsModelId !== undefined) this.elevenLabsModelId = elevenLabsModelId || 'eleven_flash_v2_5';
         if (elevenLabsMode    !== undefined) this.elevenLabsMode    = elevenLabsMode    || 'wss';
         if (cloudLang         !== undefined) this.cloudLang         = cloudLang         || 'auto';
+        if (gcpApiKey         !== undefined) this.gcpApiKey         = gcpApiKey;
+        if (gcpVoice          !== undefined) this.gcpVoice          = gcpVoice          || 'Charon';
+        if (gcpSpeakingRate   !== undefined) this.gcpSpeakingRate   = gcpSpeakingRate   || 1.0;
+        if (gcpPitch          !== undefined) this.gcpPitch          = gcpPitch          ?? 0;
         // Re-configure ElevenLabs client if it exists.
         if (this._elevenlabs) {
             this._elevenlabs.updateConfig({
@@ -623,9 +634,10 @@ export class TTSQueue {
 
     /** Returns { buffer: ArrayBuffer, mime: string } */
     async _fetchAudio(text) {
-        if (this.apiType === 'google')          return this._fetchGoogle(text);
-        if (this.apiType === 'edge_tts')        return this._fetchEdgeTTSNative(text);
-        if (this.apiType === 'transkit_cloud')  return this._fetchCloudTTS(text);
+        if (this.apiType === 'google')            return this._fetchGoogle(text);
+        if (this.apiType === 'edge_tts')          return this._fetchEdgeTTSNative(text);
+        if (this.apiType === 'transkit_cloud')    return this._fetchCloudTTS(text);
+        if (this.apiType === 'google_cloud_tts')  return this._fetchGoogleCloud(text);
 
         const base = this._base();
 
@@ -707,6 +719,56 @@ export class TTSQueue {
 
         console.log(`[PTT-TTS] ${Date.now()} _fetchEdgeTTS RESOLVED (+${Date.now() - t0}ms) bytes:${buffer?.byteLength ?? 0}`);
         return { buffer, mime: 'audio/mpeg' };
+    }
+
+    async _fetchGoogleCloud(text) {
+        const LANG_MAP = {
+            auto: 'en-US', zh_cn: 'zh-CN', zh_tw: 'zh-TW', ja: 'ja-JP',
+            en: 'en-US', ko: 'ko-KR', fr: 'fr-FR', es: 'es-ES',
+            ru: 'ru-RU', de: 'de-DE', it: 'it-IT', tr: 'tr-TR',
+            pt_pt: 'pt-PT', pt_br: 'pt-BR', vi: 'vi-VN', id: 'id-ID',
+            th: 'th-TH', ms: 'ms-MY', ar: 'ar-XA', hi: 'hi-IN',
+            mn_cy: 'mn-MN', km: 'km-KH', nb_no: 'nb-NO', nn_no: 'nn-NO',
+            fa: 'fa-IR', sv: 'sv-SE', pl: 'pl-PL', nl: 'nl-NL',
+            uk: 'uk-UA', he: 'he-IL',
+        };
+        const langCode = LANG_MAP[this.cloudLang] ?? LANG_MAP[this.cloudLang?.replace('-', '_')] ?? 'en-US';
+        const voiceName = `${langCode}-Chirp3-HD-${this.gcpVoice || 'Charon'}`;
+
+        const t0 = Date.now();
+        console.log(`[PTT-TTS] ${t0} _fetchGoogleCloud START voice:${voiceName} rate:${this.gcpSpeakingRate}`);
+
+        const res = await tauriFetch(
+            `https://texttospeech.googleapis.com/v1/text:synthesize?key=${encodeURIComponent(this.gcpApiKey)}`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: Body.json({
+                    input: { text },
+                    voice: { languageCode: langCode, name: voiceName },
+                    audioConfig: {
+                        audioEncoding: 'MP3',
+                        speakingRate: this.gcpSpeakingRate ?? 1.0,
+                        pitch: this.gcpPitch ?? 0,
+                    },
+                }),
+                timeout: 30,
+            }
+        );
+
+        console.log(`[PTT-TTS] ${Date.now()} _fetchGoogleCloud DONE (+${Date.now() - t0}ms) status:${res.status}`);
+        if (res.status >= 400) {
+            const errMsg = res.data?.error?.message ?? res.status;
+            throw new Error(`Google Cloud TTS: ${errMsg}`);
+        }
+
+        const base64 = res.data?.audioContent;
+        if (!base64) throw new Error('Google Cloud TTS: empty audioContent');
+
+        const binary = atob(base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        return { buffer: bytes.buffer, mime: 'audio/mpeg' };
     }
 
     async _fetchGoogle(text) {

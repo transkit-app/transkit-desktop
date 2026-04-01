@@ -102,6 +102,7 @@ pub fn check_service_available() -> Result<(), Error> {
     let builtin_tts_list: Vec<&str> = vec![
         "edge_tts",
         "elevenlabs_tts",
+        "google_cloud_tts",
         "google_tts",
         "lingva",
         "openai_tts",

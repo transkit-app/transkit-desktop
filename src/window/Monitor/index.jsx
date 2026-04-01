@@ -54,6 +54,7 @@ const SVC_LABELS = {
     transkit_cloud_stt: 'Transkit Cloud', openai_whisper_stt: 'Whisper',
     assemblyai_stt: 'AssemblyAI',
     edge_tts: 'Edge TTS', elevenlabs_tts: 'ElevenLabs', google_tts: 'Google TTS',
+    google_cloud_tts: 'Google Cloud TTS',
     openai_tts: 'OpenAI TTS', vieneu_tts: 'VieNeu', lingva: 'Lingva',
 };
 function _svcLabel(name) {
@@ -102,6 +103,14 @@ function mapServiceConfigToTTSParams(serviceName, config) {
             return {
                 apiType: 'transkit_cloud',
                 voiceId: c.voiceId ?? 'auto',
+            };
+        case 'google_cloud_tts':
+            return {
+                apiType: 'google_cloud_tts',
+                gcpApiKey: c.apiKey ?? '',
+                gcpVoice: c.voice ?? 'Charon',
+                gcpSpeakingRate: parseFloat(c.speakingRate ?? '1.0') || 1.0,
+                gcpPitch: parseFloat(c.pitch ?? '0') || 0,
             };
         default:
             return { apiType: 'google', googleLang: 'vi', googleSpeed: 1 };

@@ -91,7 +91,7 @@ export default function Config() {
             {/* Sidebar */}
             <aside
                 className={`
-                    w-[210px] h-screen flex flex-col
+                    w-[250px] h-screen flex flex-col
                     ${transparent && osType !== 'Windows_NT' ? 'bg-background/80 backdrop-blur-lg' : 'bg-content1'}
                     border-r border-content3 dark:border-content3
                     ${osType === 'Linux' && 'rounded-l-[10px] border-l border-t border-b'}

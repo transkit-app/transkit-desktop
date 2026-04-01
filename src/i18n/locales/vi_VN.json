@@ -777,6 +777,15 @@
           "loading_usage": "Đang tải dữ liệu sử dụng…",
           "auto_provider_note": "Nhà cung cấp TTS được Transkit cấu hình và có thể thay đổi để đảm bảo chất lượng tốt nhất.",
           "not_available": "Transkit Cloud không khả dụng trong bản build này."
+        },
+        "google_cloud_tts": {
+          "title": "Google Cloud TTS (Chirp3-HD)",
+          "api_key": "API Key",
+          "voice": "Giọng đọc",
+          "speaking_rate": "Tốc độ đọc (0.25 – 2.0)",
+          "pitch": "Cao độ giọng (-20 – 20)",
+          "api_key_hint": "Lấy API key tại",
+          "api_key_hint_enable": "bật Cloud Text-to-Speech API, sau đó tạo API key."
         }
       },
       "ai": {

@@ -1,0 +1,38 @@
+export const info = {
+    name: 'google_cloud_tts',
+    icon: 'logo/google.svg',
+};
+
+// BCP-47 language codes used by Google Cloud TTS Chirp3-HD
+export enum Language {
+    auto   = 'en-US',
+    zh_cn  = 'zh-CN',
+    zh_tw  = 'zh-TW',
+    ja     = 'ja-JP',
+    en     = 'en-US',
+    ko     = 'ko-KR',
+    fr     = 'fr-FR',
+    es     = 'es-ES',
+    ru     = 'ru-RU',
+    de     = 'de-DE',
+    it     = 'it-IT',
+    tr     = 'tr-TR',
+    pt_pt  = 'pt-PT',
+    pt_br  = 'pt-BR',
+    vi     = 'vi-VN',
+    id     = 'id-ID',
+    th     = 'th-TH',
+    ms     = 'ms-MY',
+    ar     = 'ar-XA',
+    hi     = 'hi-IN',
+    mn_cy  = 'mn-MN',
+    km     = 'km-KH',
+    nb_no  = 'nb-NO',
+    nn_no  = 'nn-NO',
+    fa     = 'fa-IR',
+    sv     = 'sv-SE',
+    pl     = 'pl-PL',
+    nl     = 'nl-NL',
+    uk     = 'uk-UA',
+    he     = 'he-IL',
+}
