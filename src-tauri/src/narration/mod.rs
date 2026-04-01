@@ -66,7 +66,7 @@ pub fn narration_detect_devices() -> Vec<String> {
 ///        already present, then refreshes the device list.
 /// Both: returns the device name to use in narration_start().
 #[tauri::command]
-pub fn narration_setup(_state: State<'_, NarrationState>, device_name: String) -> Result<String, String> {
+pub fn narration_setup(state: State<'_, NarrationState>, device_name: String) -> Result<String, String> {
     #[cfg(target_os = "linux")]
     {
         if device_name.is_empty() {
