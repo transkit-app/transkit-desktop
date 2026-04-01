@@ -47,6 +47,11 @@ export default function ServiceItem(props) {
                             />
                             <Spacer x={2} />
                             <h2 className='my-auto'>{getDisplayInstanceName(serviceInstanceConfig[INSTANCE_NAME_CONFIG_KEY], () => t(`services.translate.${serviceName}.title`))}</h2>
+                            {builtinServices[serviceName]?.info?.cloud && (
+                                <span className='ml-2 my-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500 text-white leading-none shrink-0'>
+                                    Cloud
+                                </span>
+                            )}
                         </>
                     )}
                     {serviceSourceType === ServiceSourceType.PLUGIN && (

@@ -64,6 +64,13 @@ export default function SelectModal(props) {
                             alt=''
                         />
                     }
+                    endContent={
+                        service.info.cloud && (
+                            <span className='text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500 text-white leading-none shrink-0'>
+                                Cloud
+                            </span>
+                        )
+                    }
                 >
                     {t(`services.translate.${service.info.name}.title`)}
                 </Button>

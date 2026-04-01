@@ -2,8 +2,6 @@
 
 TransKit Desktop is a cross-platform translation, OCR, realtime monitor, and TTS app for Windows, macOS, and Linux.
 
-This project is a fork of [Pot Desktop](https://github.com/pot-app/pot-desktop) and is released under GPL-3.0-only.
-
 <div align="center">
 
 <h3>English | <a href='./README_VI.md'>Tiếng Việt</a> | <a href='./README_CN.md'>中文</a> | <a href='./README_KR.md'>한글</a></h3>
@@ -223,6 +221,12 @@ pnpm tauri build
    - clear summary
    - screenshots/GIFs for UI changes
    - migration notes if config keys are changed
+
+## Credits
+
+This project was originally forked from [Pot Desktop](https://github.com/pot-app/pot-desktop).
+
+Significant improvements and modifications have been made.
 
 ## License
 

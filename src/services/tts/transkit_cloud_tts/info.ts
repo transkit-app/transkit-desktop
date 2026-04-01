@@ -1,6 +1,7 @@
 export const info = {
     name: 'transkit_cloud_tts',
     icon: 'transkit.png',
+    cloud: true,
 };
 
 // Cloud TTS supports all languages — pass through as-is

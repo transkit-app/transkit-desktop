@@ -1,6 +1,7 @@
 export const info = {
     name: 'transkit_cloud_translate',
     icon: 'transkit.png',
+    cloud: true,
 };
 
 export enum Language {
