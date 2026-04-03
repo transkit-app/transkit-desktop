@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, memo } from 'react'
 import { Button, Avatar, Card, CardBody, Chip, Progress, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from '@nextui-org/react'
 import { FaGoogle, FaGithub } from 'react-icons/fa'
-import { MdLogout, MdSync, MdPerson, MdCloudDone, MdMic, MdVolumeUp, MdAutoAwesome, MdTranslate } from 'react-icons/md'
+import { MdLogout, MdSync, MdPerson, MdCloudDone, MdMic, MdVolumeUp, MdAutoAwesome, MdTranslate, MdOpenInNew } from 'react-icons/md'
 import { open as openBrowser } from '@tauri-apps/api/shell'
 import toast, { Toaster } from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
@@ -19,6 +19,7 @@ import {
 import { useConfig } from '../../../../hooks'
 
 const PRICING_URL = 'https://transkit.app/pricing'
+const DASHBOARD_URL = 'https://transkit.app/dashboard'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -246,9 +247,9 @@ function ProfileForm({ authUser, cloudProfile, onCloudSynced }) {
 
 // ─── Cloud Plan Card ──────────────────────────────────────────────────────────
 
-const PLAN_BADGE_COLOR = { trial: 'warning', starter: 'primary', pro: 'success' }
+const PLAN_BADGE_COLOR = { trial: 'warning', starter: 'primary', pro: 'success', team: 'secondary' }
 
-const ServiceRow = memo(function ServiceRow({ icon, label, used, limit, unlimited, comingSoon, unit = 'minutes', t }) {
+const ServiceRow = memo(function ServiceRow({ icon, label, used, limit, unlimited, comingSoon, unit = 'minutes', addonSeconds = 0, upgradeUrl, t }) {
   if (comingSoon) {
     return (
       <div className='flex items-center justify-between py-0.5'>
@@ -303,10 +304,25 @@ const ServiceRow = memo(function ServiceRow({ icon, label, used, limit, unlimite
       </div>
       <Progress size='sm' value={pct} maxValue={100} color={color} aria-label={label} />
       {pct >= 100 && (
-        <p className='text-xs text-danger'>{t('config.account.quota_full')}</p>
+        <div className='flex items-center justify-between'>
+          <p className='text-xs text-danger'>{t('config.account.quota_full')}</p>
+          {upgradeUrl && (
+            <button
+              onClick={() => openBrowser(upgradeUrl)}
+              className='flex items-center gap-0.5 text-xs font-medium text-primary hover:text-primary-600 transition-colors'
+            >
+              {t('config.account.buy_more', { defaultValue: 'Buy more' })} <MdOpenInNew className='text-[11px]' />
+            </button>
+          )}
+        </div>
       )}
       {pct >= 70 && pct < 100 && (
         <p className='text-xs text-warning-600 dark:text-warning-400'>{t('config.account.quota_low')}</p>
+      )}
+      {addonSeconds > 0 && (
+        <p className='text-xs text-success-600 dark:text-success-400'>
+          +{fmt(addonSeconds)} {unitLabel} {t('config.account.addon_remaining', { defaultValue: 'addon remaining' })}
+        </p>
       )}
     </div>
   )
@@ -317,12 +333,18 @@ function CloudPlanCard({ profile, usage, onRefresh }) {
   const [refreshing, setRefreshing] = useState(false)
   const plan = profile.plan ?? 'trial'
   const badgeColor = PLAN_BADGE_COLOR[plan] ?? 'default'
-  const planLabel = t(`config.account.plan_badge_${plan}`, { defaultValue: plan })
-  const sttLimit      = profile.plan_stt_limit
-  const ttsLimit      = profile.plan_tts_chars_limit ?? 0
-  const aiLimit       = profile.plan_ai_requests_limit ?? 0
-  const translateLimit= profile.plan_translate_requests_limit ?? 0
-  const isUpgradeable = plan === 'trial' || plan === 'starter'
+  const planLabel = t(`config.account.plan_badge_${plan}`, { defaultValue: plan.charAt(0).toUpperCase() + plan.slice(1) })
+  const sttLimit       = profile.plan_stt_limit
+  const sttAddonSeconds = profile.stt_addon_seconds ?? 0
+  const ttsLimit       = profile.plan_tts_chars_limit ?? 0
+  const aiLimit        = profile.plan_ai_requests_limit ?? 0
+  const translateLimit = profile.plan_translate_requests_limit ?? 0
+  const isUpgradeable  = plan === 'trial' || plan === 'starter'
+
+  // Subscription has ended but pg_cron hasn't downgraded yet
+  const subscriptionExpired = profile.subscription_ends_at &&
+    new Date(profile.subscription_ends_at) < new Date() &&
+    plan !== 'trial'
 
   const handleRefresh = async () => {
     if (refreshing) return
@@ -353,6 +375,13 @@ function CloudPlanCard({ profile, usage, onRefresh }) {
           </Chip>
         </div>
 
+        {/* Subscription ended warning */}
+        {subscriptionExpired && (
+          <p className='text-xs text-warning-600 dark:text-warning-400 border border-warning-200 dark:border-warning-800 bg-warning-50 dark:bg-warning-900/20 rounded-lg px-3 py-2'>
+            {t('config.account.subscription_ended', { defaultValue: 'Subscription ended. Your plan will be updated shortly.' })}
+          </p>
+        )}
+
         {/* Services */}
         <div className='flex flex-col gap-3'>
           {/* STT */}
@@ -362,6 +391,8 @@ function CloudPlanCard({ profile, usage, onRefresh }) {
             used={usage.stt}
             limit={sttLimit}
             unlimited={sttLimit === -1}
+            addonSeconds={sttAddonSeconds}
+            upgradeUrl={`${PRICING_URL}?stt`}
             unit='minutes'
             t={t}
           />
@@ -374,6 +405,7 @@ function CloudPlanCard({ profile, usage, onRefresh }) {
               used={usage.tts}
               limit={ttsLimit}
               unlimited={ttsLimit === -1}
+              upgradeUrl={`${PRICING_URL}?tts`}
               unit='chars'
               t={t}
             />
@@ -515,6 +547,7 @@ function GuestView() {
 // ─── Logged-in dashboard ──────────────────────────────────────────────────────
 
 function AccountDashboard({ user, cloudProfile, cloudUsage, onRefreshUsage, onSignOut }) {
+  const { t } = useTranslation()
   const [signingOut, setSigningOut] = useState(false)
   const { isOpen, onOpen, onClose } = useDisclosure()
 
@@ -535,30 +568,41 @@ function AccountDashboard({ user, cloudProfile, cloudUsage, onRefreshUsage, onSi
     <div className='flex flex-col gap-4'>
       {/* User info */}
       <Card>
-        <CardBody className='flex flex-row items-center gap-3'>
-          <Avatar
-            src={user?.user_metadata?.avatar_url}
-            name={user?.email?.[0]?.toUpperCase()}
-            size='md'
-            className='flex-shrink-0'
-          />
-          <div className='flex-1 min-w-0'>
-            <p className='text-sm font-medium truncate'>
-              {user?.user_metadata?.full_name || user?.email}
-            </p>
-            <p className='text-xs text-default-400 truncate'>{user?.email}</p>
+        <CardBody className='flex flex-col gap-0 p-0'>
+          <div className='flex flex-row items-center gap-3 px-3 pt-3 pb-2.5'>
+            <Avatar
+              src={user?.user_metadata?.avatar_url}
+              name={user?.email?.[0]?.toUpperCase()}
+              size='md'
+              className='flex-shrink-0'
+            />
+            <div className='flex-1 min-w-0'>
+              <p className='text-sm font-medium truncate'>
+                {user?.user_metadata?.full_name || user?.email}
+              </p>
+              <p className='text-xs text-default-400 truncate'>{user?.email}</p>
+            </div>
+            <Button
+              variant='light'
+              color='danger'
+              size='sm'
+              startContent={<MdLogout className='text-base' />}
+              isLoading={signingOut}
+              onPress={onOpen}
+              className='flex-shrink-0'
+            >
+              Sign out
+            </Button>
           </div>
-          <Button
-            variant='light'
-            color='danger'
-            size='sm'
-            startContent={<MdLogout className='text-base' />}
-            isLoading={signingOut}
-            onPress={onOpen}
-            className='flex-shrink-0'
-          >
-            Sign out
-          </Button>
+          <div className='border-t border-content3 px-3 py-2'>
+            <button
+              onClick={() => openBrowser(DASHBOARD_URL)}
+              className='flex items-center gap-1 text-xs text-default-500 hover:text-primary transition-colors'
+            >
+              <MdOpenInNew className='text-sm' />
+              {t('config.account.manage_account', { defaultValue: 'Manage account' })}
+            </button>
+          </div>
         </CardBody>
       </Card>
 
@@ -598,14 +642,16 @@ const FOCUS_REFRESH_COOLDOWN_MS = 30_000 // min 30s between focus-triggered refr
 // Extract usage counters from a profile object into a stable shape
 function extractUsage(p) {
   return {
-    stt:      p.stt_seconds_used         ?? 0,
-    tts:      p.tts_chars_used           ?? 0,
-    ai:       p.ai_requests_used         ?? 0,
-    translate: p.translate_requests_used ?? 0,
+    stt:       p.stt_seconds_used         ?? 0,
+    stt_addon: p.stt_addon_seconds        ?? 0,
+    tts:       p.tts_chars_used           ?? 0,
+    ai:        p.ai_requests_used         ?? 0,
+    translate: p.translate_requests_used  ?? 0,
   }
 }
 
 export default function Account() {
+  const { t } = useTranslation()
   const [user, setUser] = useState(null)
   const [cloudProfile, setCloudProfile] = useState(null)
   // Usage counters are kept in separate state so polling only re-renders
@@ -624,6 +670,7 @@ export default function Account() {
       // Skip state update if nothing changed to avoid re-renders
       if (prev &&
           prev.stt === next.stt &&
+          prev.stt_addon === next.stt_addon &&
           prev.tts === next.tts &&
           prev.ai === next.ai &&
           prev.translate === next.translate) return prev

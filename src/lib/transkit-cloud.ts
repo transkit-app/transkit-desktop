@@ -243,7 +243,7 @@ export async function getUserProfile(): Promise<UserProfile | null> {
   // This avoids a second query to subscription_plans which requires separate table permissions.
   const { data: profileData, error: profileError } = await supabase
     .from('profiles')
-    .select('email, full_name, avatar_url, role, company, experience_level, expertise, notes, stt_seconds_used, plan, tts_chars_used, ai_requests_used, translate_requests_used, plan_stt_limit, plan_tts_chars_limit, plan_ai_requests_limit, plan_translate_requests_limit')
+    .select('email, full_name, avatar_url, role, company, experience_level, expertise, notes, stt_seconds_used, stt_addon_seconds, plan, tts_chars_used, ai_requests_used, translate_requests_used, plan_stt_limit, plan_tts_chars_limit, plan_ai_requests_limit, plan_translate_requests_limit, subscription_ends_at')
     .eq('id', user.id)
     .single()
 
@@ -255,7 +255,9 @@ export async function getUserProfile(): Promise<UserProfile | null> {
     ...raw,
     plan_display_name:             raw.plan ?? 'trial',
     stt_seconds_used:              raw.stt_seconds_used               ?? 0,
+    stt_addon_seconds:             raw.stt_addon_seconds              ?? 0,
     plan_stt_limit:                raw.plan_stt_limit                 ?? 0,
+    subscription_ends_at:          raw.subscription_ends_at           ?? null,
     plan_tts_chars_limit:          raw.plan_tts_chars_limit           ?? 0,
     plan_ai_requests_limit:        raw.plan_ai_requests_limit         ?? 0,
     plan_translate_requests_limit: raw.plan_translate_requests_limit  ?? 0,
@@ -276,9 +278,11 @@ export interface UserProfile {
   notes: string | null
   // STT quota
   stt_seconds_used: number
-  plan: string              // 'trial' | 'starter' | 'pro'
-  plan_display_name: string // e.g. 'Free Trial', 'Starter', 'Pro'
+  stt_addon_seconds: number  // addon quota (not reset monthly)
+  plan: string              // 'trial' | 'starter' | 'pro' | 'team'
+  plan_display_name: string // e.g. 'Free Trial', 'Starter', 'Pro', 'Team'
   plan_stt_limit: number    // authoritative STT limit from subscription_plans (-1 = unlimited)
+  subscription_ends_at: string | null  // grace period end; null if active
   // TTS quota
   tts_chars_used: number
   plan_tts_chars_limit: number

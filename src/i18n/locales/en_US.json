@@ -255,6 +255,7 @@
         "plan_badge_trial": "Free Trial",
         "plan_badge_starter": "Starter",
         "plan_badge_pro": "Pro",
+        "plan_badge_team": "Team",
         "stt_label": "Speech to Text",
         "tts_label": "Text to Speech",
         "ai_label": "AI Suggestion",
@@ -271,6 +272,10 @@
         "unit_requests": "requests",
         "translate_label": "Translation",
         "powered_by_note": "AI & Translation: Gemini 2.5 Flash · TTS: ElevenLabs",
+        "buy_more": "Buy more",
+        "addon_remaining": "addon remaining",
+        "subscription_ended": "Subscription ended. Your plan will be updated shortly.",
+        "manage_account": "Manage account",
         "session_expired": "Session expired. Please sign in again."
       },
       "backup": {

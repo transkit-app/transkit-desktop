@@ -255,6 +255,7 @@
         "plan_badge_trial": "Dùng thử",
         "plan_badge_starter": "Starter",
         "plan_badge_pro": "Pro",
+        "plan_badge_team": "Team",
         "stt_label": "Nhận dạng giọng nói",
         "tts_label": "Chuyển văn bản thành giọng nói",
         "ai_label": "Gợi ý AI",
@@ -271,6 +272,10 @@
         "unit_requests": "yêu cầu",
         "translate_label": "Dịch thuật",
         "powered_by_note": "AI & Dịch thuật: Gemini 2.5 Flash · TTS: ElevenLabs",
+        "buy_more": "Mua thêm",
+        "addon_remaining": "addon còn lại",
+        "subscription_ended": "Gói đăng ký đã hết hạn. Gói của bạn sẽ sớm được cập nhật.",
+        "manage_account": "Quản lý tài khoản",
         "session_expired": "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."
       },
       "backup": {
