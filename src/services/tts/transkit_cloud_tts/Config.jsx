@@ -2,6 +2,7 @@ import { Button, Progress, Chip, Select, SelectItem } from '@nextui-org/react';
 import { useTranslation } from 'react-i18next';
 import { open } from '@tauri-apps/api/shell';
 import React, { useState, useEffect, useCallback } from 'react';
+import { SignOutButton } from '../../../components/SignOutButton';
 
 import { INSTANCE_NAME_CONFIG_KEY } from '../../../utils/service_instance';
 import { useConfig } from '../../../hooks/useConfig';
@@ -12,7 +13,6 @@ import {
     signInWithGoogle,
     signInWithGitHub,
     onAuthStateChange,
-    signOut,
 } from '../../../lib/transkit-cloud';
 
 const BASE = 'services.tts.transkit_cloud_tts';
@@ -92,9 +92,7 @@ export function Config({ instanceKey, updateServiceList, onClose }) {
                                     </Chip>
                                 )}
                             </div>
-                            <Button size='sm' variant='light' color='danger' onPress={() => signOut()}>
-                                {t(`${BASE}.sign_out`)}
-                            </Button>
+                            <SignOutButton label={t(`${BASE}.sign_out`)} />
                         </div>
 
                         {/* Voice selector */}

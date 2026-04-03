@@ -90,7 +90,7 @@ export async function signInWithGitHub(): Promise<void> {
 
 export async function signOut(): Promise<void> {
   if (!CLOUD_ENABLED || !supabase) return
-  await supabase.auth.signOut()
+  await supabase.auth.signOut({ scope: 'local' })
 }
 
 // ─── OAuth flow (localhost redirect) ─────────────────────────────────────────

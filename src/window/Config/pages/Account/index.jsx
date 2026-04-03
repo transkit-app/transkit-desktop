@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, memo } from 'react'
-import { Button, Avatar, Card, CardBody, Chip, Progress } from '@nextui-org/react'
+import { Button, Avatar, Card, CardBody, Chip, Progress, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from '@nextui-org/react'
 import { FaGoogle, FaGithub } from 'react-icons/fa'
 import { MdLogout, MdSync, MdPerson, MdCloudDone, MdMic, MdVolumeUp, MdAutoAwesome, MdTranslate } from 'react-icons/md'
 import { open as openBrowser } from '@tauri-apps/api/shell'
@@ -516,8 +516,10 @@ function GuestView() {
 
 function AccountDashboard({ user, cloudProfile, cloudUsage, onRefreshUsage, onSignOut }) {
   const [signingOut, setSigningOut] = useState(false)
+  const { isOpen, onOpen, onClose } = useDisclosure()
 
   const handleSignOut = async () => {
+    onClose()
     setSigningOut(true)
     try {
       await signOut()
@@ -552,7 +554,7 @@ function AccountDashboard({ user, cloudProfile, cloudUsage, onRefreshUsage, onSi
             size='sm'
             startContent={<MdLogout className='text-base' />}
             isLoading={signingOut}
-            onPress={handleSignOut}
+            onPress={onOpen}
             className='flex-shrink-0'
           >
             Sign out
@@ -569,6 +571,22 @@ function AccountDashboard({ user, cloudProfile, cloudUsage, onRefreshUsage, onSi
           <ProfileForm authUser={user} cloudProfile={cloudProfile} />
         </CardBody>
       </Card>
+
+      {/* Sign-out confirmation modal */}
+      <Modal isOpen={isOpen} onClose={onClose} size='sm'>
+        <ModalContent>
+          <ModalHeader className='text-sm font-semibold'>Sign out?</ModalHeader>
+          <ModalBody>
+            <p className='text-xs text-default-500'>
+              You will be signed out on this device. Other sessions will remain active.
+            </p>
+          </ModalBody>
+          <ModalFooter className='gap-2'>
+            <Button size='sm' variant='flat' onPress={onClose}>Cancel</Button>
+            <Button size='sm' color='danger' onPress={handleSignOut}>Sign out</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   )
 }
