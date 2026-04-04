@@ -203,13 +203,14 @@ async function _throwFunctionError(error: any): Promise<never> {
  */
 export async function getCloudCredentials(
   serviceType: 'stt' | 'tts' | 'ai',
-  options?: CloudCredentialsOptions
+  options?: CloudCredentialsOptions,
+  signal?: AbortSignal
 ): Promise<CloudCredentialsResult> {
   if (!CLOUD_ENABLED || !supabase) throw new Error('cloud_disabled')
 
   const { data, error } = await supabase.functions.invoke<CloudCredentialsResult>(
     'get-cloud-credentials',
-    { body: { service_type: serviceType, options: options ?? {} } }
+    { body: { service_type: serviceType, options: options ?? {} }, signal }
   )
   if (error) await _throwFunctionError(error)
   if (!data) throw new Error('server_error')

@@ -6,9 +6,9 @@ import { open as openPath } from '@tauri-apps/api/shell';
 import { save as saveDialog } from '@tauri-apps/api/dialog';
 import { writeTextFile, createDir, exists } from '@tauri-apps/api/fs';
 import { useTranslation } from 'react-i18next';
-import { Button } from '@nextui-org/react';
+import { Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '@nextui-org/react';
 import { BsPinFill } from 'react-icons/bs';
-import { MdOpenInFull, MdBlurOn, MdVolumeUp, MdVolumeOff, MdSettings, MdSave, MdSaveAlt, MdFolderOpen, MdDownload, MdClose, MdRemove, MdMic } from 'react-icons/md';
+import { MdOpenInFull, MdBlurOn, MdVolumeUp, MdVolumeOff, MdSettings, MdSave, MdSaveAlt, MdFolderOpen, MdDownload, MdClose, MdRemove, MdMic, MdRecordVoiceOver } from 'react-icons/md';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useConfig } from '../../hooks';
 import { osType } from '../../utils/env';
@@ -170,6 +170,7 @@ export default function Monitor() {
 
     // Narration (spoken translation → virtual mic)
     const [narrationEnabled, setNarrationEnabled]     = useConfig('narration_enabled', false);
+    const [narrationPttEnabled, setNarrationPttEnabled] = useConfig('narration_ptt_enabled', false);
     const [narrationDeviceName, setNarrationDeviceName] = useConfig('narration_device_name', '');
     const [narrationMonitorAudio, setNarrationMonitorAudio] = useConfig('narration_monitor_audio', false);
     const [narrationPttFabSize, setNarrationPttFabSize] = useConfig('narration_ptt_fab_size', 52);
@@ -245,6 +246,16 @@ export default function Monitor() {
     const [cloudCountdown, setCloudCountdown] = useState(null); // seconds remaining
     const [cloudWarningLevel, setCloudWarningLevel] = useState(null); // null | 'warning' | 'danger'
     const countdownTimerRef = useRef(null);
+
+    // Guard against double-start (e.g. rapid double-click before isRunning state updates)
+    const isStartingRef = useRef(false);
+
+    // Provider picker modals (status bar)
+    const [sttPickerOpen, setSttPickerOpen] = useState(false);
+    const [ttsPickerOpen, setTtsPickerOpen] = useState(false);
+    const [pickedStt, setPickedStt] = useState(null);
+    const [pickedTts, setPickedTts] = useState(null);
+    const pendingSvcOverrideRef = useRef(null); // service key to use on next start()
 
     // ── Backward migration: old context keys → new format ────────────────────
     useEffect(() => {
@@ -496,7 +507,7 @@ export default function Monitor() {
     }, [isRunning]);
 
     const handlePttStart = useCallback(async () => {
-        if (!narrationDeviceName) return;
+        if (!narrationPttEnabled || !narrationDeviceName) return;
         clearPttDrainTimer();
         clearPttRestoreCaptureTimer();
         setNarrationDrainActive(false);
@@ -524,7 +535,7 @@ export default function Monitor() {
 
         pttActiveRef.current = true;
         setNarrationPttActive(true);
-    }, [narrationDeviceName, isRunning, restartCaptureWithSource, startNarrationClient, waitNarrationClientConnected, clearPttDrainTimer, clearPttRestoreCaptureTimer]);
+    }, [narrationPttEnabled, narrationDeviceName, isRunning, restartCaptureWithSource, startNarrationClient, waitNarrationClientConnected, clearPttDrainTimer, clearPttRestoreCaptureTimer]);
 
     const handlePttEnd = useCallback(async () => {
         const prev = prevSourceAudioRef.current;
@@ -694,8 +705,13 @@ export default function Monitor() {
 
     // ── Start / Stop ──────────────────────────────────────────────────────────
     const start = useCallback(async () => {
-        const serviceName = getServiceName(activeTranscriptionService);
-        const transcriptionConfig = (await store.get(activeTranscriptionService)) ?? {};
+        if (isStartingRef.current) return;
+        isStartingRef.current = true;
+
+        const svcKey = pendingSvcOverrideRef.current ?? activeTranscriptionService;
+        pendingSvcOverrideRef.current = null;
+        const serviceName = getServiceName(svcKey);
+        const transcriptionConfig = (await store.get(svcKey)) ?? {};
 
         setErrorMsg(''); setErrorMeta(null); // clear any leftover error from previous attempt
 
@@ -715,6 +731,7 @@ export default function Monitor() {
                 service: t('config.service.label'),
                 transcription: t('config.service.transcription'),
             }));
+            isStartingRef.current = false;
             return;
         }
 
@@ -724,7 +741,11 @@ export default function Monitor() {
 
         // Store config for narration client (same service + API key, different lang)
         narrationConfigRef.current = { serviceName, config: transcriptionConfig };
-        if (narrationDeviceName) {
+        // Only pre-connect narration STT when audio is actually routed to narration
+        // right after Start (mic + narration mode). PTT-only flows will connect lazily
+        // on first press to avoid creating a second cloud session up front.
+        const shouldWarmupNarration = Boolean(narrationDeviceName) && narrationEnabled && sourceAudio === 'microphone';
+        if (shouldWarmupNarration) {
             const narrationReady = startNarrationClient({ quiet: true });
             if (narrationReady === false && sourceLang === 'auto') {
                 setErrorMsg(t('monitor.narration_ptt_requires_fixed_source'));
@@ -838,6 +859,7 @@ export default function Monitor() {
         };
 
         setIsRunning(true);
+        isStartingRef.current = false; // state guard (isRunning) takes over from here
         setProvisional('');
 
         client.connect({
@@ -879,7 +901,7 @@ export default function Monitor() {
             }
             transcriptFileRef.current = null;
         }
-    }, [activeTranscriptionService, sourceLang, targetLang, sourceAudio, transcriptionContext, autosaveEnabled, narrationDeviceName, addAudioChunkListener, getOrCreateTranscriptionClient, startNarrationClient, flushSaveQueue, t]);
+    }, [activeTranscriptionService, sourceLang, targetLang, sourceAudio, transcriptionContext, autosaveEnabled, narrationEnabled, narrationDeviceName, addAudioChunkListener, getOrCreateTranscriptionClient, startNarrationClient, flushSaveQueue, t]);
 
     const stop = useCallback(async (silent = false) => {
         setIsRunning(false);
@@ -949,6 +971,34 @@ export default function Monitor() {
     const toggleRun = useCallback(() => {
         isRunning ? stop() : start();
     }, [isRunning, start, stop]);
+
+    // ── Provider picker (status bar) ─────────────────────────────────────────
+    const openSttPicker = useCallback(() => {
+        setPickedStt(activeTranscriptionService);
+        setSttPickerOpen(true);
+    }, [activeTranscriptionService]);
+
+    const openTtsPicker = useCallback(() => {
+        setPickedTts(activeTtsService);
+        setTtsPickerOpen(true);
+    }, [activeTtsService]);
+
+    const confirmSttSwitch = useCallback(async () => {
+        setSttPickerOpen(false);
+        if (!pickedStt || pickedStt === activeTranscriptionService) return;
+        setActiveTranscriptionService(pickedStt);
+        if (isRunning) {
+            pendingSvcOverrideRef.current = pickedStt;
+            await stop(true);
+            start();
+        }
+    }, [pickedStt, activeTranscriptionService, isRunning, stop, start, setActiveTranscriptionService]);
+
+    const confirmTtsSwitch = useCallback(() => {
+        setTtsPickerOpen(false);
+        if (!pickedTts || pickedTts === activeTtsService) return;
+        setActiveTtsService(pickedTts);
+    }, [pickedTts, activeTtsService, setActiveTtsService]);
 
     const togglePin = useCallback(() => {
         const next = !isPinned;
@@ -1368,6 +1418,7 @@ export default function Monitor() {
             {/* Toolbar */}
             <MonitorToolbar
                 isRunning={isRunning}
+                isConnecting={cloudConnecting && isRunning}
                 sourceAudio={sourceAudio}
                 sourceLang={sourceLang ?? 'auto'}
                 targetLang={targetLang ?? 'vi'}
@@ -1398,7 +1449,7 @@ export default function Monitor() {
                 isNarrationActive={narrationEffectivelyActive}
                 showPttButton={false}
                 isPttActive={narrationPttActive}
-                isPttEnabled={Boolean(narrationDeviceName) && isRunning}
+                isPttEnabled={Boolean(narrationDeviceName) && narrationPttEnabled && isRunning}
                 onPttStart={handlePttStart}
                 onPttEnd={handlePttEnd}
             />
@@ -1462,9 +1513,12 @@ export default function Monitor() {
                         <div className='p-3'>
                             <NarrationPanel
                                 isNarrationActive={narrationEffectivelyActive}
+                                narrationEnabled={narrationEnabled}
+                                pttEnabled={narrationPttEnabled}
                                 narrationDeviceName={narrationDeviceName ?? ''}
                                 onSetDevice={handleNarrationSetDevice}
                                 onToggleNarration={toggleNarration}
+                                onTogglePttEnabled={() => setNarrationPttEnabled(!narrationPttEnabled)}
                                 isPttActive={narrationPttActive}
                                 onTestSignal={handleNarrationTestSignal}
                                 monitorAudio={narrationMonitorAudio ?? false}
@@ -1580,6 +1634,7 @@ export default function Monitor() {
                 transcriptFileRef={transcriptFileRef}
                 sortOrder={sortOrder}
                 onToggleRun={toggleRun}
+                isConnecting={cloudConnecting && isRunning}
                 activeTranscriptionService={activeTranscriptionService ?? 'soniox_stt'}
                 onSetTranscriptionService={setActiveTranscriptionService}
                 transcriptionServiceList={transcriptionServiceList ?? []}
@@ -1591,7 +1646,7 @@ export default function Monitor() {
             />
 
             {/* Floating PTT button (Siri-style) */}
-            {Boolean(narrationDeviceName) && (
+            {Boolean(narrationDeviceName) && narrationPttEnabled && (
                 <div className='absolute right-3 bottom-10 z-30'>
                     <button
                         className={`relative rounded-full flex items-center justify-center select-none touch-none transition-all
@@ -1632,11 +1687,15 @@ export default function Monitor() {
             <div className='flex items-center justify-between px-2 h-[22px] border-t border-content2/60 flex-shrink-0 select-none'>
                 {/* Left: transcription + TTS provider + cloud countdown */}
                 <div className='flex items-center gap-2.5'>
-                    {/* Transcription */}
-                    <span className={`flex items-center gap-1 text-[10px] ${status === 'connected' ? 'text-foreground' : 'text-default-400'}`}>
+                    {/* Transcription — clickable to switch provider */}
+                    <button
+                        onClick={openSttPicker}
+                        className={`flex items-center gap-1 text-[10px] rounded px-0.5 hover:bg-content2 transition-colors cursor-pointer ${status === 'connected' ? 'text-foreground' : 'text-default-400'}`}
+                        title='Switch STT provider'
+                    >
                         <MdMic className='text-[11px]' />
                         {_svcLabel(getServiceName(activeTranscriptionService ?? ''))}
-                    </span>
+                    </button>
                     {/* Cloud: connecting indicator or countdown */}
                     {cloudConnecting && isRunning && (
                         <span className='flex items-center gap-1 text-[10px] text-default-400'>
@@ -1655,14 +1714,35 @@ export default function Monitor() {
                             {cloudWarningLevel === 'danger'  && ` · ${t('monitor.cloud_session_last_minute')}`}
                         </span>
                     )}
-                    {/* TTS — only when enabled */}
+                    {/* TTS — only when enabled; clickable to switch provider */}
                     {isTTSEnabled && (
-                        <span className='flex items-center gap-1 text-[10px] text-default-400'>
+                        <button
+                            onClick={openTtsPicker}
+                            className='flex items-center gap-1 text-[10px] text-default-400 rounded px-0.5 hover:bg-content2 transition-colors cursor-pointer'
+                            title='Switch TTS provider'
+                        >
                             <span className='text-default-300'>·</span>
                             <MdVolumeUp className='text-[11px]' />
                             {_svcLabel(getServiceName(activeTtsService ?? ''))}
-                        </span>
+                        </button>
                     )}
+                    {/* PTT section */}
+                    <button
+                        onClick={() => setShowNarrationPanel(true)}
+                        className={`flex items-center gap-1 text-[10px] rounded px-0.5 transition-colors cursor-pointer ${
+                            narrationPttEnabled
+                                ? 'text-warning-600 dark:text-warning-400 hover:bg-warning/10'
+                                : 'text-default-400 hover:bg-content2'
+                        }`}
+                        title={t('monitor.narration_ptt_section', { defaultValue: 'PTT settings' })}
+                    >
+                        <span className='text-default-300'>·</span>
+                        <MdRecordVoiceOver className='text-[11px]' />
+                        {t('monitor.narration_ptt_label', { defaultValue: 'PTT' })} ({t('monitor.narration_beta', { defaultValue: 'Beta' })}):{' '}
+                        {narrationPttEnabled
+                            ? t('monitor.narration_ptt_on', { defaultValue: 'ON' })
+                            : t('monitor.narration_ptt_off', { defaultValue: 'OFF' })}
+                    </button>
                 </div>
                 {/* Right: auto-save status */}
                 <span className={`flex items-center gap-1 text-[10px] font-medium ${
@@ -1679,6 +1759,66 @@ export default function Monitor() {
                                              t('monitor.autosave_disabled_warning')}
                 </span>
             </div>
+
+            {/* ── STT Provider picker modal ─────────────────────────────────── */}
+            <Modal isOpen={sttPickerOpen} onClose={() => setSttPickerOpen(false)} size='sm'>
+                <ModalContent>
+                    <ModalHeader className='text-sm font-semibold'>Switch STT Provider</ModalHeader>
+                    <ModalBody>
+                        <div className='flex flex-col gap-1'>
+                            {(transcriptionServiceList ?? []).map(svcKey => (
+                                <button
+                                    key={svcKey}
+                                    onClick={() => setPickedStt(svcKey)}
+                                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left transition-colors
+                                        ${pickedStt === svcKey ? 'bg-primary/15 text-primary' : 'hover:bg-content2 text-default-700'}`}
+                                >
+                                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${pickedStt === svcKey ? 'bg-primary' : 'bg-default-300'}`} />
+                                    {_svcLabel(getServiceName(svcKey))}
+                                    {svcKey === activeTranscriptionService && (
+                                        <span className='ml-auto text-[10px] text-default-400'>current</span>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                    </ModalBody>
+                    <ModalFooter className='gap-2'>
+                        <Button size='sm' variant='flat' onPress={() => setSttPickerOpen(false)}>Cancel</Button>
+                        <Button size='sm' color='primary' onPress={confirmSttSwitch}>
+                            {isRunning ? 'Switch & Restart' : 'Confirm'}
+                        </Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
+
+            {/* ── TTS Provider picker modal ─────────────────────────────────── */}
+            <Modal isOpen={ttsPickerOpen} onClose={() => setTtsPickerOpen(false)} size='sm'>
+                <ModalContent>
+                    <ModalHeader className='text-sm font-semibold'>Switch TTS Provider</ModalHeader>
+                    <ModalBody>
+                        <div className='flex flex-col gap-1'>
+                            {(ttsServiceList ?? []).map(svcKey => (
+                                <button
+                                    key={svcKey}
+                                    onClick={() => setPickedTts(svcKey)}
+                                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left transition-colors
+                                        ${pickedTts === svcKey ? 'bg-secondary/15 text-secondary' : 'hover:bg-content2 text-default-700'}`}
+                                >
+                                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${pickedTts === svcKey ? 'bg-secondary' : 'bg-default-300'}`} />
+                                    {_svcLabel(getServiceName(svcKey))}
+                                    {svcKey === activeTtsService && (
+                                        <span className='ml-auto text-[10px] text-default-400'>current</span>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                    </ModalBody>
+                    <ModalFooter className='gap-2'>
+                        <Button size='sm' variant='flat' onPress={() => setTtsPickerOpen(false)}>Cancel</Button>
+                        <Button size='sm' color='secondary' onPress={confirmTtsSwitch}>Confirm</Button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
         </div>
     );
 }

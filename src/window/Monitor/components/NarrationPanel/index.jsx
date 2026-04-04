@@ -11,9 +11,12 @@ const VBCABLE_URL    = 'https://vb-audio.com/Cable/';
 
 export default function NarrationPanel({
     isNarrationActive,
+    narrationEnabled,
+    pttEnabled,
     narrationDeviceName,
     onSetDevice,
     onToggleNarration,
+    onTogglePttEnabled,
     isPttActive,
     onTestSignal,
     monitorAudio,
@@ -22,6 +25,7 @@ export default function NarrationPanel({
     onSetPttFabSize,
 }) {
     const { t } = useTranslation();
+    const controlsDisabled = !pttEnabled;
     const [virtualDevices, setVirtualDevices] = useState([]);
     const [allDevices, setAllDevices]         = useState([]);
     const [showAllDevices, setShowAllDevices] = useState(false);
@@ -73,91 +77,125 @@ export default function NarrationPanel({
                 <span className='text-[11px] font-bold text-success uppercase tracking-widest'>
                     {`🎙 ${t('monitor.narration_title', { defaultValue: 'Narration' })}`}
                 </span>
+                <span className='px-1.5 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wide bg-warning/15 text-warning-700 dark:text-warning-400 border border-warning/35'>
+                    {t('monitor.narration_beta', { defaultValue: 'Beta' })}
+                </span>
                 <span className='text-[10px] text-default-400'>
                     · {t('monitor.narration_subtitle', { defaultValue: 'Speak VI → TTS EN → virtual mic' })}
                 </span>
             </div>
 
-            {/* Device selector */}
-            <div className='flex items-start gap-2'>
-                <span className='text-[11px] text-default-500 w-20 flex-shrink-0 pt-2'>
-                    {t('monitor.narration_device', { defaultValue: 'Device' })}
-                </span>
-                <div className='flex-1 space-y-1.5'>
-                    {displayDevices.length > 0 ? (
-                        <div className='flex gap-1.5 items-center'>
-                            <Select
-                                size='sm'
-                                isLoading={loading}
-                                placeholder={t('monitor.narration_select_device', { defaultValue: 'Select virtual mic…' })}
-                                selectedKeys={narrationDeviceName ? new Set([narrationDeviceName]) : new Set()}
-                                onSelectionChange={keys => handleSetDevice([...keys][0])}
-                                aria-label={t('monitor.narration_virtual_mic_aria', { defaultValue: 'Virtual mic device' })}
-                                className='flex-1'
-                            >
-                                {displayDevices.map(d => (
-                                    <SelectItem key={d} textValue={d}>{d}</SelectItem>
-                                ))}
-                            </Select>
-                            {/* Test signal button */}
-                            {narrationDeviceName && (
-                                <button
-                                    className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-medium border transition-colors
-                                        ${testStatus === 'testing'
-                                            ? 'border-warning/40 text-warning bg-warning/10 animate-pulse'
-                                            : testStatus === 'ok'
-                                            ? 'border-success/40 text-success bg-success/10'
-                                            : testStatus === 'error'
-                                            ? 'border-danger/40 text-danger bg-danger/10'
-                                            : 'border-content3/40 text-default-500 hover:text-primary hover:border-primary/30 bg-content2/50'
-                                        }`}
-                                    onClick={handleTestSignal}
-                                    title={t('monitor.narration_test_tone_title', { defaultValue: 'Send 440 Hz test tone to virtual device' })}
-                                >
-                                    <MdGraphicEq className='text-[13px]' />
-                                    {testStatus === 'testing' ? t('monitor.narration_test_testing', { defaultValue: 'Testing…' })
-                                        : testStatus === 'ok' ? t('monitor.narration_test_ok', { defaultValue: 'OK ✓' })
-                                        : testStatus === 'error' ? t('monitor.narration_test_failed', { defaultValue: 'Failed' })
-                                        : t('monitor.narration_test', { defaultValue: 'Test' })}
-                                </button>
-                            )}
-                        </div>
-                    ) : (
-                        <span className='text-[11px] text-warning/80'>
-                            {t('monitor.narration_no_virtual', { defaultValue: 'No virtual device found' })}
-                        </span>
-                    )}
-
-                    <button
-                        className='text-[10px] text-default-400 hover:text-default-600 underline'
-                        onClick={() => setShowAllDevices(v => !v)}
-                    >
-                        {showAllDevices
-                            ? t('monitor.narration_show_virtual', { defaultValue: 'Show virtual devices only' })
-                            : t('monitor.narration_show_all', { defaultValue: 'Show all output devices' })}
-                    </button>
-                </div>
-            </div>
-
-            {/* Always-on toggle (secondary) */}
+            {/* PTT active toggle */}
             <div className='flex items-center gap-2'>
                 <span className='text-[11px] text-default-500 w-20 flex-shrink-0'>
-                    {t('monitor.narration_sticky', { defaultValue: 'Always on' })}
+                    {t('monitor.narration_ptt_active', { defaultValue: 'PTT Active' })}
                 </span>
                 <Switch
                     size='sm'
-                    color='success'
-                    isSelected={isNarrationActive}
-                    isDisabled={!narrationDeviceName}
-                    onValueChange={onToggleNarration}
+                    color='warning'
+                    isSelected={Boolean(pttEnabled)}
+                    onValueChange={onTogglePttEnabled}
                 />
                 <span className='text-[10px] text-default-400'>
-                    {t('monitor.narration_sticky_hint', { defaultValue: 'ON when mic mode is active' })}
+                    {t('monitor.narration_ptt_active_hint', { defaultValue: 'Enable Hold to Speak button' })}
                 </span>
             </div>
 
+            {pttEnabled && (
+                <div className='rounded-lg bg-warning/10 border border-warning/25 px-2 py-1.5'>
+                    <p className='text-[10px] text-warning-700 dark:text-warning-400'>
+                        {t('monitor.narration_ptt_cost_warning', {
+                            defaultValue: 'PTT Active may create an extra STT cloud stream while pressed and can consume duplicate token/minutes.',
+                        })}
+                    </p>
+                </div>
+            )}
+
+            <div className={controlsDisabled ? 'opacity-45 pointer-events-none select-none' : ''}>
+                {/* Device selector */}
+                <div className='flex items-start gap-2'>
+                    <span className='text-[11px] text-default-500 w-20 flex-shrink-0 pt-2'>
+                        {t('monitor.narration_device', { defaultValue: 'Device' })}
+                    </span>
+                    <div className='flex-1 space-y-1.5'>
+                        {displayDevices.length > 0 ? (
+                            <div className='flex gap-1.5 items-center'>
+                                <Select
+                                    size='sm'
+                                    isLoading={loading}
+                                    isDisabled={controlsDisabled}
+                                    placeholder={t('monitor.narration_select_device', { defaultValue: 'Select virtual mic…' })}
+                                    selectedKeys={narrationDeviceName ? new Set([narrationDeviceName]) : new Set()}
+                                    onSelectionChange={keys => handleSetDevice([...keys][0])}
+                                    aria-label={t('monitor.narration_virtual_mic_aria', { defaultValue: 'Virtual mic device' })}
+                                    className='flex-1'
+                                >
+                                    {displayDevices.map(d => (
+                                        <SelectItem key={d} textValue={d}>{d}</SelectItem>
+                                    ))}
+                                </Select>
+                                {/* Test signal button */}
+                                {narrationDeviceName && (
+                                    <button
+                                        className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-medium border transition-colors
+                                            ${testStatus === 'testing'
+                                                ? 'border-warning/40 text-warning bg-warning/10 animate-pulse'
+                                                : testStatus === 'ok'
+                                                ? 'border-success/40 text-success bg-success/10'
+                                                : testStatus === 'error'
+                                                ? 'border-danger/40 text-danger bg-danger/10'
+                                                : 'border-content3/40 text-default-500 hover:text-primary hover:border-primary/30 bg-content2/50'
+                                            }`}
+                                        onClick={handleTestSignal}
+                                        disabled={controlsDisabled}
+                                        title={t('monitor.narration_test_tone_title', { defaultValue: 'Send 440 Hz test tone to virtual device' })}
+                                    >
+                                        <MdGraphicEq className='text-[13px]' />
+                                        {testStatus === 'testing' ? t('monitor.narration_test_testing', { defaultValue: 'Testing…' })
+                                            : testStatus === 'ok' ? t('monitor.narration_test_ok', { defaultValue: 'OK ✓' })
+                                            : testStatus === 'error' ? t('monitor.narration_test_failed', { defaultValue: 'Failed' })
+                                            : t('monitor.narration_test', { defaultValue: 'Test' })}
+                                    </button>
+                                )}
+                            </div>
+                        ) : (
+                            <span className='text-[11px] text-warning/80'>
+                                {t('monitor.narration_no_virtual', { defaultValue: 'No virtual device found' })}
+                            </span>
+                        )}
+
+                        <button
+                            className='text-[10px] text-default-400 hover:text-default-600 underline'
+                            onClick={() => setShowAllDevices(v => !v)}
+                            disabled={controlsDisabled}
+                        >
+                            {showAllDevices
+                                ? t('monitor.narration_show_virtual', { defaultValue: 'Show virtual devices only' })
+                                : t('monitor.narration_show_all', { defaultValue: 'Show all output devices' })}
+                        </button>
+                    </div>
+                </div>
+
+                {/* Always-on toggle (secondary) */}
+                <div className='flex items-center gap-2'>
+                    <span className='text-[11px] text-default-500 w-20 flex-shrink-0'>
+                        {t('monitor.narration_sticky', { defaultValue: 'Always on' })}
+                    </span>
+                    <Switch
+                        size='sm'
+                        color='success'
+                        isSelected={Boolean(narrationEnabled)}
+                        isDisabled={controlsDisabled || !narrationDeviceName}
+                        onValueChange={onToggleNarration}
+                    />
+                    <span className='text-[10px] text-default-400'>
+                        {t('monitor.narration_sticky_hint', { defaultValue: 'ON when mic mode is active' })}
+                    </span>
+                </div>
+            </div>
+
             {/* PTT floating button size */}
-            <div className='flex items-center gap-2'>
+            <div className={`flex items-center gap-2 ${controlsDisabled ? 'opacity-45' : ''}`}>
                 <span className='text-[11px] text-default-500 w-20 flex-shrink-0'>
                     {t('monitor.narration_ptt_size', { defaultValue: 'PTT size' })}
                 </span>
@@ -168,6 +206,7 @@ export default function NarrationPanel({
                         max={88}
                         step={2}
                         value={pttFabSize ?? 52}
+                        disabled={controlsDisabled}
                         onChange={(e) => onSetPttFabSize?.(Number(e.target.value))}
                         className='flex-1 h-1 accent-primary cursor-pointer'
                         style={{ accentColor: 'hsl(var(--nextui-primary))' }}
@@ -177,13 +216,14 @@ export default function NarrationPanel({
             </div>
 
             {/* Monitor audio toggle */}
-            <div className='flex items-center gap-2'>
+            <div className={`flex items-center gap-2 ${controlsDisabled ? 'opacity-45' : ''}`}>
                 <span className='text-[11px] text-default-500 w-20 flex-shrink-0'>
                     {t('monitor.narration_monitor_audio', { defaultValue: 'Hear TTS' })}
                 </span>
                 <Switch
                     size='sm'
                     color='warning'
+                    isDisabled={controlsDisabled}
                     isSelected={monitorAudio}
                     onValueChange={onToggleMonitorAudio}
                 />

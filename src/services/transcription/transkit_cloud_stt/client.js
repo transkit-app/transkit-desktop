@@ -32,6 +32,7 @@ export class TranskitCloudSTTClient {
         this._debitedSeconds = 0;
         this._startTime = null;
         this._intentionalDisconnect = false;
+        this._connectController = null; // AbortController for in-flight credential request
 
         // Standard provider callbacks — same interface as all other STT clients
         this.onOriginal = null;      // (text, speaker) => {}
@@ -63,17 +64,27 @@ export class TranskitCloudSTTClient {
             return;
         }
 
+        // Abort any in-flight credential request from a previous connect() call.
+        // This prevents duplicate sessions when connect() is called twice before
+        // the first getCloudCredentials() round-trip completes.
+        if (this._connectController) {
+            this._connectController.abort();
+        }
+        this._connectController = new AbortController();
+
         this._config = config;
         this._intentionalDisconnect = false;
         this._sessionId = null;
         this._startTime = null;
-        this._doConnect(config);
+        this._doConnect(config, this._connectController.signal);
     }
 
-    async _doConnect(config) {
+    async _doConnect(config, signal) {
         try {
-            await this._doConnectInner(config);
+            await this._doConnectInner(config, signal);
         } catch (err) {
+            // Ignore aborts — they happen when a newer connect() call supersedes this one.
+            if (err?.name === 'AbortError') return;
             // Safety net: catch any unexpected throw so it never becomes an
             // unhandled promise rejection (e.g. Supabase auth lock conflicts).
             this.onCredentialRequest?.(false);
@@ -89,7 +100,7 @@ export class TranskitCloudSTTClient {
         }
     }
 
-    async _doConnectInner(config) {
+    async _doConnectInner(config, signal) {
         this._setStatus('connecting');
 
         // Verify the user is logged in before hitting the network
@@ -99,6 +110,9 @@ export class TranskitCloudSTTClient {
             this.onError?.('Sign in to your Transkit account to use Transkit Cloud, or add your own provider API key in Settings.');
             return;
         }
+
+        // Bail out if a newer connect() was called while we awaited getUser().
+        if (signal?.aborted) return;
 
         // Build session options for providers that need them at creation time (Gladia)
         const options = {
@@ -112,9 +126,11 @@ export class TranskitCloudSTTClient {
         this.onCredentialRequest?.(true);
         let result;
         try {
-            result = await getCloudCredentials('stt', options);
+            result = await getCloudCredentials('stt', options, signal);
         } catch (err) {
             this.onCredentialRequest?.(false);
+            // Abort means a newer connect() superseded us — not an error.
+            if (err?.name === 'AbortError') return;
             if (this._intentionalDisconnect) return;
             this._setStatus('error');
             this._handleCredentialError(err);

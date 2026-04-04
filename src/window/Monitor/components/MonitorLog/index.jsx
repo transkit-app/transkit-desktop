@@ -530,6 +530,7 @@ export default function MonitorLog({
     targetLang = 'vi',
     transcriptFileRef = null,
     onToggleRun,
+    isConnecting = false,
     activeTranscriptionService = '',
     onSetTranscriptionService,
     transcriptionServiceList = [],
@@ -740,16 +741,26 @@ export default function MonitorLog({
                         </>
                     ) : (
                         <div className='flex flex-col items-center justify-center h-full gap-5 select-none px-4 text-center w-full'>
-                            {/* Clickable play button */}
+                            {/* Clickable play button — shows spinner while connecting */}
                             <button
-                                onClick={onToggleRun}
-                                className='group flex flex-col items-center gap-1.5 focus:outline-none'
-                                title={t('monitor.start')}
+                                onClick={isConnecting ? undefined : onToggleRun}
+                                disabled={isConnecting}
+                                className={`group flex flex-col items-center gap-1.5 focus:outline-none ${isConnecting ? 'cursor-not-allowed' : ''}`}
+                                title={isConnecting ? '' : t('monitor.start')}
                             >
-                                <MdPlayCircle className='text-[52px] text-default-300 group-hover:text-primary transition-colors duration-150' />
-                                <p className='text-sm font-medium text-default-400 group-hover:text-primary transition-colors duration-150'>
-                                    {t('monitor.placeholder')}
-                                </p>
+                                {isConnecting ? (
+                                    <>
+                                        <span className='w-[52px] h-[52px] rounded-full border-4 border-primary/30 border-t-primary animate-spin flex-shrink-0' />
+                                        <p className='text-sm font-medium text-primary/70'>Connecting…</p>
+                                    </>
+                                ) : (
+                                    <>
+                                        <MdPlayCircle className='text-[52px] text-default-300 group-hover:text-primary transition-colors duration-150' />
+                                        <p className='text-sm font-medium text-default-400 group-hover:text-primary transition-colors duration-150'>
+                                            {t('monitor.placeholder')}
+                                        </p>
+                                    </>
+                                )}
                             </button>
 
                             {/* STT quick-switch — configured providers only */}

@@ -31,6 +31,7 @@ const FONT_MAX = 72;
 
 export default function MonitorToolbar({
     isRunning,
+    isConnecting,
     sourceAudio,
     sourceLang,
     targetLang,
@@ -177,6 +178,8 @@ export default function MonitorToolbar({
                     color={isRunning ? 'danger' : 'primary'}
                     variant='flat'
                     className='h-7 w-7 min-w-0'
+                    isLoading={isConnecting}
+                    isDisabled={isConnecting}
                     onPress={onToggleRun}
                 >
                     {isRunning ? <MdStop className='text-[16px]' /> : <MdPlayArrow className='text-[16px]' />}
