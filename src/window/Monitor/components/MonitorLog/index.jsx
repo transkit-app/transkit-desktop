@@ -842,13 +842,13 @@ export default function MonitorLog({
                             // Bubble background/border tinted by speaker color
                             const bubbleBg = isMeEntry
                                 ? 'linear-gradient(145deg, #0084ff, #006fe6)'
-                                : speakerColor ? `${speakerColor}28` : 'hsl(var(--nextui-content2))';
+                                : speakerColor ? `${speakerColor}28` : 'rgba(96, 165, 250, 0.157)';
                             const bubbleBorder = isMeEntry
                                 ? 'transparent'
-                                : speakerColor ? `${speakerColor}45` : 'hsl(var(--nextui-content3))';
+                                : speakerColor ? `${speakerColor}45` : 'rgba(96, 165, 250, 0.27)';
                             const bubbleShadow = isMeEntry
                                 ? '0 3px 14px rgba(0,132,255,0.40), 0 1px 4px rgba(0,132,255,0.25)'
-                                : speakerColor ? `0 2px 10px ${speakerColor}22` : undefined;
+                                : speakerColor ? `0 2px 10px ${speakerColor}22` : '0 2px 10px rgba(96, 165, 250, 0.133)';
 
                             return (
                                 <motion.div
