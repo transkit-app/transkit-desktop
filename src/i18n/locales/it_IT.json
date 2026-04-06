@@ -365,7 +365,8 @@
         "title": "Impostazioni dei tasti di scelta rapida",
         "set_hotkey": "Premere per impostare il tasto di scelta rapida",
         "selection_translate": "Selezione traduzione",
-        "ocr_recognize": "Riconoscimento del testo"
+        "ocr_recognize": "Riconoscimento del testo",
+        "voice_anywhere": "Voice Input (Anywhere)"
       },
       "service": {
         "add_service": "Aggiungi servizio",
@@ -404,6 +405,24 @@
       "history": {
         "label": "Cronologia",
         "title": "Cronologia"
+      },
+      "voice_input": {
+        "label": "Voice Input",
+        "title": "Voice Input Settings",
+        "stt_section": "Speech Recognition",
+        "stt_service": "STT Service",
+        "inherit_monitor": "Same as Audio Monitor",
+        "language": "Language",
+        "auto_detect": "Same as Audio Monitor",
+        "behaviour_section": "Behaviour",
+        "inject_mode": "Text Injection Mode",
+        "inject_mode_desc": "Replace: clears existing text. Append: adds after current text.",
+        "inject_mode_replace": "Replace",
+        "inject_mode_append": "Append",
+        "autostart": "Auto-start recording on hotkey",
+        "autostart_desc": "Immediately begin recording when the hotkey is pressed.",
+        "appearance_section": "Button Appearance",
+        "fab_size": "Button Size"
       }
     },
     "translate": {

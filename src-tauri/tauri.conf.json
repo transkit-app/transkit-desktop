@@ -134,6 +134,42 @@
         "visible": false,
         "focus": false,
         "additionalBrowserArgs": "--disable-web-security"
+      },
+      {
+        "title": "Voice Input",
+        "label": "voice_anywhere",
+        "url": "index.html",
+        "transparent": true,
+        "decorations": false,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "width": 144,
+        "height": 144,
+        "minWidth": 120,
+        "minHeight": 120,
+        "resizable": false,
+        "visible": false,
+        "focus": false,
+        "center": false,
+        "additionalBrowserArgs": "--disable-web-security"
+      },
+      {
+        "title": "Voice Input Caption",
+        "label": "voice_anywhere_caption",
+        "url": "index.html",
+        "transparent": true,
+        "decorations": false,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "width": 380,
+        "height": 92,
+        "minWidth": 280,
+        "minHeight": 64,
+        "resizable": false,
+        "visible": false,
+        "focus": false,
+        "center": false,
+        "additionalBrowserArgs": "--disable-web-security"
       }
     ],
     "systemTray": {

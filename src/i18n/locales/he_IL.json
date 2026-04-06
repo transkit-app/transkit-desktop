@@ -99,7 +99,8 @@
         "ocr_recognize": "זהה טקסט",
         "is_register": "מקש הקיצור כבר מוגדר",
         "success": "הגדרת מקשי קיצור הצליח",
-        "set_hotkey": "לחץ כדי להגדיר מקיש קיצור"
+        "set_hotkey": "לחץ כדי להגדיר מקיש קיצור",
+        "voice_anywhere": "Voice Input (Anywhere)"
       },
       "service": {
         "view_plugin_list": "הצג רשימת תוספים",
@@ -209,6 +210,24 @@
       "history": {
         "label": "היסטוריה",
         "title": "היסטוריה"
+      },
+      "voice_input": {
+        "label": "Voice Input",
+        "title": "Voice Input Settings",
+        "stt_section": "Speech Recognition",
+        "stt_service": "STT Service",
+        "inherit_monitor": "Same as Audio Monitor",
+        "language": "Language",
+        "auto_detect": "Same as Audio Monitor",
+        "behaviour_section": "Behaviour",
+        "inject_mode": "Text Injection Mode",
+        "inject_mode_desc": "Replace: clears existing text. Append: adds after current text.",
+        "inject_mode_replace": "Replace",
+        "inject_mode_append": "Append",
+        "autostart": "Auto-start recording on hotkey",
+        "autostart_desc": "Immediately begin recording when the hotkey is pressed.",
+        "appearance_section": "Button Appearance",
+        "fab_size": "Button Size"
       }
     },
     "updater": {

@@ -153,7 +153,8 @@
         "ocr_translate": "Tradução de Imagem",
         "is_register": "O atalho já está registrado",
         "success": "Atalho registrado com sucesso",
-        "set_hotkey": "Pressione para Definir a Tecla de Atalho"
+        "set_hotkey": "Pressione para Definir a Tecla de Atalho",
+        "voice_anywhere": "Voice Input (Anywhere)"
       },
       "service": {
         "label": "Serviço",
@@ -216,6 +217,24 @@
         "qq_group": "Grupo QQ",
         "telegram": "Telegram",
         "discussion": "Discussão no GitHub"
+      },
+      "voice_input": {
+        "label": "Voice Input",
+        "title": "Voice Input Settings",
+        "stt_section": "Speech Recognition",
+        "stt_service": "STT Service",
+        "inherit_monitor": "Same as Audio Monitor",
+        "language": "Language",
+        "auto_detect": "Same as Audio Monitor",
+        "behaviour_section": "Behaviour",
+        "inject_mode": "Text Injection Mode",
+        "inject_mode_desc": "Replace: clears existing text. Append: adds after current text.",
+        "inject_mode_replace": "Replace",
+        "inject_mode_append": "Append",
+        "autostart": "Auto-start recording on hotkey",
+        "autostart_desc": "Immediately begin recording when the hotkey is pressed.",
+        "appearance_section": "Button Appearance",
+        "fab_size": "Button Size"
       }
     },
     "updater": {

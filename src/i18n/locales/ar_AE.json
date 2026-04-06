@@ -144,7 +144,8 @@
         "ocr_translate": "أخذ لقطة للترجمة",
         "is_register": "هذا الاختصار مستخدم",
         "success": "سجل الاختصار بنجاح",
-        "set_hotkey": "اضغط لاختيار مفتاح اختصار"
+        "set_hotkey": "اضغط لاختيار مفتاح اختصار",
+        "voice_anywhere": "Voice Input (Anywhere)"
       },
       "recognize": {
         "title": "إعدادات التعرف",
@@ -216,6 +217,24 @@
         "qq_group": "مجموعة QQ",
         "discussion": "مناقشة جيتهب",
         "issue": "ابلاغ المشكلة"
+      },
+      "voice_input": {
+        "label": "Voice Input",
+        "title": "Voice Input Settings",
+        "stt_section": "Speech Recognition",
+        "stt_service": "STT Service",
+        "inherit_monitor": "Same as Audio Monitor",
+        "language": "Language",
+        "auto_detect": "Same as Audio Monitor",
+        "behaviour_section": "Behaviour",
+        "inject_mode": "Text Injection Mode",
+        "inject_mode_desc": "Replace: clears existing text. Append: adds after current text.",
+        "inject_mode_replace": "Replace",
+        "inject_mode_append": "Append",
+        "autostart": "Auto-start recording on hotkey",
+        "autostart_desc": "Immediately begin recording when the hotkey is pressed.",
+        "appearance_section": "Button Appearance",
+        "fab_size": "Button Size"
       }
     },
     "updater": {

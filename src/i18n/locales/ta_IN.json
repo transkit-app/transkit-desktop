@@ -144,7 +144,8 @@
         "ocr_translate": "திரைக்காட்சி மொழிபெயர்ப்பு",
         "is_register": "ஆட்கி ஏற்கனவே பதிவு செய்யப்பட்டுள்ளது",
         "success": "ஆட்கி பதிவு செய்",
-        "set_hotkey": "ஆட்ச்கியை அமைக்க அழுத்தவும்"
+        "set_hotkey": "ஆட்ச்கியை அமைக்க அழுத்தவும்",
+        "voice_anywhere": "Voice Input (Anywhere)"
       },
       "service": {
         "label": "பணி",
@@ -207,6 +208,24 @@
         "qq_group": "QQ குழு",
         "telegram": "தந்தி",
         "discussion": "அறிவிலிமையம் கலந்துரையாடல்"
+      },
+      "voice_input": {
+        "label": "Voice Input",
+        "title": "Voice Input Settings",
+        "stt_section": "Speech Recognition",
+        "stt_service": "STT Service",
+        "inherit_monitor": "Same as Audio Monitor",
+        "language": "Language",
+        "auto_detect": "Same as Audio Monitor",
+        "behaviour_section": "Behaviour",
+        "inject_mode": "Text Injection Mode",
+        "inject_mode_desc": "Replace: clears existing text. Append: adds after current text.",
+        "inject_mode_replace": "Replace",
+        "inject_mode_append": "Append",
+        "autostart": "Auto-start recording on hotkey",
+        "autostart_desc": "Immediately begin recording when the hotkey is pressed.",
+        "appearance_section": "Button Appearance",
+        "fab_size": "Button Size"
       }
     },
     "services": {

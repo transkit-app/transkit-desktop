@@ -8,7 +8,7 @@ import React from 'react';
 import { BsInfoSquareFill } from 'react-icons/bs';
 import { PiTranslateFill, PiTextboxFill } from 'react-icons/pi';
 import { AiFillAppstore, AiFillCloud } from 'react-icons/ai';
-import { MdKeyboardAlt, MdExtension, MdHeadset, MdPerson } from 'react-icons/md';
+import { MdKeyboardAlt, MdExtension, MdHeadset, MdPerson, MdMic } from 'react-icons/md';
 import { FaHistory } from 'react-icons/fa';
 
 import { getUser, onAuthStateChange } from '../../../../lib/transkit-cloud';
@@ -23,6 +23,7 @@ const navigationConfig = [
             { id: 'translate', path: '/translate', icon: PiTranslateFill, labelKey: 'config.translate.label' },
             { id: 'recognize', path: '/recognize', icon: PiTextboxFill, labelKey: 'config.recognize.label' },
             { id: 'audio-translate', path: '/audio-translate', icon: MdHeadset, labelKey: 'config.audio_translate.label' },
+            { id: 'voice-input', path: '/voice-input', icon: MdMic, labelKey: 'config.voice_input.label' },
             { id: 'hotkey', path: '/hotkey', icon: MdKeyboardAlt, labelKey: 'config.hotkey.label' },
         ],
     },

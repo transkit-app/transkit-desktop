@@ -403,7 +403,8 @@
         "title": "Paramètres des raccourcis",
         "selection_translate": "Traduction de la sélection",
         "ocr_recognize": "Reconnaissance de texte",
-        "set_hotkey": "Appuyer pour définir"
+        "set_hotkey": "Appuyer pour définir",
+        "voice_anywhere": "Voice Input (Anywhere)"
       },
       "service": {
         "add_service": "Ajouter un service",
@@ -442,6 +443,24 @@
       "history": {
         "label": "Historique",
         "title": "Historique"
+      },
+      "voice_input": {
+        "label": "Voice Input",
+        "title": "Voice Input Settings",
+        "stt_section": "Speech Recognition",
+        "stt_service": "STT Service",
+        "inherit_monitor": "Same as Audio Monitor",
+        "language": "Language",
+        "auto_detect": "Same as Audio Monitor",
+        "behaviour_section": "Behaviour",
+        "inject_mode": "Text Injection Mode",
+        "inject_mode_desc": "Replace: clears existing text. Append: adds after current text.",
+        "inject_mode_replace": "Replace",
+        "inject_mode_append": "Append",
+        "autostart": "Auto-start recording on hotkey",
+        "autostart_desc": "Immediately begin recording when the hotkey is pressed.",
+        "appearance_section": "Button Appearance",
+        "fab_size": "Button Size"
       }
     },
     "translate": {

@@ -11,6 +11,8 @@ import Translate from './window/Translate';
 import Recognize from './window/Recognize';
 import Updater from './window/Updater';
 import Monitor from './window/Monitor';
+import VoiceAnywhere from './window/VoiceAnywhere';
+import VoiceAnywhereCaption from './window/VoiceAnywhereCaption';
 import { store } from './utils/store';
 import Config from './window/Config';
 import { useConfig } from './hooks';
@@ -24,6 +26,8 @@ const windowMap = {
     config: <Config />,
     updater: <Updater />,
     monitor: <Monitor />,
+    voice_anywhere: <VoiceAnywhere />,
+    voice_anywhere_caption: <VoiceAnywhereCaption />,
 };
 
 export default function App() {

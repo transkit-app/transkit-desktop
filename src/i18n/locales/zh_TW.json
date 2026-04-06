@@ -154,7 +154,8 @@
         "ocr_translate": "截圖翻譯",
         "is_register": "該快速鍵已被註冊",
         "success": "快速鍵註冊成功",
-        "set_hotkey": "按下設定快速鍵"
+        "set_hotkey": "按下設定快速鍵",
+        "voice_anywhere": "Voice Input (Anywhere)"
       },
       "service": {
         "label": "服務設定",
@@ -219,6 +220,24 @@
         "qq_group": "QQ 群組",
         "telegram": "Telegram",
         "discussion": "Github 討論區"
+      },
+      "voice_input": {
+        "label": "Voice Input",
+        "title": "Voice Input Settings",
+        "stt_section": "Speech Recognition",
+        "stt_service": "STT Service",
+        "inherit_monitor": "Same as Audio Monitor",
+        "language": "Language",
+        "auto_detect": "Same as Audio Monitor",
+        "behaviour_section": "Behaviour",
+        "inject_mode": "Text Injection Mode",
+        "inject_mode_desc": "Replace: clears existing text. Append: adds after current text.",
+        "inject_mode_replace": "Replace",
+        "inject_mode_append": "Append",
+        "autostart": "Auto-start recording on hotkey",
+        "autostart_desc": "Immediately begin recording when the hotkey is pressed.",
+        "appearance_section": "Button Appearance",
+        "fab_size": "Button Size"
       }
     },
     "updater": {

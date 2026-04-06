@@ -236,6 +236,22 @@ export default function SourceArea(props) {
         }
     }, [hideWindow]);
 
+    // Voice Anywhere: inject dictated text into the source area
+    useEffect(() => {
+        const unlistenVoice = listen('voice_inject', (event) => {
+            const { text, mode } = event.payload ?? {};
+            if (!text?.trim()) return;
+            if (mode === 'append') {
+                setSourceText((prev) => (prev ? prev + ' ' + text : text), true);
+            } else {
+                setSourceText(text, true);
+            }
+            detect_language(text).then(() => syncSourceText());
+        });
+        return () => { unlistenVoice.then((f) => f()); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     useEffect(() => {
         const unlistenFocus = listen('tauri://focus', async () => {
             const stateText = ((await invoke('get_text')) || '').trim();

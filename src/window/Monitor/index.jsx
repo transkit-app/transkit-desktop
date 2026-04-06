@@ -1027,6 +1027,23 @@ export default function Monitor() {
         setProvisional('');
     }, [isRunning, autosaveEnabled, t]);
 
+    // Voice Anywhere: inject dictated text into the monitor context panel
+    useEffect(() => {
+        const unlistenPromise = listen('voice_inject', (event) => {
+            const { text, mode } = event.payload ?? {};
+            if (!text?.trim()) return;
+            setTranscriptionContext((prev) => {
+                const current = prev ?? EMPTY_CONTEXT;
+                const updated = mode === 'append'
+                    ? current.text ? current.text + ' ' + text : text
+                    : text;
+                return { ...current, text: updated };
+            });
+        });
+        return () => { unlistenPromise.then((f) => f()); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     const handleExport = useCallback(async () => {
         if (entries.length === 0) return;
         const header = `# Transcript\n\n**Exported:** ${new Date().toLocaleString()}\n\n---\n\n`;

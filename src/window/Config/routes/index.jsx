@@ -9,6 +9,7 @@ import Hotkey from '../pages/Hotkey';
 import Backup from '../pages/Backup';
 import About from '../pages/About';
 import AudioTranslate from '../pages/AudioTranslate';
+import VoiceInput from '../pages/VoiceInput';
 import Profile from '../pages/Profile';
 import Account from '../pages/Account';
 
@@ -28,6 +29,10 @@ const routes = [
     {
         path: '/audio-translate',
         element: <AudioTranslate />,
+    },
+    {
+        path: '/voice-input',
+        element: <VoiceInput />,
     },
     {
         path: '/profile',

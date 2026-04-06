@@ -42,6 +42,12 @@
       "uk": "Ukrainian",
       "he": "Hebrew"
     },
+    "voice_anywhere": {
+      "errors": {
+        "no_speech_detected": "No speech detected.",
+        "no_speech_detected_with_request_id": "No speech detected. request_id={{requestId}}"
+      }
+    },
     "config": {
       "general": {
         "label": "General",
@@ -160,7 +166,8 @@
         "audio_monitor": "Realtime Translate",
         "is_register": "The hotkey is already registered",
         "success": "Hotkey register success",
-        "set_hotkey": "Press to Set Hotkey"
+        "set_hotkey": "Press to Set Hotkey",
+        "voice_anywhere": "Voice Input (Anywhere)"
       },
       "service": {
         "label": "Service",
@@ -335,6 +342,24 @@
         "notes": "Bio / Notes",
         "notes_placeholder": "e.g. I attend English-speaking meetings but prefer answers in Vietnamese",
         "preview_label": "Profile Preview"
+      },
+      "voice_input": {
+        "label": "Voice Input",
+        "title": "Voice Input Settings",
+        "stt_section": "Speech Recognition",
+        "stt_service": "STT Service",
+        "inherit_monitor": "Same as Audio Monitor",
+        "language": "Language",
+        "auto_detect": "Same as Audio Monitor",
+        "behaviour_section": "Behaviour",
+        "inject_mode": "Text Injection Mode",
+        "inject_mode_desc": "Replace: clears existing text. Append: adds after current text.",
+        "inject_mode_replace": "Replace",
+        "inject_mode_append": "Append",
+        "autostart": "Auto-start recording on hotkey",
+        "autostart_desc": "Immediately begin recording when the hotkey is pressed.",
+        "appearance_section": "Button Appearance",
+        "fab_size": "Button Size"
       }
     },
     "monitor": {

@@ -42,6 +42,12 @@
       "uk": "Tiếng Ukraina",
       "he": "Tiếng Hebrew"
     },
+    "voice_anywhere": {
+      "errors": {
+        "no_speech_detected": "Không phát hiện được giọng nói.",
+        "no_speech_detected_with_request_id": "Không phát hiện được giọng nói. request_id={{requestId}}"
+      }
+    },
     "config": {
       "general": {
         "label": "Chung",
@@ -160,7 +166,8 @@
         "audio_monitor": "Dịch âm thanh realtime",
         "is_register": "Phím tắt đã được đăng ký",
         "success": "Đăng ký phím tắt thành công",
-        "set_hotkey": "Nhấn để đặt phím tắt"
+        "set_hotkey": "Nhấn để đặt phím tắt",
+        "voice_anywhere": "Nhập giọng nói (Anywhere)"
       },
       "service": {
         "label": "Dịch vụ",
@@ -335,6 +342,24 @@
         "notes": "Ghi chú / Giới thiệu",
         "notes_placeholder": "VD: Tôi tham dự cuộc họp tiếng Anh nhưng muốn câu trả lời bằng tiếng Việt",
         "preview_label": "Xem trước hồ sơ"
+      },
+      "voice_input": {
+        "label": "Nhập giọng nói",
+        "title": "Cài đặt Nhập giọng nói",
+        "stt_section": "Nhận dạng giọng nói",
+        "stt_service": "Dịch vụ STT",
+        "inherit_monitor": "Giống Audio Monitor",
+        "language": "Ngôn ngữ",
+        "auto_detect": "Giống Audio Monitor",
+        "behaviour_section": "Hành vi",
+        "inject_mode": "Chế độ chèn văn bản",
+        "inject_mode_desc": "Thay thế: xoá nội dung hiện tại. Chèn thêm: thêm vào sau văn bản hiện tại.",
+        "inject_mode_replace": "Thay thế",
+        "inject_mode_append": "Chèn thêm",
+        "autostart": "Tự động bắt đầu ghi khi nhấn phím tắt",
+        "autostart_desc": "Bắt đầu ghi âm ngay khi nhấn phím tắt.",
+        "appearance_section": "Giao diện nút",
+        "fab_size": "Kích thước nút"
       }
     },
     "monitor": {

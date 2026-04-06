@@ -8,7 +8,7 @@ import { initStore } from './utils/store';
 import { initEnv } from './utils/env';
 import App from './App';
 
-if (import.meta.env.PROD) {
+if (import.meta.env.PROD && appWindow.label !== 'voice_anywhere') {
     document.addEventListener('contextmenu', (e) => {
         e.preventDefault();
     });

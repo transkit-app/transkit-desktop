@@ -17,6 +17,7 @@ mod server;
 mod system_ocr;
 mod tray;
 mod updater;
+mod voice_anywhere;
 mod window;
 
 use audio_cmd::*;
@@ -25,6 +26,11 @@ use narration::{
     narration_setup, narration_start, narration_stop, NarrationState,
 };
 use auth::start_oauth_server;
+use voice_anywhere::{
+    VoiceAnywhereState, get_current_voice_anywhere_target, get_voice_anywhere_focused,
+    hide_voice_anywhere_caption, show_voice_anywhere_caption,
+    voice_inject_to_window, voice_copy_to_clipboard,
+};
 use backup::*;
 use clipboard::*;
 use cmd::*;
@@ -44,6 +50,8 @@ use tray::*;
 use updater::check_update;
 use window::config_window;
 use window::open_config_window;
+use window::show_voice_anywhere_window;
+use window::hide_voice_anywhere_window;
 use window::updater_window;
 
 // Global AppHandle
@@ -107,6 +115,7 @@ fn main() {
                 stop_flag: Mutex::new(None),
             });
             app.manage(NarrationState::new());
+            app.manage(VoiceAnywhereState::new());
             // Update Tray Menu
             update_tray(app.app_handle(), "".to_string(), "".to_string());
             // Start http server
@@ -131,6 +140,13 @@ fn main() {
                     }
                 }
                 None => {}
+            }
+            // Auto-show Voice Anywhere FAB if "always visible" is enabled
+            if get("voice_anywhere_always_visible")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false)
+            {
+                window::voice_anywhere_window();
             }
             // Check Update
             check_update(app.handle());
@@ -183,7 +199,15 @@ fn main() {
             narration_start,
             narration_inject_audio,
             narration_stop,
-            narration_get_status
+            narration_get_status,
+            get_current_voice_anywhere_target,
+            get_voice_anywhere_focused,
+            show_voice_anywhere_caption,
+            hide_voice_anywhere_caption,
+            voice_inject_to_window,
+            voice_copy_to_clipboard,
+            show_voice_anywhere_window,
+            hide_voice_anywhere_window
         ])
         .on_system_tray_event(tray_event_handler)
         .build(tauri::generate_context!())

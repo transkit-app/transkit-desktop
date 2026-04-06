@@ -446,6 +446,93 @@ pub fn open_config_window() {
     config_window();
 }
 
+/// Tauri command: show the Voice Anywhere FAB (same as pressing the hotkey).
+/// Called from the Config window when "Always visible" is enabled.
+#[tauri::command]
+pub fn show_voice_anywhere_window() {
+    voice_anywhere_window();
+}
+
+/// Tauri command: hide the Voice Anywhere FAB.
+/// Called from the Config window when "Always visible" is disabled.
+#[tauri::command]
+pub fn hide_voice_anywhere_window() {
+    let app_handle = APP.get().unwrap();
+    if let Some(window) = app_handle.get_window("voice_anywhere") {
+        window.hide().unwrap_or_default();
+    }
+}
+
+/// Show the Voice Anywhere FAB window.
+///
+/// Before revealing the window we snapshot which Transkit window currently has
+/// OS focus (if any) so the transcript can be routed there.  The FAB window
+/// itself is always-on-top and transparent, so it must never steal focus from
+/// an in-use application — that is why it is declared with `focus: false` in
+/// tauri.conf.json.
+pub fn voice_anywhere_window() {
+    let app_handle = APP.get().unwrap();
+
+    // Record the currently focused Transkit window BEFORE showing the FAB.
+    // voice_anywhere itself is excluded so toggling the shortcut while FAB is
+    // visible doesn't overwrite the real target.
+    {
+        let state: tauri::State<crate::voice_anywhere::VoiceAnywhereState> =
+            app_handle.state();
+        let focused = app_handle
+            .windows()
+            .iter()
+            .find(|(label, w)| {
+                *label != "voice_anywhere" && w.is_focused().unwrap_or(false)
+            })
+            .map(|(label, _)| label.clone());
+        *state.focused_window.lock().unwrap() = focused;
+    }
+
+    if let Some(window) = app_handle.get_window("voice_anywhere") {
+        // Disable the native OS window shadow for the FAB.
+        // The shadow follows the window rectangle (not the circular FAB shape)
+        // and creates a visible gray/blue border around the icon. CSS box-shadow
+        // on the FAB element provides sufficient visual depth instead.
+        #[cfg(not(target_os = "linux"))]
+        set_shadow(&window, false).unwrap_or_default();
+
+        // Position the FAB at the configured corner on the primary monitor.
+        // We derive the position here (Rust side) so the window appears in the
+        // right place before the React component has a chance to move it.
+        if let Some(daemon) = app_handle.get_window("daemon") {
+            if let Ok(Some(monitor)) = daemon.primary_monitor() {
+                let size = monitor.size();
+                let pos = monitor.position();
+                let scale = monitor.scale_factor();
+                // Window is larger than the FAB to provide fade room on all sides.
+                // padding_logical must match the PADDING constant in VoiceAnywhere/index.jsx.
+                let fab_logical: f64 = crate::config::get("voice_anywhere_fab_size")
+                    .and_then(|v| v.as_f64())
+                    .unwrap_or(72.0);
+                let padding_logical: f64 = 36.0;
+                let win_logical: f64 = fab_logical + padding_logical * 2.0;
+                let margin_logical: f64 = 28.0;
+                // Resize window to match configured FAB size + padding
+                let _ = window.set_size(tauri::LogicalSize::new(win_logical, win_logical));
+                // offset keeps FAB right/bottom edge `margin_logical` from the screen edge
+                // offset = padding + fab + margin  (distance from screen right to window left)
+                let offset = ((padding_logical + fab_logical + margin_logical) * scale) as i32;
+                let x = pos.x + size.width as i32 - offset;
+                let y = pos.y + size.height as i32 - offset;
+                let _ = window.set_position(tauri::PhysicalPosition::new(x, y));
+            }
+        }
+
+        // Send a trigger event so the React component can start recording if
+        // `voice_anywhere_autostart` is enabled.
+        window.emit("voice_anywhere_trigger", ()).unwrap_or_default();
+        window.show().unwrap_or_default();
+    } else {
+        warn!("voice_anywhere window not found — check tauri.conf.json");
+    }
+}
+
 pub fn monitor_window() {
     let app_handle = APP.get().unwrap();
     // The monitor window is pre-declared in tauri.conf.json (transparent: true, visible: false).
