@@ -1,5 +1,29 @@
 # Changelog
 
+## 3.2.5 (2026-04-06)
+
+### Voice Anywhere & Global Inclusion:
+- **Voice Anywhere FAB**: Introduced a global floating action button (FAB) for instant voice-to-text input. Dictate anywhere and inject text directly into any active application (Zoom, Teams, Slack, etc.).
+- **Realtime Caption Overlay**: Added a dedicated caption window that displays live transcription results right above the FAB as you speak.
+- **Smart Visual States**: The FAB features 5 dynamic states: Idle (swirling pulse), Listening (live amplitude bars), Processing (spinner), Injecting (success flash), and Error (red alert).
+- **Customizable Aesthetics**: New configuration option for **Idle Button Color**, allowing the FAB to blend perfectly with your desktop theme.
+- **Drag & Toggle**: Intelligent interaction design that distinguishes between a quick tap (toggle recording) and a long-press/drag (reposition window).
+
+### Realtime Monitor & PTT Enhancements:
+- **Push-to-Talk (PTT) Toggle**: Dedicated toolbar button in the Monitor window to quickly enable/disable PTT mode.
+- **Live Service Switching**: Support for switching transcription services (e.g., Deepgram to Gladia) on-the-fly without stopping the session.
+- **Modern Log Aesthetics**: Updated the Monitor log bubbles with consistent, blue-tinted visual styles for improved clarity and readability.
+- **Initialization Guards**: Added start-up concurrency guards to prevent multiple simultaneous session requests, ensuring stability during rapid toggling.
+
+### Account & Subscription Management:
+- **STT Addons & Team Plans**: Enhanced the Account dashboard to support purchasing STT minute bundles and managing Team-based collaborative plans.
+- **Subscription Awareness**: Added dedicated UI for tracking plan expiration dates and quotas for STT, TTS, and AI credits.
+- **Secure Sign-out Flow**: New `SignOutButton` with a confirmation modal to prevent accidental logouts. Sign-out now correctly targets local session scope for better multi-account handling.
+
+### Core & Configuration:
+- **Hotkeys & Voice Input Config**: New dedicated configuration pages for global Hotkeys and specific Voice Input settings, including sensitivity and delay controls.
+- **Source Area Refinement**: Improved focus handling and text injection logic to ensure cursor stability when pasting dictated text.
+
 ## 3.2.4 (2026-04-01)
 
 ### UI & UX Enhancements:
