@@ -359,7 +359,10 @@
         "autostart": "Tự động bắt đầu ghi khi nhấn phím tắt",
         "autostart_desc": "Bắt đầu ghi âm ngay khi nhấn phím tắt.",
         "appearance_section": "Giao diện nút",
-        "fab_size": "Kích thước nút"
+        "fab_size": "Kích thước nút",
+        "idle_button_color": "Màu nút chờ",
+        "idle_button_color_desc": "Chọn màu chờ cho nút Voice Anywhere.",
+        "reset_idle_button_color": "Đặt lại"
       }
     },
     "monitor": {

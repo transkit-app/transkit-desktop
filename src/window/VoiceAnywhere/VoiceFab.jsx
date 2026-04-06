@@ -3,6 +3,21 @@ import { appWindow } from '@tauri-apps/api/window';
 import { MdMic, MdCheck } from 'react-icons/md';
 import AmplitudeBars from './AmplitudeBars';
 
+function hexToRgba(hex, alpha) {
+    if (!hex || typeof hex !== 'string') return `rgba(63, 63, 70, ${alpha})`;
+    const normalized = hex.replace('#', '');
+    const expanded = normalized.length === 3
+        ? normalized.split('').map((ch) => ch + ch).join('')
+        : normalized;
+    if (expanded.length !== 6) return `rgba(63, 63, 70, ${alpha})`;
+    const int = Number.parseInt(expanded, 16);
+    if (Number.isNaN(int)) return `rgba(63, 63, 70, ${alpha})`;
+    const r = (int >> 16) & 255;
+    const g = (int >> 8) & 255;
+    const b = int & 255;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 /**
  * Floating Action Button (FAB) with 5 visual states:
  *   idle        — mic icon + slow pulse ring
@@ -14,7 +29,7 @@ import AmplitudeBars from './AmplitudeBars';
  * Distinguishes tap (toggle recording) from drag (reposition window).
  * A press > 300ms OR mouse travel > 4px is treated as a drag.
  */
-export default function VoiceFab({ fabState, amplitude, onToggle, errorMsg, size = 72 }) {
+export default function VoiceFab({ fabState, amplitude, onToggle, errorMsg, size = 72, idleColor = '#3f3f46' }) {
     const dragTimerRef = useRef(null);
     const startPosRef = useRef({ x: 0, y: 0 });
     const isDraggingRef = useRef(false);
@@ -60,7 +75,7 @@ export default function VoiceFab({ fabState, amplitude, onToggle, errorMsg, size
         ? 'rgba(22, 163, 74, 0.90)'
         : isListening || isProcessing
         ? 'rgba(14, 165, 233, 0.90)'
-        : 'rgba(30, 30, 35, 0.85)';
+        : hexToRgba(idleColor, 0.92);
 
     const boxShadow = isListening
         ? `0 0 0 6px rgba(14,165,233,0.25), 0 4px 20px rgba(0,0,0,0.5)`
@@ -68,7 +83,7 @@ export default function VoiceFab({ fabState, amplitude, onToggle, errorMsg, size
         ? `0 0 0 6px rgba(22,163,74,0.25), 0 4px 20px rgba(0,0,0,0.5)`
         : isError
         ? `0 0 0 6px rgba(220,38,38,0.25), 0 4px 20px rgba(0,0,0,0.5)`
-        : `0 4px 20px rgba(0,0,0,0.5)`;
+        : `0 4px 20px rgba(0,0,0,0.5), 0 0 0 1px ${hexToRgba(idleColor, 0.20)}`;
 
     return (
         <div style={{ position: 'relative', width: size, height: size }}>
@@ -119,7 +134,7 @@ export default function VoiceFab({ fabState, amplitude, onToggle, errorMsg, size
                                 position: 'absolute',
                                 inset: '6%',
                                 borderRadius: '50%',
-                                background: 'radial-gradient(circle at 50% 42%, rgba(255,255,255,0.30), rgba(255,255,255,0.12) 42%, rgba(255,255,255,0.04) 62%, transparent 78%)',
+                                background: `radial-gradient(circle at 50% 42%, rgba(255,255,255,0.30), ${hexToRgba(idleColor, 0.18)} 42%, ${hexToRgba(idleColor, 0.06)} 62%, transparent 78%)`,
                                 filter: 'blur(1.8px)',
                                 animation: 'va-idle-breathe 2.7s ease-in-out infinite',
                                 pointerEvents: 'none',
@@ -130,7 +145,7 @@ export default function VoiceFab({ fabState, amplitude, onToggle, errorMsg, size
                                 position: 'absolute',
                                 inset: '-11%',
                                 borderRadius: '44%',
-                                background: 'conic-gradient(from 0deg, rgba(255,255,255,0.00), rgba(255,255,255,0.17), rgba(255,255,255,0.03), rgba(255,255,255,0.12), rgba(255,255,255,0.00))',
+                                background: `conic-gradient(from 0deg, rgba(255,255,255,0.00), ${hexToRgba(idleColor, 0.26)}, rgba(255,255,255,0.03), ${hexToRgba(idleColor, 0.18)}, rgba(255,255,255,0.00))`,
                                 opacity: 0.86,
                                 mixBlendMode: 'screen',
                                 animation: 'va-idle-swirl 5.8s linear infinite',
@@ -142,7 +157,7 @@ export default function VoiceFab({ fabState, amplitude, onToggle, errorMsg, size
                                 position: 'absolute',
                                 inset: '-16%',
                                 borderRadius: '46%',
-                                background: 'conic-gradient(from 180deg, rgba(255,255,255,0.00), rgba(255,255,255,0.09), rgba(255,255,255,0.00), rgba(255,255,255,0.14), rgba(255,255,255,0.00))',
+                                background: `conic-gradient(from 180deg, rgba(255,255,255,0.00), ${hexToRgba(idleColor, 0.14)}, rgba(255,255,255,0.00), ${hexToRgba(idleColor, 0.22)}, rgba(255,255,255,0.00))`,
                                 opacity: 0.62,
                                 mixBlendMode: 'screen',
                                 animation: 'va-idle-swirl-rev 7.8s linear infinite',
@@ -154,8 +169,8 @@ export default function VoiceFab({ fabState, amplitude, onToggle, errorMsg, size
                                 position: 'absolute',
                                 inset: '4px',
                                 borderRadius: '50%',
-                                border: '1px solid rgba(255,255,255,0.10)',
-                                boxShadow: 'inset 0 0 12px rgba(255,255,255,0.06)',
+                                border: `1px solid ${hexToRgba(idleColor, 0.24)}`,
+                                boxShadow: `inset 0 0 12px ${hexToRgba(idleColor, 0.16)}`,
                                 animation: 'va-idle-ring 3.4s ease-in-out infinite',
                                 pointerEvents: 'none',
                             }}

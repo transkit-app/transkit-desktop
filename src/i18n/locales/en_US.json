@@ -359,7 +359,10 @@
         "autostart": "Auto-start recording on hotkey",
         "autostart_desc": "Immediately begin recording when the hotkey is pressed.",
         "appearance_section": "Button Appearance",
-        "fab_size": "Button Size"
+        "fab_size": "Button Size",
+        "idle_button_color": "Idle Button Color",
+        "idle_button_color_desc": "Choose the standby color for the Voice Anywhere button.",
+        "reset_idle_button_color": "Reset"
       }
     },
     "monitor": {

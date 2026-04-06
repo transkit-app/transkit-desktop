@@ -18,6 +18,7 @@ function getTranscriptionServiceLabel(instanceKey, t) {
 
 const INJECT_MODES = ['replace', 'append'];
 const FAB_SIZES = [48, 56, 64, 72, 88, 104];
+const DEFAULT_IDLE_BUTTON_COLOR = '#3f3f46';
 
 export default function VoiceInput() {
     const { t } = useTranslation();
@@ -39,6 +40,7 @@ export default function VoiceInput() {
 
     // FAB size
     const [fabSize, setFabSize] = useConfig('voice_anywhere_fab_size', 72);
+    const [idleButtonColor, setIdleButtonColor] = useConfig('voice_anywhere_idle_button_color', DEFAULT_IDLE_BUTTON_COLOR);
 
     // Always visible — show FAB without needing to press the hotkey
     const [alwaysVisible, setAlwaysVisible] = useConfig('voice_anywhere_always_visible', false);
@@ -235,6 +237,38 @@ export default function VoiceInput() {
                                 onChange={setFabSize}
                                 className='w-full'
                             />
+                        </div>
+                    </div>
+
+                    <div className='config-item'>
+                        <div>
+                            <h3>{t('config.voice_input.idle_button_color', { defaultValue: 'Idle Button Color' })}</h3>
+                            <p className='text-xs text-default-400 mt-0.5'>
+                                {t('config.voice_input.idle_button_color_desc', { defaultValue: 'Choose the standby color for the Voice Anywhere button.' })}
+                            </p>
+                        </div>
+                        <div className='flex items-center justify-end gap-3 max-w-[50%] w-full'>
+                            <input
+                                type='color'
+                                value={idleButtonColor ?? DEFAULT_IDLE_BUTTON_COLOR}
+                                aria-label={t('config.voice_input.idle_button_color', { defaultValue: 'Idle Button Color' })}
+                                onChange={(e) => setIdleButtonColor(e.target.value)}
+                                style={{
+                                    width: '44px',
+                                    height: '32px',
+                                    padding: 0,
+                                    border: 'none',
+                                    background: 'transparent',
+                                    cursor: 'pointer',
+                                }}
+                            />
+                            <button
+                                type='button'
+                                className='text-xs px-2 py-1 rounded-md border border-default-200 text-default-500'
+                                onClick={() => setIdleButtonColor(DEFAULT_IDLE_BUTTON_COLOR)}
+                            >
+                                {t('config.voice_input.reset_idle_button_color', { defaultValue: 'Reset' })}
+                            </button>
                         </div>
                     </div>
                 </CardBody>

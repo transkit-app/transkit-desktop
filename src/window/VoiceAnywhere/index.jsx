@@ -26,6 +26,7 @@ export default function VoiceAnywhere() {
     const [showContextMenu] = useConfig('voice_anywhere_show_context_menu', true);
     const [preferAsyncApi] = useConfig('voice_anywhere_prefer_async_api', true);
     const [fabSize] = useConfig('voice_anywhere_fab_size', 72);
+    const [idleButtonColor] = useConfig('voice_anywhere_idle_button_color', '#3f3f46');
     const [transcriptionServiceList] = useConfig('transcription_service_list', []);
 
     const sz = fabSize ?? 72;
@@ -245,6 +246,7 @@ export default function VoiceAnywhere() {
                         onToggle={toggle}
                         errorMsg={errorMsg}
                         size={sz}
+                        idleColor={idleButtonColor}
                     />
                 </div>
             </div>
