@@ -9,10 +9,11 @@ import { useAmplitude } from './useAmplitude';
 import { useConfig } from '../../hooks';
 import { getServiceName } from '../../utils/service_instance';
 import { store } from '../../utils/store';
+import { DEFAULT_PROMPTS, BUILTIN_LEVELS } from '../../utils/polishTranscript';
 
 // Context menu dimensions — used for dynamic window resize
 const MENU_W = 220;
-const MENU_H = 390;
+const MENU_H = 610;
 const CAPTION_W = 380;
 const CAPTION_H = 92;
 
@@ -22,12 +23,28 @@ export default function VoiceAnywhere() {
     const [monitorSvcKey] = useConfig('transcription_active_service', '');
     const [voiceLanguage, setVoiceLanguage] = useConfig('voice_anywhere_language', 'auto');
     const [injectMode, setInjectMode] = useConfig('voice_anywhere_inject_mode', 'replace');
+    const [action, setAction] = useConfig('voice_anywhere_action', 'clipboard');
     const [autostart] = useConfig('voice_anywhere_autostart', true);
     const [showContextMenu] = useConfig('voice_anywhere_show_context_menu', true);
     const [preferAsyncApi] = useConfig('voice_anywhere_prefer_async_api', true);
     const [fabSize] = useConfig('voice_anywhere_fab_size', 72);
     const [idleButtonColor] = useConfig('voice_anywhere_idle_button_color', '#3f3f46');
     const [transcriptionServiceList] = useConfig('transcription_service_list', []);
+    const [polishEnabled] = useConfig('voice_anywhere_polish_enabled', false);
+    const [polishLevel] = useConfig('voice_anywhere_polish_level', 'mild');
+    const [polishServiceKey] = useConfig('voice_anywhere_polish_service', '');
+    const [polishPromptOverrides] = useConfig('voice_anywhere_polish_prompt_overrides', {});
+    const [polishCustomLevels] = useConfig('voice_anywhere_polish_custom_levels', []);
+
+    // Resolve the effective prompt for the selected level
+    const polishPrompt = React.useMemo(() => {
+        if (BUILTIN_LEVELS.includes(polishLevel)) {
+            return (polishPromptOverrides ?? {})[polishLevel] || DEFAULT_PROMPTS[polishLevel];
+        }
+        // Custom level — find by key
+        const custom = (polishCustomLevels ?? []).find(c => c.key === polishLevel);
+        return custom?.prompt || DEFAULT_PROMPTS.mild;
+    }, [polishLevel, polishPromptOverrides, polishCustomLevels]);
 
     const sz = fabSize ?? 72;
 
@@ -37,8 +54,12 @@ export default function VoiceAnywhere() {
         monitorSvcKey,
         language: voiceLanguage,
         injectMode,
+        action,
         autostart,
         preferAsyncApi,
+        polishEnabled,
+        polishPrompt,
+        polishServiceKey,
     });
 
     const isRecording = fabState === 'listening';
@@ -104,10 +125,12 @@ export default function VoiceAnywhere() {
             const newX = fabRight  - newW;
             const newY = fabBottom - newH;
 
+            isMenuExpandedRef.current = true;
             await appWindow.setSize(new LogicalSize(newW, newH));
             await appWindow.setPosition(new LogicalPosition(newX, newY));
             setCtxMenu({ x: 4, y: 4 });
         } catch {
+            isMenuExpandedRef.current = false;
             setCtxMenu({ x: 0, y: 0 });
         }
     }, [sz]);
@@ -122,6 +145,7 @@ export default function VoiceAnywhere() {
                 await appWindow.setPosition(new LogicalPosition(x, y));
             } catch {}
         }
+        isMenuExpandedRef.current = false;
     }, []);
 
     const handlePointerDownCapture = useCallback((e) => {
@@ -148,6 +172,32 @@ export default function VoiceAnywhere() {
         const p = listen('tauri://close-requested', () => appWindow.hide());
         return () => { p.then((f) => f()); };
     }, []);
+
+    // Persist user-dragged position so hotkey doesn't snap back to default corner.
+    // Skip saves while context menu is open (window expands/contracts during that cycle).
+    const isMenuExpandedRef = useRef(false);
+    const savePosTimerRef = useRef(null);
+    useEffect(() => {
+        const p = listen('tauri://move', async () => {
+            if (isMenuExpandedRef.current) return;
+            clearTimeout(savePosTimerRef.current);
+            savePosTimerRef.current = setTimeout(async () => {
+                try {
+                    const physPos = await appWindow.outerPosition();
+                    await invoke('save_voice_anywhere_position', { x: physPos.x, y: physPos.y });
+                    baseWindowRef.current = null; // invalidate cached base position
+                } catch {}
+            }, 400);
+        });
+        return () => { p.then((f) => f()); clearTimeout(savePosTimerRef.current); };
+    }, []);
+
+    // Close context menu when the window loses focus (user clicks elsewhere on screen)
+    useEffect(() => {
+        if (!ctxMenu) return;
+        const p = listen('tauri://blur', () => closeCtxMenu());
+        return () => { p.then((f) => f()); };
+    }, [ctxMenu, closeCtxMenu]);
 
     const services = (transcriptionServiceList ?? []).map((key) => ({
         key,
@@ -260,9 +310,11 @@ export default function VoiceAnywhere() {
                     monitorSvcKey={monitorSvcKey}
                     language={voiceLanguage}
                     injectMode={injectMode}
+                    action={action}
                     onSelectService={setVoiceSttService}
                     onSelectLanguage={setVoiceLanguage}
                     onSelectInjectMode={setInjectMode}
+                    onSelectAction={setAction}
                     onClose={closeCtxMenu}
                 />
             )}

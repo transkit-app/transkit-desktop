@@ -5,19 +5,24 @@ import { useTranslation } from 'react-i18next';
 import { store } from '../../utils/store';
 import { getServiceName } from '../../utils/service_instance';
 import * as transcriptionServices from '../../services/transcription';
+import { polishTranscript } from '../../utils/polishTranscript';
 
 /**
  * Core hook for Voice Anywhere.
  *
  * @param {object} opts
- * @param {string} opts.sttServiceKey  - reactive: current value of voice_anywhere_stt_service config
- * @param {string} opts.monitorSvcKey  - reactive: current value of transcription_active_service config
- * @param {string} opts.language       - reactive: voice_anywhere_language config
- * @param {string} opts.injectMode     - reactive: voice_anywhere_inject_mode config
- * @param {boolean} opts.autostart     - reactive: voice_anywhere_autostart config
- * @param {boolean} opts.preferAsyncApi - reactive: opt-in async STT mode for Voice Anywhere
+ * @param {string}  opts.sttServiceKey    - reactive: voice_anywhere_stt_service config
+ * @param {string}  opts.monitorSvcKey    - reactive: transcription_active_service config
+ * @param {string}  opts.language         - reactive: voice_anywhere_language config
+ * @param {string}  opts.injectMode       - reactive: voice_anywhere_inject_mode ('replace'|'append') — Transkit windows only
+ * @param {string}  opts.action           - reactive: voice_anywhere_action ('clipboard'|'paste') — external apps
+ * @param {boolean} opts.autostart        - reactive: voice_anywhere_autostart config
+ * @param {boolean} opts.preferAsyncApi   - reactive: opt-in async STT mode for Voice Anywhere
+ * @param {boolean} opts.polishEnabled    - reactive: voice_anywhere_polish_enabled config
+ * @param {string}  opts.polishPrompt     - reactive: resolved system prompt for the selected level
+ * @param {string}  opts.polishServiceKey - reactive: voice_anywhere_polish_service config
  */
-export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, injectMode, autostart, preferAsyncApi }) {
+export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, injectMode, action, autostart, preferAsyncApi, polishEnabled, polishPrompt, polishServiceKey }) {
     const { t } = useTranslation();
     const [fabState, setFabState] = useState('idle');
     const [interim, setInterim] = useState('');
@@ -34,18 +39,32 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, injec
     const interimRef = useRef('');
     const lastTranscriptRef = useRef('');
     const finalizingRef = useRef(false);
+    // Accumulates chunk-finals that arrive while user is still recording
+    // (e.g. local_sidecar sends is_final:true after each chunk even mid-dictation)
+    const accumulatedRef = useRef('');
+    // Tracks whether the current interimRef value is a status/loading message
+    // (isStatus:true from local_sidecar). Status messages must never be used as fallback text.
+    const interimIsStatusRef = useRef(false);
 
     // Keep reactive config in refs so callbacks always see the latest values
     const sttKeyRef = useRef(sttServiceKey);
     const monitorKeyRef = useRef(monitorSvcKey);
     const languageRef = useRef(language);
     const injectModeRef = useRef(injectMode);
+    const actionRef = useRef(action);
     const preferAsyncRef = useRef(preferAsyncApi);
+    const polishEnabledRef = useRef(polishEnabled);
+    const polishPromptRef = useRef(polishPrompt);
+    const polishServiceKeyRef = useRef(polishServiceKey);
     useEffect(() => { sttKeyRef.current = sttServiceKey; }, [sttServiceKey]);
     useEffect(() => { monitorKeyRef.current = monitorSvcKey; }, [monitorSvcKey]);
     useEffect(() => { languageRef.current = language; }, [language]);
     useEffect(() => { injectModeRef.current = injectMode; }, [injectMode]);
+    useEffect(() => { actionRef.current = action; }, [action]);
     useEffect(() => { preferAsyncRef.current = preferAsyncApi; }, [preferAsyncApi]);
+    useEffect(() => { polishEnabledRef.current = polishEnabled; }, [polishEnabled]);
+    useEffect(() => { polishPromptRef.current = polishPrompt; }, [polishPrompt]);
+    useEffect(() => { polishServiceKeyRef.current = polishServiceKey; }, [polishServiceKey]);
 
     const clearInjectingTimer = () => {
         if (injectingTimerRef.current) {
@@ -130,21 +149,46 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, injec
 
     // ── Inject ───────────────────────────────────────────────────────────────
 
-    const injectText = useCallback(async (text) => {
-        if (!text?.trim()) return;
+    const injectText = useCallback(async (rawText) => {
+        if (!rawText?.trim()) return;
         setFabState('processing');
         try {
+            // ── Polish step (optional middleware) ─────────────────────────────
+            let text = rawText;
+            if (polishEnabledRef.current && polishServiceKeyRef.current) {
+                try {
+                    text = await polishTranscript(rawText, {
+                        prompt: polishPromptRef.current,
+                        aiServiceKey: polishServiceKeyRef.current,
+                    });
+                } catch (polishErr) {
+                    console.warn('[VoiceAnywhere] Polish failed, using raw transcript:', polishErr);
+                    text = rawText; // fall back gracefully
+                }
+            }
+
+            // injectMode (replace|append) applies only to Transkit windows.
+            // action (clipboard|paste) applies to external apps.
+            const injectMode = injectModeRef.current ?? 'replace';
+            const action = actionRef.current ?? 'clipboard';
+
             const currentFocusedWindow = await invoke('get_current_voice_anywhere_target').catch(() => null);
             const previousFocusedWindow = await invoke('get_voice_anywhere_focused').catch(() => null);
             const focusedWindow = currentFocusedWindow || previousFocusedWindow;
-            const mode = injectModeRef.current ?? 'replace';
             const transKitWindows = ['translate', 'monitor', 'config'];
+
             if (focusedWindow && transKitWindows.includes(focusedWindow)) {
-                await invoke('voice_inject_to_window', { label: focusedWindow, text, mode });
-                console.log('[VoiceAnywhere] injected into window:', focusedWindow);
+                // Inject into Transkit window using replace/append mode
+                await invoke('voice_inject_to_window', { label: focusedWindow, text, mode: injectMode });
+                console.log('[VoiceAnywhere] injected into window:', focusedWindow, 'mode:', injectMode);
+            } else if (action === 'paste') {
+                // Focus last external app and paste (VA is focus:false so input focus is preserved)
+                await invoke('voice_focus_and_paste', { text });
+                console.log('[VoiceAnywhere] pasted to last external app');
             } else {
+                // Default: copy to clipboard only
                 await invoke('voice_copy_to_clipboard', { text });
-                console.log('[VoiceAnywhere] copied transcript to clipboard');
+                console.log('[VoiceAnywhere] copied to clipboard');
             }
             setFabState('injecting');
             setInjected(true);
@@ -175,26 +219,51 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, injec
         finalizingRef.current = false;
         interimRef.current = '';
         lastTranscriptRef.current = '';
+        accumulatedRef.current = '';
 
         try {
             const client = await createSTTClient();
 
-            client.onProvisional = (text) => {
+            client.onProvisional = (text, opts = {}) => {
                 const nextText = text ?? '';
                 interimRef.current = nextText;
-                if (!isPlaceholderTranscript(nextText)) lastTranscriptRef.current = nextText;
+                interimIsStatusRef.current = !!opts?.isStatus;
+                // Don't track sidecar status/loading messages as potential final transcript
+                if (!opts?.isStatus && !isPlaceholderTranscript(nextText)) lastTranscriptRef.current = nextText;
                 setInterim(nextText);
             };
             client.onOriginal = async (text) => {
                 if (!text?.trim()) return;
                 clearStopFallbackTimer();
-                lastTranscriptRef.current = text;
-                setFinalText(text);
+
+                if (isRecordingRef.current && preferAsyncRef.current) {
+                    // Mid-stream chunk-final while user is still recording (e.g. local_sidecar
+                    // sends is_final:true after every chunk). Accumulate — don't stop yet.
+                    const joined = accumulatedRef.current
+                        ? `${accumulatedRef.current} ${text}`
+                        : text;
+                    accumulatedRef.current = joined;
+                    lastTranscriptRef.current = joined;
+                    interimRef.current = '';
+                    setInterim('');
+                    setFinalText(joined);
+                    console.log('[VoiceAnywhere] onOriginal mid-stream (async), accumulated:', joined);
+                    return;
+                }
+
+                // User has already stopped (isRecordingRef = false) or realtime mode:
+                // combine any accumulated chunks with this final result and inject.
+                const fullText = accumulatedRef.current
+                    ? `${accumulatedRef.current} ${text}`
+                    : text;
+                accumulatedRef.current = '';
+                lastTranscriptRef.current = fullText;
+                setFinalText(fullText);
                 isRecordingRef.current = false;
                 await invoke('stop_audio_capture').catch(() => {});
                 unlistenAudioRef.current?.();
                 unlistenAudioRef.current = null;
-                await injectText(text);
+                await injectText(fullText);
             };
             client.onStatusChange = (status) => {
                 if (status === 'error') setError('STT connection error');
@@ -236,10 +305,15 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, injec
         try { clientRef.current?.finalize?.(); } catch (_) {}
         setFabState('processing');
         clearStopFallbackTimer();
+        // Give extra time if the model is still loading (status message showing).
+        // Local sidecar needs time to finish inference before sending is_final.
+        const fallbackDelay = interimIsStatusRef.current ? 12000 : 1500;
         stopFallbackTimerRef.current = setTimeout(async () => {
             if (!finalizingRef.current) return;
+            // Never use a status/loading string as the fallback transcript
+            const interimCandidate = interimIsStatusRef.current ? '' : interimRef.current?.trim();
             const fallbackText = (isPlaceholderTranscript(lastTranscriptRef.current) ? '' : lastTranscriptRef.current?.trim())
-                || (isPlaceholderTranscript(interimRef.current) ? '' : interimRef.current?.trim());
+                || (isPlaceholderTranscript(interimCandidate) ? '' : interimCandidate);
             if (fallbackText) {
                 setFinalText(fallbackText);
                 await injectText(fallbackText);

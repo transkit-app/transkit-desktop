@@ -488,6 +488,8 @@ pub fn voice_anywhere_window() {
             .map(|(label, _)| label.clone());
         *state.focused_window.lock().unwrap() = focused;
     }
+    // Capture the frontmost external (non-Transkit) app for the "paste" inject mode.
+    crate::voice_anywhere::capture_last_external_app(app_handle);
 
     if let Some(window) = app_handle.get_window("voice_anywhere") {
         // Disable the native OS window shadow for the FAB.
@@ -497,30 +499,43 @@ pub fn voice_anywhere_window() {
         #[cfg(not(target_os = "linux"))]
         set_shadow(&window, false).unwrap_or_default();
 
-        // Position the FAB at the configured corner on the primary monitor.
-        // We derive the position here (Rust side) so the window appears in the
-        // right place before the React component has a chance to move it.
+        // Resize + position the FAB window.
+        // Size always reflects the current fab_size config.
+        // Position: restore user-dragged location if saved; fall back to default bottom-right.
         if let Some(daemon) = app_handle.get_window("daemon") {
             if let Ok(Some(monitor)) = daemon.primary_monitor() {
                 let size = monitor.size();
                 let pos = monitor.position();
                 let scale = monitor.scale_factor();
-                // Window is larger than the FAB to provide fade room on all sides.
-                // padding_logical must match the PADDING constant in VoiceAnywhere/index.jsx.
                 let fab_logical: f64 = crate::config::get("voice_anywhere_fab_size")
                     .and_then(|v| v.as_f64())
                     .unwrap_or(72.0);
                 let padding_logical: f64 = 36.0;
                 let win_logical: f64 = fab_logical + padding_logical * 2.0;
-                let margin_logical: f64 = 28.0;
-                // Resize window to match configured FAB size + padding
+                // Always resize to match current fab_size
                 let _ = window.set_size(tauri::LogicalSize::new(win_logical, win_logical));
-                // offset keeps FAB right/bottom edge `margin_logical` from the screen edge
-                // offset = padding + fab + margin  (distance from screen right to window left)
-                let offset = ((padding_logical + fab_logical + margin_logical) * scale) as i32;
-                let x = pos.x + size.width as i32 - offset;
-                let y = pos.y + size.height as i32 - offset;
-                let _ = window.set_position(tauri::PhysicalPosition::new(x, y));
+
+                // Restore saved physical position if available, otherwise default bottom-right
+                let saved = crate::config::get("voice_anywhere_pos_x")
+                    .and_then(|x| crate::config::get("voice_anywhere_pos_y").map(|y| (x, y)))
+                    .and_then(|(x, y)| Some((x.as_i64()? as i32, y.as_i64()? as i32)));
+
+                let (wx, wy) = if let Some((sx, sy)) = saved {
+                    // Clamp to keep window within current monitor bounds
+                    let win_phys = (win_logical * scale) as i32;
+                    let mx = pos.x;
+                    let my = pos.y;
+                    let mw = size.width as i32;
+                    let mh = size.height as i32;
+                    let cx = sx.max(mx).min(mx + mw - win_phys);
+                    let cy = sy.max(my).min(my + mh - win_phys);
+                    (cx, cy)
+                } else {
+                    let margin_logical: f64 = 28.0;
+                    let offset = ((padding_logical + fab_logical + margin_logical) * scale) as i32;
+                    (pos.x + size.width as i32 - offset, pos.y + size.height as i32 - offset)
+                };
+                let _ = window.set_position(tauri::PhysicalPosition::new(wx, wy));
             }
         }
 

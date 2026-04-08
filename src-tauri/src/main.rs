@@ -37,7 +37,8 @@ use auth::start_oauth_server;
 use voice_anywhere::{
     VoiceAnywhereState, get_current_voice_anywhere_target, get_voice_anywhere_focused,
     hide_voice_anywhere_caption, show_voice_anywhere_caption,
-    voice_inject_to_window, voice_copy_to_clipboard,
+    voice_inject_to_window, voice_copy_to_clipboard, voice_focus_and_paste,
+    save_voice_anywhere_position,
 };
 use backup::*;
 use clipboard::*;
@@ -243,6 +244,8 @@ fn main() {
             hide_voice_anywhere_caption,
             voice_inject_to_window,
             voice_copy_to_clipboard,
+            voice_focus_and_paste,
+            save_voice_anywhere_position,
             show_voice_anywhere_window,
             hide_voice_anywhere_window,
             local_sidecar_start,

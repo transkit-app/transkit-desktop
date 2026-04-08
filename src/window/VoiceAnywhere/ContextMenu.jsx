@@ -73,10 +73,12 @@ export default function ContextMenu({
     currentSvcKey,      // e.g. 'soniox_stt' or 'inherit'
     monitorSvcKey,      // fallback when inherit
     language,
-    injectMode,
+    injectMode,         // 'replace' | 'append'  — for Transkit windows
+    action,             // 'clipboard' | 'paste'  — for external apps
     onSelectService,
     onSelectLanguage,
     onSelectInjectMode,
+    onSelectAction,
     onClose,
 }) {
     const ref = useRef(null);
@@ -93,7 +95,7 @@ export default function ContextMenu({
     // Clamp to the current viewport (window is dynamically resized before menu opens,
     // so there is enough room above and to the left of the FAB).
     const menuW = 210;
-    const menuH = 390;
+    const menuH = 610;
     const clampedX = Math.max(4, Math.min(x, window.innerWidth - menuW - 4));
     const clampedY = Math.max(4, Math.min(y, window.innerHeight - menuH - 4));
 
@@ -108,6 +110,8 @@ export default function ContextMenu({
                 left: clampedX,
                 top: clampedY,
                 width: menuW,
+                maxHeight: Math.min(menuH, window.innerHeight - clampedY - 8),
+                overflowY: 'auto',
                 background: 'rgba(22, 22, 28, 0.96)',
                 backdropFilter: 'blur(16px)',
                 borderRadius: '10px',
@@ -145,8 +149,15 @@ export default function ContextMenu({
             ))}
 
             <Separator />
-            <SectionLabel label="Inject Mode" />
-            <MenuItem label="Replace" checked={(injectMode ?? 'replace') === 'replace'}
+            <SectionLabel label="After Stop" />
+            <MenuItem label="Clipboard" checked={!action || action === 'clipboard'}
+                onClick={() => { onSelectAction('clipboard'); onClose(); }} />
+            <MenuItem label="Paste to last app" checked={action === 'paste'}
+                onClick={() => { onSelectAction('paste'); onClose(); }} />
+
+            <Separator />
+            <SectionLabel label="Inject Mode (Transkit)" />
+            <MenuItem label="Replace" checked={!injectMode || injectMode === 'replace'}
                 onClick={() => { onSelectInjectMode('replace'); onClose(); }} />
             <MenuItem label="Append" checked={injectMode === 'append'}
                 onClick={() => { onSelectInjectMode('append'); onClose(); }} />

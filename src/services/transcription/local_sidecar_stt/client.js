@@ -132,9 +132,12 @@ export class LocalSidecarSTTClient {
 
                 case 'status':
                     console.log('[LocalSidecarSTT] status:', msg.message);
-                    // Show loading message as provisional text so user knows what's happening
+                    // Show loading message as provisional text so user knows what's happening.
+                    // isStatus: true tells consumers (e.g. VoiceAnywhere) that this is a
+                    // status/loading string, NOT a real transcript, so it should never be
+                    // used as the final result when recording stops.
                     if (!this.isConnected && msg.message) {
-                        this.onProvisional?.(msg.message);
+                        this.onProvisional?.(msg.message, { isStatus: true });
                     }
                     break;
 
