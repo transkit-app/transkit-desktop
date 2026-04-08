@@ -10,6 +10,7 @@ import Backup from '../pages/Backup';
 import About from '../pages/About';
 import AudioTranslate from '../pages/AudioTranslate';
 import VoiceInput from '../pages/VoiceInput';
+import LocalSidecar from '../pages/LocalSidecar';
 import Profile from '../pages/Profile';
 import Account from '../pages/Account';
 
@@ -33,6 +34,10 @@ const routes = [
     {
         path: '/voice-input',
         element: <VoiceInput />,
+    },
+    {
+        path: '/local-sidecar',
+        element: <LocalSidecar />,
     },
     {
         path: '/profile',

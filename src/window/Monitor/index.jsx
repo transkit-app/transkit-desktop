@@ -52,10 +52,11 @@ function StatusDot({ status }) {
 const SVC_LABELS = {
     deepgram_stt: 'Deepgram', soniox_stt: 'Soniox', gladia_stt: 'Gladia',
     transkit_cloud_stt: 'Transkit Cloud', openai_whisper_stt: 'Whisper',
-    assemblyai_stt: 'AssemblyAI',
+    assemblyai_stt: 'AssemblyAI', local_sidecar_stt: 'Local Model STT',
     edge_tts: 'Edge TTS', elevenlabs_tts: 'ElevenLabs', google_tts: 'Google TTS',
     google_cloud_tts: 'Google Cloud TTS',
     openai_tts: 'OpenAI TTS', vieneu_tts: 'VieNeu', lingva: 'Lingva',
+    local_sidecar_tts: 'Local Model TTS',
 };
 function _svcLabel(name) {
     return SVC_LABELS[name] ?? name.replace(/_stt|_tts/g, '').replace(/_/g, ' ');
@@ -111,6 +112,12 @@ function mapServiceConfigToTTSParams(serviceName, config) {
                 gcpVoice: c.voice ?? 'Charon',
                 gcpSpeakingRate: parseFloat(c.speakingRate ?? '1.0') || 1.0,
                 gcpPitch: parseFloat(c.pitch ?? '0') || 0,
+            };
+        case 'local_sidecar_tts':
+            return {
+                apiType: 'local_sidecar',
+                voiceId: c.voice ?? 'af_heart',
+                localSidecarSpeed: c.speed ?? 1.0,
             };
         default:
             return { apiType: 'google', googleLang: 'vi', googleSpeed: 1 };
@@ -306,9 +313,14 @@ export default function Monitor() {
         const serviceKey = activeTtsService ?? 'edge_tts';
         const serviceName = getServiceName(serviceKey);
 
-        const applyConfig = (cfg) => {
+        const applyConfig = async (cfg) => {
+            const params = mapServiceConfigToTTSParams(serviceName, cfg);
+            if (serviceName === 'local_sidecar_tts') {
+                const port = await invoke('local_sidecar_get_port').catch(() => 0) || 0;
+                params.serverUrl = `http://127.0.0.1:${port}`;
+            }
             getTTSQueue().updateConfig({
-                ...mapServiceConfigToTTSParams(serviceName, cfg),
+                ...params,
                 baseRate: ttsPlaybackRate,
                 volume: ttsVolume ?? 1.0,
                 cloudLang: targetLang,
@@ -318,8 +330,15 @@ export default function Monitor() {
         store.get(serviceKey).then(applyConfig);
 
         const eventKey = serviceKey.replaceAll('.', '_').replaceAll('@', ':');
-        const unlistenPromise = listen(`${eventKey}_changed`, (e) => applyConfig(e.payload));
-        return () => { unlistenPromise.then(f => f()); };
+        const unlistenCfg = listen(`${eventKey}_changed`, (e) => applyConfig(e.payload));
+        // Re-apply when Local Model server (re)starts — port may have changed
+        const unlistenReady = serviceName === 'local_sidecar_tts'
+            ? listen('local-sidecar://ready', () => store.get(serviceKey).then(applyConfig))
+            : Promise.resolve(() => {});
+        return () => {
+            unlistenCfg.then(f => f());
+            unlistenReady.then(f => f());
+        };
     }, [activeTtsService, ttsPlaybackRate, ttsVolume, targetLang]);
 
     // ── Load audio capabilities ───────────────────────────────────────────────
@@ -725,8 +744,9 @@ export default function Monitor() {
         }
 
         // Non-cloud providers: require an API key / token before proceeding.
-        // transkit_cloud_stt handles its own credential fetching internally.
-        if (serviceName !== 'transkit_cloud_stt' && !transcriptionConfig.apiKey && !transcriptionConfig.token) {
+        // transkit_cloud_stt and local_sidecar_stt handle credentials internally (no API key needed).
+        const NO_KEY_SERVICES = ['transkit_cloud_stt', 'local_sidecar_stt'];
+        if (!NO_KEY_SERVICES.includes(serviceName) && !transcriptionConfig.apiKey && !transcriptionConfig.token) {
             setErrorMsg(t('monitor.no_api_key', {
                 service: t('config.service.label'),
                 transcription: t('config.service.transcription'),

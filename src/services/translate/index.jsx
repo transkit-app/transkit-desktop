@@ -22,6 +22,7 @@ import * as _ecdict from './ecdict';
 import * as _lingva from './lingva';
 import * as _openrouter from './openrouter';
 import * as _groq from './groq';
+import * as _local_sidecar from './local_sidecar';
 
 export const transkit_cloud_translate = _transkit_cloud_translate;
 export const deepl = _deepl;
@@ -47,3 +48,4 @@ export const ecdict = _ecdict;
 export const lingva = _lingva;
 export const openrouter = _openrouter;
 export const groq = _groq;
+export const local_sidecar = _local_sidecar;

@@ -363,6 +363,49 @@
         "idle_button_color": "Idle Button Color",
         "idle_button_color_desc": "Choose the standby color for the Voice Anywhere button.",
         "reset_idle_button_color": "Reset"
+      },
+      "local_sidecar": {
+        "label": "Local Model",
+        "title": "Local Model",
+        "subtitle": "Run AI models locally, no internet required",
+        "setup": {
+          "title": "Environment",
+          "not_installed": "Not installed",
+          "install_button": "Install Local Environment",
+          "installing": "Installing…",
+          "ready": "Environment ready",
+          "requirements": "Requires macOS Apple Silicon · ~3 GB disk · Python 3.10+ (brew install python3)",
+          "installed_at": "Installed at: $t(path)"
+        },
+        "startup": {
+          "title": "Startup",
+          "enable": "Enable Local Model",
+          "enable_hint": "Start the inference server when Transkit launches",
+          "port": "Port",
+          "status_running": "Running",
+          "status_stopped": "Stopped",
+          "start": "Start",
+          "stop": "Stop"
+        },
+        "llm": {
+          "section": "Language Model  (Translate · AI)",
+          "model": "Model",
+          "temperature": "Temperature",
+          "temperature_hint": "Lower = more deterministic, higher = more creative",
+          "context_tokens": "Max output tokens"
+        },
+        "asr": {
+          "section": "Speech Recognition (STT)",
+          "model": "Whisper model",
+          "language": "Language",
+          "chunk_seconds": "Chunk size"
+        },
+        "tts": {
+          "section": "Text to Speech (TTS)",
+          "engine": "Engine",
+          "voice": "Voice",
+          "speed": "Speed"
+        }
       }
     },
     "monitor": {
@@ -691,6 +734,10 @@
           "loading_usage": "Loading usage data…",
           "powered_by_note": "Powered by Gemini 2.5 Flash. Model may be updated for quality improvements.",
           "not_available": "Transkit Cloud is not available in this build."
+        },
+        "local_sidecar": {
+          "title": "Local Model",
+          "hint": "Uses the Local Model LLM for translation. Configure the model in Settings → Local Model."
         }
       },
       "recognize": {
@@ -829,6 +876,9 @@
           "pitch": "Pitch (-20 – 20)",
           "api_key_hint": "Get your API key at",
           "api_key_hint_enable": "enable Cloud Text-to-Speech API, then create an API key."
+        },
+        "local_sidecar_tts": {
+          "title": "Local Model TTS"
         }
       },
       "ai": {
@@ -865,6 +915,10 @@
           "loading_usage": "Loading usage data…",
           "powered_by_note": "Powered by Gemini 2.5 Flash. Model may be updated for quality improvements.",
           "not_available": "Transkit Cloud is not available in this build."
+        },
+        "local_sidecar_ai": {
+          "title": "Local Model AI",
+          "hint": "Uses the Local Model LLM for AI analysis. Configure the model in Settings → Local Model."
         }
       },
       "collection": {
@@ -965,6 +1019,9 @@
           "endpointing_hint": "Silence duration that triggers utterance completion. Lower = faster response, higher = more complete sentences. Applied when the active provider supports it.",
           "speech_threshold": "Speech Threshold",
           "speech_threshold_hint": "Minimum confidence to detect speech activity. Higher = fewer false triggers. Applied when the active provider supports it."
+        },
+        "local_sidecar_stt": {
+          "title": "Local Model STT"
         }
       }
     },

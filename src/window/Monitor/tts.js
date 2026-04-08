@@ -153,6 +153,9 @@ export class TTSQueue {
         this.gcpSpeakingRate = 1.0;
         this.gcpPitch       = 0;
 
+        // Local Sidecar TTS
+        this.localSidecarSpeed = 1.0;
+
         // ── ElevenLabs provider ────────────────────────────────────────────
         /** @type {ElevenLabsTTS|null} */
         this._elevenlabs = null;
@@ -199,6 +202,7 @@ export class TTSQueue {
         elevenLabsApiKey, elevenLabsVoiceId, elevenLabsModelId, elevenLabsMode,
         cloudLang,
         gcpApiKey, gcpVoice, gcpSpeakingRate, gcpPitch,
+        localSidecarSpeed,
     } = {}) {
         if (serverUrl     !== undefined) this.serverUrl     = serverUrl;
         if (apiType       !== undefined) this.apiType       = apiType;
@@ -227,6 +231,7 @@ export class TTSQueue {
         if (gcpVoice          !== undefined) this.gcpVoice          = gcpVoice          || 'Charon';
         if (gcpSpeakingRate   !== undefined) this.gcpSpeakingRate   = gcpSpeakingRate   || 1.0;
         if (gcpPitch          !== undefined) this.gcpPitch          = gcpPitch          ?? 0;
+        if (localSidecarSpeed !== undefined) this.localSidecarSpeed = localSidecarSpeed || 1.0;
         // Re-configure ElevenLabs client if it exists.
         if (this._elevenlabs) {
             this._elevenlabs.updateConfig({
@@ -638,6 +643,23 @@ export class TTSQueue {
         if (this.apiType === 'edge_tts')          return this._fetchEdgeTTSNative(text);
         if (this.apiType === 'transkit_cloud')    return this._fetchCloudTTS(text);
         if (this.apiType === 'google_cloud_tts')  return this._fetchGoogleCloud(text);
+
+        if (this.apiType === 'local_sidecar') {
+            const res = await tauriFetch(`${this.serverUrl}/v1/tts`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: Body.json({
+                    text,
+                    voice: this.voiceId || 'af_heart',
+                    speed: this.localSidecarSpeed || 1.0,
+                    format: 'wav',
+                }),
+                responseType: ResponseType.Binary,
+                timeout: 60,
+            });
+            if (res.status >= 400) throw new Error(`Local Model TTS HTTP ${res.status}`);
+            return { buffer: new Uint8Array(res.data).buffer, mime: 'audio/wav' };
+        }
 
         const base = this._base();
 

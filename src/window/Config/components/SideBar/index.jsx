@@ -8,7 +8,7 @@ import React from 'react';
 import { BsInfoSquareFill } from 'react-icons/bs';
 import { PiTranslateFill, PiTextboxFill } from 'react-icons/pi';
 import { AiFillAppstore, AiFillCloud } from 'react-icons/ai';
-import { MdKeyboardAlt, MdExtension, MdHeadset, MdPerson, MdMic } from 'react-icons/md';
+import { MdKeyboardAlt, MdExtension, MdHeadset, MdPerson, MdMic, MdMemory } from 'react-icons/md';
 import { FaHistory } from 'react-icons/fa';
 
 import { getUser, onAuthStateChange } from '../../../../lib/transkit-cloud';
@@ -31,6 +31,7 @@ const navigationConfig = [
         section: 'SERVICES',
         items: [
             { id: 'service', path: '/service', icon: MdExtension, labelKey: 'config.service.label' },
+            { id: 'local-sidecar', path: '/local-sidecar', icon: MdMemory, labelKey: 'config.local_sidecar.label' },
             { id: 'history', path: '/history', icon: FaHistory, labelKey: 'config.history.label', hasBadge: true },
         ],
     },

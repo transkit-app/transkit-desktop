@@ -18,6 +18,7 @@ const globalServices = [
     'ollama',
     'yandex',
     'lingva',
+    'local_sidecar',
 ];
 
 // Advanced/More services

@@ -1,0 +1,33 @@
+export const info = {
+    name: 'local_sidecar',
+    icon: 'logo/local_sidecar.svg',
+};
+
+export enum Language {
+    auto = 'Auto',
+    en = 'English',
+    vi = 'Vietnamese',
+    ja = 'Japanese',
+    zh_cn = 'Simplified Chinese',
+    zh_tw = 'Traditional Chinese',
+    ko = 'Korean',
+    fr = 'French',
+    de = 'German',
+    es = 'Spanish',
+    ru = 'Russian',
+    it = 'Italian',
+    pt_pt = 'Portuguese',
+    pt_br = 'Brazilian Portuguese',
+    th = 'Thai',
+    id = 'Indonesian',
+    ms = 'Malay',
+    ar = 'Arabic',
+    hi = 'Hindi',
+    tr = 'Turkish',
+    uk = 'Ukrainian',
+    pl = 'Polish',
+    nl = 'Dutch',
+    sv = 'Swedish',
+    he = 'Hebrew',
+    fa = 'Persian',
+}

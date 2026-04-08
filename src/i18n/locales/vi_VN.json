@@ -363,6 +363,49 @@
         "idle_button_color": "Màu nút chờ",
         "idle_button_color_desc": "Chọn màu chờ cho nút Voice Anywhere.",
         "reset_idle_button_color": "Đặt lại"
+      },
+      "local_sidecar": {
+        "label": "Model cục bộ",
+        "title": "Model cục bộ",
+        "subtitle": "Chạy mô hình AI trực tiếp trên máy, không cần internet",
+        "setup": {
+          "title": "Môi trường",
+          "not_installed": "Chưa cài đặt",
+          "install_button": "Cài đặt môi trường cục bộ",
+          "installing": "Đang cài đặt…",
+          "ready": "Môi trường sẵn sàng",
+          "requirements": "Yêu cầu macOS Apple Silicon · ~3 GB dung lượng · Python 3.10+ (brew install python3)",
+          "installed_at": "Đã cài tại: $t(path)"
+        },
+        "startup": {
+          "title": "Khởi động",
+          "enable": "Bật Model cục bộ",
+          "enable_hint": "Khởi động model cục bộ khi mở Transkit",
+          "port": "Cổng",
+          "status_running": "Đang chạy",
+          "status_stopped": "Đã dừng",
+          "start": "Bắt đầu",
+          "stop": "Dừng"
+        },
+        "llm": {
+          "section": "Mô hình ngôn ngữ  (Dịch · AI)",
+          "model": "Mô hình",
+          "temperature": "Nhiệt độ",
+          "temperature_hint": "Thấp = ổn định hơn, cao = sáng tạo hơn",
+          "context_tokens": "Số token đầu ra tối đa"
+        },
+        "asr": {
+          "section": "Nhận dạng giọng nói (STT)",
+          "model": "Mô hình Whisper",
+          "language": "Ngôn ngữ",
+          "chunk_seconds": "Kích thước đoạn"
+        },
+        "tts": {
+          "section": "Chuyển văn bản thành giọng nói (TTS)",
+          "engine": "Engine",
+          "voice": "Giọng đọc",
+          "speed": "Tốc độ"
+        }
       }
     },
     "monitor": {
@@ -690,6 +733,10 @@
           "loading_usage": "Đang tải dữ liệu sử dụng…",
           "powered_by_note": "Được hỗ trợ bởi Gemini 2.5 Flash. Model có thể được cập nhật để cải thiện chất lượng.",
           "not_available": "Transkit Cloud không khả dụng trong bản build này."
+        },
+        "local_sidecar": {
+          "title": "Model cục bộ",
+          "hint": "Dùng LLM Model cục bộ để dịch. Cấu hình mô hình tại Cài đặt → Model cục bộ."
         }
       },
       "recognize": {
@@ -828,6 +875,9 @@
           "pitch": "Cao độ giọng (-20 – 20)",
           "api_key_hint": "Lấy API key tại",
           "api_key_hint_enable": "bật Cloud Text-to-Speech API, sau đó tạo API key."
+        },
+        "local_sidecar_tts": {
+          "title": "Model cục bộ TTS"
         }
       },
       "ai": {
@@ -864,6 +914,10 @@
           "loading_usage": "Đang tải dữ liệu sử dụng…",
           "powered_by_note": "Được hỗ trợ bởi Gemini 2.5 Flash. Model có thể được cập nhật để cải thiện chất lượng.",
           "not_available": "Transkit Cloud không khả dụng trong bản build này."
+        },
+        "local_sidecar_ai": {
+          "title": "Model cục bộ AI",
+          "hint": "Dùng LLM Model cục bộ cho phân tích AI. Cấu hình mô hình tại Cài đặt → Model cục bộ."
         }
       },
       "collection": {
@@ -964,6 +1018,9 @@
           "endpointing_hint": "Khoảng lặng tối thiểu để xác nhận kết thúc câu. Thấp hơn = phản hồi nhanh hơn, cao hơn = câu đầy đủ hơn. Áp dụng khi provider hỗ trợ.",
           "speech_threshold": "Ngưỡng nhận giọng",
           "speech_threshold_hint": "Độ nhạy tối thiểu để phát hiện giọng nói. Cao hơn = ít false trigger hơn. Áp dụng khi provider hỗ trợ."
+        },
+        "local_sidecar_stt": {
+          "title": "Model cục bộ STT"
         }
       }
     },
