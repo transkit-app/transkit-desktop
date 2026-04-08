@@ -31,6 +31,7 @@ export class SonioxClient {
         this._intentionalDisconnect = false;
         this._sessionTimer = null;
         this._recentTranslations = []; // Rolling buffer of recent translations
+        this._finalizeTimer = null;
 
         // Callbacks
         this.onOriginal = null;       // (text, speaker) => {}
@@ -224,6 +225,8 @@ export class SonioxClient {
     disconnect() {
         this._intentionalDisconnect = true;
         this._stopSessionTimer();
+        clearTimeout(this._finalizeTimer);
+        this._finalizeTimer = null;
 
         if (this.ws) {
             try {
@@ -238,6 +241,23 @@ export class SonioxClient {
         }
         this.isConnected = false;
         this._setStatus('disconnected');
+    }
+
+    finalize() {
+        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+        this._stopSessionTimer();
+        clearTimeout(this._finalizeTimer);
+        this._finalizeTimer = setTimeout(() => {
+            if (!this._intentionalDisconnect && this.ws?.readyState === WebSocket.OPEN) {
+                this.disconnect();
+            }
+        }, 4000);
+
+        try {
+            this.ws.send(new ArrayBuffer(0));
+        } catch (err) {
+            console.warn('[Soniox] finalize failed:', err);
+        }
     }
 
     /**
@@ -258,17 +278,19 @@ export class SonioxClient {
                 continue;
             }
 
-            if (token.speaker && token.translation_status === 'original') {
+            const tokenType = token.translation_status ?? 'original';
+
+            if (token.speaker && tokenType === 'original') {
                 speaker = token.speaker;
             }
 
-            if (token.translation_status === 'original') {
+            if (tokenType === 'original') {
                 if (token.is_final) {
                     originalText += token.text;
                 } else {
                     provisionalText += token.text;
                 }
-            } else if (token.translation_status === 'translation') {
+            } else if (tokenType === 'translation') {
                 if (token.is_final) {
                     translationText += token.text;
                 }

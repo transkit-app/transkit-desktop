@@ -266,6 +266,15 @@ export class GladiaClient {
         this._setStatus('disconnected');
     }
 
+    finalize() {
+        if (this.ws?.readyState !== WebSocket.OPEN) return;
+        try {
+            this.ws.send(JSON.stringify({ type: 'stop_recording' }));
+        } catch (err) {
+            console.warn('[Gladia] finalize failed:', err);
+        }
+    }
+
     /**
      * Process incoming WebSocket messages from Gladia
      *

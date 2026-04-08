@@ -80,6 +80,39 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, injec
         }
     };
 
+    const normalizeTranscriptEvent = useCallback((value, aux = null) => {
+        const payload = (value && typeof value === 'object' && !Array.isArray(value))
+            ? value
+            : { text: value };
+        const auxMeta = (aux && typeof aux === 'object' && !Array.isArray(aux))
+            ? aux
+            : {};
+
+        return {
+            text: String(
+                payload.text
+                ?? payload.transcript
+                ?? payload.original
+                ?? payload.translation
+                ?? ''
+            ),
+            speaker: payload.speaker ?? auxMeta.speaker ?? (typeof aux === 'string' ? aux : null),
+            isStatus: Boolean(payload.isStatus ?? auxMeta.isStatus),
+            isFinal: Boolean(payload.isFinal ?? auxMeta.isFinal),
+            raw: payload,
+        };
+    }, []);
+
+    const getBestTranscriptCandidate = useCallback(() => {
+        const candidates = [
+            finalTextRef.current?.trim?.(),
+            accumulatedRef.current?.trim?.(),
+            (isPlaceholderTranscript(lastTranscriptRef.current) ? '' : lastTranscriptRef.current?.trim?.()),
+            (interimIsStatusRef.current ? '' : interimRef.current?.trim?.()),
+        ];
+        return candidates.find(Boolean) || '';
+    }, []);
+
     const isPlaceholderTranscript = (text) => {
         const normalized = (text ?? '').trim().toLowerCase();
         return normalized === '' || normalized === 'listening…' || normalized === 'processing…' || normalized === 'listening...' || normalized === 'processing...';
@@ -224,16 +257,19 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, injec
         try {
             const client = await createSTTClient();
 
-            client.onProvisional = (text, opts = {}) => {
-                const nextText = text ?? '';
+            client.onProvisional = (value, opts = {}) => {
+                const event = normalizeTranscriptEvent(value, opts);
+                const nextText = event.text ?? '';
                 interimRef.current = nextText;
-                interimIsStatusRef.current = !!opts?.isStatus;
+                interimIsStatusRef.current = event.isStatus;
                 // Don't track sidecar status/loading messages as potential final transcript
-                if (!opts?.isStatus && !isPlaceholderTranscript(nextText)) lastTranscriptRef.current = nextText;
+                if (!event.isStatus && !isPlaceholderTranscript(nextText)) lastTranscriptRef.current = nextText;
                 setInterim(nextText);
             };
-            client.onOriginal = async (text) => {
-                if (!text?.trim()) return;
+            client.onOriginal = async (value, opts = {}) => {
+                const event = normalizeTranscriptEvent(value, opts);
+                const text = event.text?.trim?.() ?? '';
+                if (!text) return;
                 clearStopFallbackTimer();
 
                 if (isRecordingRef.current && preferAsyncRef.current) {
@@ -268,9 +304,7 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, injec
             client.onStatusChange = (status) => {
                 if (status === 'error') setError('STT connection error');
                 if (status === 'disconnected' && finalizingRef.current) {
-                    const fallbackText = finalTextRef.current?.trim?.()
-                        || (isPlaceholderTranscript(lastTranscriptRef.current) ? '' : lastTranscriptRef.current?.trim())
-                        || (isPlaceholderTranscript(interimRef.current) ? '' : interimRef.current?.trim());
+                    const fallbackText = getBestTranscriptCandidate();
                     if (fallbackText) {
                         clearStopFallbackTimer();
                         injectText(fallbackText);
@@ -293,7 +327,7 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, injec
         } catch (err) {
             setError(String(err));
         }
-    }, [createSTTClient, attachAudioListener, injectText, setError, disconnectClient]);
+    }, [createSTTClient, attachAudioListener, injectText, setError, disconnectClient, normalizeTranscriptEvent, getBestTranscriptCandidate]);
 
     const stopRecording = useCallback(async () => {
         if (!isRecordingRef.current) return;
@@ -310,10 +344,7 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, injec
         const fallbackDelay = interimIsStatusRef.current ? 12000 : 1500;
         stopFallbackTimerRef.current = setTimeout(async () => {
             if (!finalizingRef.current) return;
-            // Never use a status/loading string as the fallback transcript
-            const interimCandidate = interimIsStatusRef.current ? '' : interimRef.current?.trim();
-            const fallbackText = (isPlaceholderTranscript(lastTranscriptRef.current) ? '' : lastTranscriptRef.current?.trim())
-                || (isPlaceholderTranscript(interimCandidate) ? '' : interimCandidate);
+            const fallbackText = getBestTranscriptCandidate();
             if (fallbackText) {
                 setFinalText(fallbackText);
                 await injectText(fallbackText);
@@ -322,11 +353,11 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, injec
             finalizingRef.current = false;
             disconnectClient();
             setError(t('voice_anywhere.errors.no_speech_detected'));
-        }, 1500);
+        }, fallbackDelay);
         setTimeout(() => {
             setFabState((s) => s === 'processing' ? 'idle' : s);
         }, 5000);
-    }, [injectText, disconnectClient]);
+    }, [injectText, disconnectClient, getBestTranscriptCandidate, t]);
 
     const finalTextRef = useRef(finalText);
     useEffect(() => { finalTextRef.current = finalText; }, [finalText]);

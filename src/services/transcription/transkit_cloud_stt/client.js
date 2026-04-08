@@ -184,15 +184,15 @@ export class TranskitCloudSTTClient {
         }
 
         // Forward all callbacks
-        innerClient.onOriginal = (text, speaker) => this.onOriginal?.(text, speaker);
-        innerClient.onTranslation = (text) => this.onTranslation?.(text);
-        innerClient.onProvisional = (text) => this.onProvisional?.(text);
-        innerClient.onStatusChange = (s) => {
-            if (s === 'connected') this._startTime = Date.now();
-            this.onStatusChange?.(s);
+        innerClient.onOriginal = (...args) => this.onOriginal?.(...args);
+        innerClient.onTranslation = (...args) => this.onTranslation?.(...args);
+        innerClient.onProvisional = (...args) => this.onProvisional?.(...args);
+        innerClient.onStatusChange = (...args) => {
+            if (args[0] === 'connected') this._startTime = Date.now();
+            this.onStatusChange?.(...args);
         };
-        innerClient.onError = (msg) => this.onError?.(msg);
-        innerClient.onReconnect = () => this.onReconnect?.();
+        innerClient.onError = (...args) => this.onError?.(...args);
+        innerClient.onReconnect = (...args) => this.onReconnect?.(...args);
 
         this._innerClient = innerClient;
         innerClient.connect(connectConfig);
@@ -200,6 +200,10 @@ export class TranskitCloudSTTClient {
 
     sendAudio(pcm) {
         this._innerClient?.sendAudio(pcm);
+    }
+
+    finalize() {
+        this._innerClient?.finalize?.();
     }
 
     disconnect() {

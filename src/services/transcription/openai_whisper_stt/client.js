@@ -120,6 +120,10 @@ export class OpenAIWhisperClient {
         this._setStatus('disconnected');
     }
 
+    finalize() {
+        this._flushBuffer();
+    }
+
     /** Build a minimal WAV header around raw PCM s16le data */
     _buildWav(pcmBytes) {
         const sampleRate = 16000;

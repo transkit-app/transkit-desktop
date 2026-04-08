@@ -174,6 +174,15 @@ export class AssemblyAIClient {
         this._setStatus('disconnected');
     }
 
+    finalize() {
+        if (this.ws?.readyState !== WebSocket.OPEN) return;
+        try {
+            this.ws.send(JSON.stringify({ terminate_session: true }));
+        } catch (err) {
+            console.warn('[AssemblyAI] finalize failed:', err);
+        }
+    }
+
     async _tryReconnect(reason) {
         if (this._reconnectAttempts >= MAX_RECONNECT) {
             this._setStatus('error');
