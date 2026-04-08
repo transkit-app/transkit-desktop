@@ -122,10 +122,16 @@ fn build_window(label: &str, title: &str) -> (Window, bool) {
 pub fn config_window() {
     let (window, _exists) = build_window("config", "Config");
     window
-        .set_min_size(Some(tauri::LogicalSize::new(960, 550)))
+        .set_min_size(Some(tauri::LogicalSize::new(960, 600)))
         .unwrap();
-    window.set_size(tauri::LogicalSize::new(960, 750)).unwrap();
+    window.set_size(tauri::LogicalSize::new(960, 820)).unwrap();
     window.center().unwrap();
+    // Config window must float above the Monitor overlay and all other windows.
+    // This also prevents the window from being buried on macOS (where the app
+    // runs as Accessory with no Dock icon), making always_on_top the reliable
+    // way to keep the config window reachable.
+    window.set_always_on_top(true).unwrap_or_default();
+
     #[cfg(target_os = "windows")]
     window.set_skip_taskbar(false).unwrap_or_default();
 }
