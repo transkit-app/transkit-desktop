@@ -657,7 +657,14 @@ export class TTSQueue {
                 responseType: ResponseType.Binary,
                 timeout: 60,
             });
-            if (res.status >= 400) throw new Error(`Local Model TTS HTTP ${res.status}`);
+            if (res.status >= 400) {
+                let detail = `Local Model TTS HTTP ${res.status}`;
+                try {
+                    const body = JSON.parse(new TextDecoder().decode(new Uint8Array(res.data)));
+                    if (body?.detail) detail = body.detail;
+                } catch (_) {}
+                throw new Error(detail);
+            }
             return { buffer: new Uint8Array(res.data).buffer, mime: 'audio/wav' };
         }
 

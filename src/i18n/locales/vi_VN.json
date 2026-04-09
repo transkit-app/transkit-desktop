@@ -365,8 +365,8 @@
         "reset_idle_button_color": "Đặt lại"
       },
       "local_sidecar": {
-        "label": "Model cục bộ",
-        "title": "Model cục bộ",
+        "label": "Offline model",
+        "title": "Offline model",
         "subtitle": "Chạy mô hình AI trực tiếp trên máy, không cần internet",
         "setup": {
           "title": "Môi trường",
@@ -379,8 +379,8 @@
         },
         "startup": {
           "title": "Khởi động",
-          "enable": "Bật Model cục bộ",
-          "enable_hint": "Khởi động model cục bộ khi mở Transkit",
+          "enable": "Bật Offline model",
+          "enable_hint": "Khởi động Offline model khi mở Transkit",
           "port": "Cổng",
           "status_running": "Đang chạy",
           "status_stopped": "Đã dừng",
@@ -735,8 +735,8 @@
           "not_available": "Transkit Cloud không khả dụng trong bản build này."
         },
         "local_sidecar": {
-          "title": "Model cục bộ",
-          "hint": "Dùng LLM Model cục bộ để dịch. Cấu hình mô hình tại Cài đặt → Model cục bộ."
+          "title": "Offline model",
+          "hint": "Dùng LLM Offline model để dịch. Cấu hình mô hình tại Cài đặt → Offline model."
         }
       },
       "recognize": {
@@ -877,7 +877,7 @@
           "api_key_hint_enable": "bật Cloud Text-to-Speech API, sau đó tạo API key."
         },
         "local_sidecar_tts": {
-          "title": "Model cục bộ TTS"
+          "title": "Offline model TTS"
         }
       },
       "ai": {
@@ -916,8 +916,8 @@
           "not_available": "Transkit Cloud không khả dụng trong bản build này."
         },
         "local_sidecar_ai": {
-          "title": "Model cục bộ AI",
-          "hint": "Dùng LLM Model cục bộ cho phân tích AI. Cấu hình mô hình tại Cài đặt → Model cục bộ."
+          "title": "Offline model AI",
+          "hint": "Dùng LLM Offline model cho phân tích AI. Cấu hình mô hình tại Cài đặt → Offline model."
         }
       },
       "collection": {
@@ -1020,7 +1020,7 @@
           "speech_threshold_hint": "Độ nhạy tối thiểu để phát hiện giọng nói. Cao hơn = ít false trigger hơn. Áp dụng khi provider hỗ trợ."
         },
         "local_sidecar_stt": {
-          "title": "Model cục bộ STT"
+          "title": "Offline model STT"
         }
       }
     },

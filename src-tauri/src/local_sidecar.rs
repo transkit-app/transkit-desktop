@@ -24,7 +24,7 @@ use std::net::TcpListener;
 use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
-use tauri::{Manager, State, Window};
+use tauri::{AppHandle, Manager, State, Window};
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
@@ -76,6 +76,10 @@ pub struct SidecarConfig {
     pub llm_temperature:    Option<f64>,
     pub llm_max_tokens:     Option<u32>,
     pub log_level:          Option<String>,
+    /// Comma-separated list of components the user has enabled in the UI
+    /// (e.g. "stt" when LLM and TTS are unchecked).  If None, falls back to
+    /// the installed-components list from the marker file.
+    pub enabled_components: Option<String>,
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -170,15 +174,16 @@ fn base_env() -> (String, String) {
 
 // ── Commands ──────────────────────────────────────────────────────────────────
 
-/// Start the sidecar server.  Emits `local-sidecar://ready` when the server is up.
-#[tauri::command]
-pub fn local_sidecar_start(
+/// Internal implementation — accepts AppHandle so it can be called both from
+/// the Tauri command (which has a Window) and from the app setup callback
+/// (where no window exists yet).
+pub fn start_with_handle(
     config: SidecarConfig,
-    window: Window,
-    state: State<'_, LocalSidecarState>,
+    app_handle: AppHandle,
+    state: &LocalSidecarState,
 ) -> Result<(), String> {
     // Stop any existing process first
-    stop_inner(&state);
+    stop_inner(state);
 
     let script = server_script()
         .ok_or("Sidecar server script not found. Ensure scripts/local_sidecar/server.py exists.")?;
@@ -205,6 +210,26 @@ pub fn local_sidecar_start(
 
     let (home, path_env) = base_env();
 
+    // Compute the active components: intersection of what is installed (marker file)
+    // and what the user has enabled in the UI.  This prevents preloading (and
+    // auto-downloading) components that were installed but are currently disabled.
+    let installed: std::collections::HashSet<String> =
+        read_installed_components().into_iter().collect();
+    let installed_components = if let Some(ref enabled_str) = config.enabled_components {
+        let enabled: std::collections::HashSet<String> = enabled_str
+            .split(',')
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .collect();
+        let mut active: Vec<String> = installed.intersection(&enabled).cloned().collect();
+        active.sort();
+        active.join(",")
+    } else {
+        let mut all: Vec<String> = installed.into_iter().collect();
+        all.sort();
+        all.join(",")
+    };
+
     let mut cmd = Command::new(&python);
     cmd.arg(&script)
         .arg("--port").arg(port.to_string())
@@ -219,6 +244,7 @@ pub fn local_sidecar_start(
         .arg("--asr-chunk-seconds").arg(&chunk_secs)
         .arg("--asr-stride-seconds").arg(&stride_secs)
         .arg("--log-level").arg(&log_level)
+        .arg("--installed-components").arg(&installed_components)
         .env("PATH", path_env)
         .env("HOME", &home)
         .env("TOKENIZERS_PARALLELISM", "false")
@@ -241,8 +267,6 @@ pub fn local_sidecar_start(
     let stdout = child.stdout.take().ok_or("Failed to get sidecar stdout")?;
     let stderr = child.stderr.take().ok_or("Failed to get sidecar stderr")?;
 
-    // Use app_handle so events are broadcast to ALL windows, not just the caller.
-    let app_handle = window.app_handle();
     std::thread::spawn(move || {
         use std::io::BufRead;
         let reader = std::io::BufReader::new(stdout);
@@ -296,6 +320,16 @@ pub fn local_sidecar_start(
 
     *state.process.lock().unwrap() = Some(child);
     Ok(())
+}
+
+/// Tauri command wrapper — delegates to start_with_handle.
+#[tauri::command]
+pub fn local_sidecar_start(
+    config: SidecarConfig,
+    window: Window,
+    state: State<'_, LocalSidecarState>,
+) -> Result<(), String> {
+    start_with_handle(config, window.app_handle(), &state)
 }
 
 /// Stop the sidecar process gracefully.
@@ -687,5 +721,29 @@ pub fn local_sidecar_delete_cached_model(repo_id: String) -> Result<(), String> 
     std::fs::remove_dir_all(&model_path)
         .map_err(|e| format!("Failed to delete model cache: {}", e))?;
     info!("[LocalSidecar] Deleted model cache: {}", repo_id);
+    Ok(())
+}
+
+/// Open the HuggingFace hub cache directory in the system file manager.
+#[tauri::command]
+pub fn local_sidecar_reveal_cache() -> Result<(), String> {
+    let path = hf_cache_dir();
+    std::fs::create_dir_all(&path).ok();
+    let path_str = path.to_string_lossy().into_owned();
+    #[cfg(target_os = "macos")]
+    std::process::Command::new("open")
+        .arg(&path_str)
+        .spawn()
+        .map_err(|e| format!("Failed to open folder: {}", e))?;
+    #[cfg(target_os = "windows")]
+    std::process::Command::new("explorer")
+        .arg(&path_str)
+        .spawn()
+        .map_err(|e| format!("Failed to open folder: {}", e))?;
+    #[cfg(target_os = "linux")]
+    std::process::Command::new("xdg-open")
+        .arg(&path_str)
+        .spawn()
+        .map_err(|e| format!("Failed to open folder: {}", e))?;
     Ok(())
 }

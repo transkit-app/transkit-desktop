@@ -101,17 +101,23 @@ def chat(messages: list[dict], repo: str, max_tokens: int = 512, temperature: fl
 
 
 def translate(text: str, from_lang: str, to_lang: str, repo: str,
-              context: str = "", max_tokens: int = 256, temperature: float = 0.2) -> str:
+              context: str = "", system_prompt: str = "",
+              max_tokens: int = 256, temperature: float = 0.2) -> str:
     """
     Translate `text` from `from_lang` to `to_lang` using the loaded LLM.
-    `context` is an optional domain hint to improve terminology accuracy.
+    `context` is an optional domain hint; `system_prompt` fully overrides the default prompt.
     """
-    system_msg = (
-        "You are a professional translator. Translate accurately and naturally. "
-        "Output only the translated text, nothing else."
-    )
-    if context:
-        system_msg += f" Domain context: {context}"
+    if system_prompt:
+        system_msg = system_prompt
+    else:
+        system_msg = (
+            "You are a translation engine. Output ONLY the translated text.\n"
+            "Rules: no explanations, no commentary, no greetings, no questions.\n"
+            "Do not add any prefix like 'Translation:', 'Here is:', or 'Sure!'.\n"
+            "Preserve line breaks and punctuation from the source."
+        )
+        if context:
+            system_msg += f"\nDomain context: {context}"
 
     from_label = from_lang if from_lang != "auto" else "the source language"
     user_msg = f"Translate from {from_label} to {to_lang}:\n\n{text}"

@@ -27,7 +27,7 @@ use local_sidecar::{
     local_sidecar_start, local_sidecar_stop, local_sidecar_status,
     local_sidecar_check_setup, local_sidecar_check_prereqs, local_sidecar_run_setup,
     local_sidecar_list_cached_models, local_sidecar_delete_cached_model,
-    local_sidecar_download_model, local_sidecar_get_port,
+    local_sidecar_download_model, local_sidecar_get_port, local_sidecar_reveal_cache,
 };
 use narration::{
     narration_detect_devices, narration_get_status, narration_inject_audio, narration_list_devices,
@@ -163,27 +163,24 @@ fn main() {
                 .and_then(|v| v.as_bool())
                 .unwrap_or(false)
             {
-                if let Some(main_window) = app.get_window("main").or_else(|| app.get_window("config")) {
-                    let sidecar_state = app.state::<LocalSidecarState>();
-                    let config = local_sidecar::SidecarConfig {
-                        llm_model: get("local_sidecar_llm_model").and_then(|v| v.as_str().map(|s| s.to_string())),
-                        asr_model: get("local_sidecar_asr_model").and_then(|v| v.as_str().map(|s| s.to_string())),
-                        asr_task: get("local_sidecar_asr_task").and_then(|v| v.as_str().map(|s| s.to_string())),
-                        asr_language: get("local_sidecar_asr_language").and_then(|v| v.as_str().map(|s| s.to_string())),
-                        asr_chunk_seconds: get("local_sidecar_asr_chunk_seconds").and_then(|v| v.as_u64()).map(|v| v as u32),
-                        asr_stride_seconds: get("local_sidecar_asr_stride_seconds").and_then(|v| v.as_u64()).map(|v| v as u32),
-                        tts_engine: get("local_sidecar_tts_engine").and_then(|v| v.as_str().map(|s| s.to_string())),
-                        tts_model: get("local_sidecar_tts_model").and_then(|v| v.as_str().map(|s| s.to_string())),
-                        tts_ref_audio: get("local_sidecar_tts_ref_audio").and_then(|v| v.as_str().map(|s| s.to_string())),
-                        llm_temperature: get("local_sidecar_llm_temperature").and_then(|v| v.as_f64()),
-                        llm_max_tokens: get("local_sidecar_llm_max_tokens").and_then(|v| v.as_u64()).map(|v| v as u32),
-                        log_level: None,
-                    };
-                    if let Err(e) = local_sidecar::local_sidecar_start(config, main_window, sidecar_state) {
-                        log::warn!("[LocalSidecar] Auto-start failed: {}", e);
-                    }
-                } else {
-                    log::warn!("[LocalSidecar] Auto-start skipped: no window available yet");
+                let sidecar_state = app.state::<LocalSidecarState>();
+                let config = local_sidecar::SidecarConfig {
+                    llm_model: get("local_sidecar_llm_model").and_then(|v| v.as_str().map(|s| s.to_string())),
+                    asr_model: get("local_sidecar_asr_model").and_then(|v| v.as_str().map(|s| s.to_string())),
+                    asr_task: get("local_sidecar_asr_task").and_then(|v| v.as_str().map(|s| s.to_string())),
+                    asr_language: get("local_sidecar_asr_language").and_then(|v| v.as_str().map(|s| s.to_string())),
+                    asr_chunk_seconds: get("local_sidecar_asr_chunk_seconds").and_then(|v| v.as_u64()).map(|v| v as u32),
+                    asr_stride_seconds: get("local_sidecar_asr_stride_seconds").and_then(|v| v.as_u64()).map(|v| v as u32),
+                    tts_engine: get("local_sidecar_tts_engine").and_then(|v| v.as_str().map(|s| s.to_string())),
+                    tts_model: get("local_sidecar_tts_model").and_then(|v| v.as_str().map(|s| s.to_string())),
+                    tts_ref_audio: get("local_sidecar_tts_ref_audio").and_then(|v| v.as_str().map(|s| s.to_string())),
+                    llm_temperature: get("local_sidecar_llm_temperature").and_then(|v| v.as_f64()),
+                    llm_max_tokens: get("local_sidecar_llm_max_tokens").and_then(|v| v.as_u64()).map(|v| v as u32),
+                    log_level: None,
+                    enabled_components: None,
+                };
+                if let Err(e) = local_sidecar::start_with_handle(config, app.handle(), &sidecar_state) {
+                    log::warn!("[LocalSidecar] Auto-start failed: {}", e);
                 }
             }
             // Check Update
@@ -257,7 +254,8 @@ fn main() {
             local_sidecar_list_cached_models,
             local_sidecar_delete_cached_model,
             local_sidecar_download_model,
-            local_sidecar_get_port
+            local_sidecar_get_port,
+            local_sidecar_reveal_cache
         ])
         .on_system_tray_event(tray_event_handler)
         .build(tauri::generate_context!())

@@ -4,10 +4,12 @@ import {
 } from '@nextui-org/react';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/tauri';
+import { open as openFileDialog, ask } from '@tauri-apps/api/dialog';
 import { listen } from '@tauri-apps/api/event';
 import {
     MdMemory, MdPlayArrow, MdStop, MdDownload,
     MdMic, MdRecordVoiceOver, MdWarning, MdCheckCircle, MdError, MdDelete, MdStorage, MdRefresh,
+    MdFolderOpen,
 } from 'react-icons/md';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 
@@ -53,6 +55,7 @@ const INSTALL_STATE = {
     CONFIRM:    'confirm',
     INSTALLING: 'installing',
     ERROR:      'error',
+    SUCCESS:    'success',
 };
 
 export default function LocalSidecar() {
@@ -69,6 +72,7 @@ export default function LocalSidecar() {
     const [ttsVoice,      setTtsVoice]       = useConfig('local_sidecar_tts_voice',         'af_heart');
     const [ttsModel,      setTtsModel]       = useConfig('local_sidecar_tts_model',         '');
     const [ttsEngine,     setTtsEngine]      = useConfig('local_sidecar_tts_engine',        'kokoro');
+    const [ttsRefAudio,   setTtsRefAudio]    = useConfig('local_sidecar_tts_ref_audio',     '');
 
     const [setupStatus,   setSetupStatus]    = useState(null);
     const [running,       setRunning]        = useState(false);
@@ -196,7 +200,7 @@ export default function LocalSidecar() {
             }
 
             if (p.type === 'done') {
-                setInstallState(INSTALL_STATE.IDLE);
+                setInstallState(INSTALL_STATE.SUCCESS);
                 setSetupProgress(100);
                 invoke('local_sidecar_check_setup').then(setSetupStatus).catch(console.error);
             }
@@ -276,8 +280,11 @@ export default function LocalSidecar() {
         asrTask:           asrTask ?? 'transcribe',
         ttsEngine:         ttsEngine ?? 'kokoro',
         ttsModel:          ttsModel ?? '',
+        ttsRefAudio:       ttsRefAudio ?? '',
         logLevel:          'info',
-    }), [llmModel, asrModel, asrTask, temperature, maxTokens, chunkSeconds, ttsEngine, ttsModel]);
+        // Pass enabled components so Rust only preloads what the user has checked
+        enabledComponents: [compLlm && 'llm', compStt && 'stt', compTts && 'tts'].filter(Boolean).join(','),
+    }), [llmModel, asrModel, asrTask, temperature, maxTokens, chunkSeconds, ttsEngine, ttsModel, ttsRefAudio, compLlm, compStt, compTts]);
 
     const buildComponentArgs = useCallback(() => {
         const parts = [];
@@ -330,6 +337,11 @@ export default function LocalSidecar() {
     }, []);
 
     const handleDeleteModel = useCallback(async (repoId) => {
+        const confirmed = await ask(
+            `Delete "${repoId}" from cache?\nThis will free up disk space but cannot be undone.`,
+            { title: 'Delete Cached Model', type: 'warning' }
+        );
+        if (!confirmed) return;
         setDeletingModel(repoId);
         try {
             await invoke('local_sidecar_delete_cached_model', { repoId });
@@ -583,6 +595,19 @@ export default function LocalSidecar() {
                             </div>
                             <Button size='sm' color='danger' variant='flat' onPress={handleRetry} className='self-start'>
                                 {t('config.local_sidecar.setup.retry', { defaultValue: 'Retry' })}
+                            </Button>
+                        </div>
+                    )}
+
+                    {/* Success banner */}
+                    {installState === INSTALL_STATE.SUCCESS && (
+                        <div className='flex items-center gap-2 p-3 bg-success-50 dark:bg-success-900/20 border border-success-200 dark:border-success-700 rounded-lg'>
+                            <MdCheckCircle className='shrink-0 text-success-600 dark:text-success-400 text-base' />
+                            <span className='flex-1 text-xs text-success-700 dark:text-success-400 font-medium'>
+                                {t('config.local_sidecar.setup.success', { defaultValue: 'Environment installed / updated successfully.' })}
+                            </span>
+                            <Button size='sm' variant='light' onPress={() => setInstallState(INSTALL_STATE.IDLE)}>
+                                {t('common.ok', { defaultValue: 'OK' })}
                             </Button>
                         </div>
                     )}
@@ -876,6 +901,44 @@ export default function LocalSidecar() {
                             </Select>
                         </div>
                     )}
+                    {(ttsEngine ?? 'kokoro') === 'mlx_audio' && (
+                        <div className='config-item'>
+                            <h3 className='my-auto text-sm'>{t('config.local_sidecar.tts.voice', { defaultValue: 'Voice' })}</h3>
+                            <Input
+                                size='sm'
+                                variant='bordered'
+                                placeholder='e.g. serena'
+                                value={ttsVoice ?? ''}
+                                onValueChange={(v) => setTtsVoice(v)}
+                                className='max-w-[50%]'
+                            />
+                        </div>
+                    )}
+                    {(ttsEngine ?? 'kokoro') === 'mlx_audio' && (
+                        <div className='config-item'>
+                            <h3 className='my-auto text-sm'>{t('config.local_sidecar.tts.ref_audio', { defaultValue: 'Ref audio (optional)' })}</h3>
+                            <div className='flex gap-2 flex-1'>
+                                <Input
+                                    size='sm'
+                                    variant='bordered'
+                                    placeholder={t('config.local_sidecar.tts.ref_audio_placeholder', { defaultValue: 'Select a .wav file…' })}
+                                    value={ttsRefAudio ?? ''}
+                                    onValueChange={(v) => { setTtsRefAudio(v); if (running) setRestartNeeded(true); }}
+                                    className='flex-1'
+                                    isReadOnly
+                                />
+                                <Button size='sm' variant='flat' onPress={async () => {
+                                    const path = await openFileDialog({ filters: [{ name: 'Audio', extensions: ['wav', 'mp3', 'm4a', 'flac'] }] });
+                                    if (path && typeof path === 'string') { setTtsRefAudio(path); if (running) setRestartNeeded(true); }
+                                }}>
+                                    {t('common.browse', { defaultValue: 'Browse' })}
+                                </Button>
+                                {ttsRefAudio && (
+                                    <Button size='sm' variant='flat' color='danger' isIconOnly onPress={() => { setTtsRefAudio(''); if (running) setRestartNeeded(true); }}>✕</Button>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </CardBody>
             </Card>
 
@@ -886,14 +949,22 @@ export default function LocalSidecar() {
                     <h3 className='font-semibold text-sm'>
                         {t('config.local_sidecar.cache.section', { defaultValue: 'Cached Models' })}
                     </h3>
-                    <Button
-                        size='sm' variant='light' isIconOnly
-                        className='ml-auto'
-                        onPress={loadCachedModels}
-                        title='Refresh'
-                    >
-                        <MdRefresh className='text-base' />
-                    </Button>
+                    <div className='ml-auto flex gap-1'>
+                        <Button
+                            size='sm' variant='light' isIconOnly
+                            onPress={() => invoke('local_sidecar_reveal_cache').catch(console.error)}
+                            title='Open cache folder'
+                        >
+                            <MdFolderOpen className='text-base' />
+                        </Button>
+                        <Button
+                            size='sm' variant='light' isIconOnly
+                            onPress={loadCachedModels}
+                            title='Refresh'
+                        >
+                            <MdRefresh className='text-base' />
+                        </Button>
+                    </div>
                 </CardHeader>
                 <CardBody className='flex flex-col gap-2'>
                     {cachedModels === null ? (

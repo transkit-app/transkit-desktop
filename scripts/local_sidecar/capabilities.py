@@ -16,7 +16,7 @@ def _importable(module_name: str) -> bool:
 def probe() -> dict:
     llm_ok = _importable("mlx_lm")
     asr_ok = _importable("mlx_whisper")
-    tts_ok = _importable("kokoro")
+    tts_ok = _importable("kokoro_mlx")
 
     return {
         "llm": {

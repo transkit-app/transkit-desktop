@@ -89,6 +89,7 @@ async def translate_endpoint(body: dict):
     from_lang = body.get("from", "auto")
     to_lang = body.get("to", "en")
     context = body.get("context", "")
+    system_prompt = body.get("system_prompt", "")
     repo = _config.get("llm_model", "mlx-community/gemma-3-4b-it-qat-4bit")
     temperature = _config.get("llm_temperature", 0.2)
     max_tokens = _config.get("llm_max_tokens", 256)
@@ -109,7 +110,8 @@ async def translate_endpoint(body: dict):
             None,
             lambda: llm.translate(
                 text, from_lang, to_lang, repo,
-                context=context, max_tokens=max_tokens, temperature=temperature,
+                context=context, system_prompt=system_prompt,
+                max_tokens=max_tokens, temperature=temperature,
             ),
         )
         return {"translated": result}
@@ -178,12 +180,29 @@ async def tts_endpoint(body: dict):
     if not text.strip():
         return Response(content=b"", media_type="audio/wav")
 
-    import tts  # type: ignore
-    wav_bytes = await asyncio.get_event_loop().run_in_executor(
-        None,
-        lambda: tts.synthesize(text, voice=voice, speed=speed),
-    )
-    return Response(content=wav_bytes, media_type="audio/wav")
+    try:
+        import tts  # type: ignore
+    except ImportError:
+        return JSONResponse(
+            status_code=503,
+            content={"error": "tts_unavailable", "detail": "TTS component not installed. Install it from Settings → Local Model."},
+        )
+
+    try:
+        wav_bytes = await asyncio.get_event_loop().run_in_executor(
+            None,
+            lambda: tts.synthesize(text, voice=voice, speed=speed),
+        )
+        return Response(content=wav_bytes, media_type="audio/wav")
+    except Exception as exc:
+        err_msg = str(exc)
+        if "No module named" in err_msg or "kokoro" in err_msg.lower() or "mlx_audio" in err_msg.lower():
+            detail = f"TTS engine import failed: {err_msg}. Reinstall from Settings → Local Model."
+            status = 503
+        else:
+            detail = f"TTS synthesis error: {err_msg}"
+            status = 500
+        return JSONResponse(status_code=status, content={"error": "tts_failed", "detail": detail})
 
 
 @app.get("/v1/tts/voices")
@@ -316,6 +335,9 @@ def main():
     parser.add_argument("--llm-temperature", type=float, default=0.3)
     parser.add_argument("--llm-max-tokens", type=int, default=512)
     parser.add_argument("--log-level", default="info")
+    # Comma-separated list of components explicitly installed by the user
+    # (e.g. "llm,stt,tts").  Empty string means "use capability probe only".
+    parser.add_argument("--installed-components", default="")
     args = parser.parse_args()
 
     global _config
@@ -343,6 +365,13 @@ def main():
     from capabilities import probe  # type: ignore
     caps = probe()
     cap_names = [k for k, v in caps.items() if v["available"]]
+
+    # If the caller told us which components are installed, restrict cap_names
+    # to only those.  This prevents auto-downloading models for components that
+    # are importable (from a previous install) but were intentionally unchecked.
+    if args.installed_components:
+        installed = {c.strip() for c in args.installed_components.split(",") if c.strip()}
+        cap_names = [c for c in cap_names if c in installed]
 
     # Signal Tauri that the server is about to start
     emit({"type": "starting", "port": args.port})

@@ -104,21 +104,67 @@ def _ensure_mlx_audio():
                 _mlx_audio_model = repo
 
 
-def _synthesize_mlx_audio(text: str) -> bytes:
+def _synthesize_mlx_audio(text: str, voice: str = "") -> bytes:
     _ensure_mlx_audio()
-    from mlx_audio.tts.generate import generate_audio  # type: ignore
+    import numpy as np  # type: ignore
 
+    model = _mlx_audio_model
+
+    # ── New API: model.generate() → GenerationResult with .audio ──────────────
+    # Qwen3-TTS and similar models that expose generate() directly on the object.
+    # Try first; if it fails or yields no audio, fall through to generate_audio().
+    if hasattr(model, "generate"):
+        try:
+            sample_rate = 24000
+            all_samples = []
+            gen_kwargs: dict = {"text": text, "stream": True}
+            if voice:
+                gen_kwargs["voice"] = voice
+            if _ref_audio:
+                gen_kwargs["ref_audio"] = _ref_audio
+            for result in model.generate(**gen_kwargs):  # type: ignore
+                audio = getattr(result, "audio", None)
+                if audio is not None:
+                    all_samples.append(np.array(audio, dtype=np.float32))
+                sr = getattr(result, "sample_rate", None)
+                if sr:
+                    sample_rate = int(sr)
+            if all_samples:
+                combined = np.concatenate(all_samples)
+                pcm16 = (combined.clip(-1.0, 1.0) * 32767).astype(np.int16)
+                buf = io.BytesIO()
+                with wave.open(buf, "wb") as wf:
+                    wf.setnchannels(1)
+                    wf.setsampwidth(2)
+                    wf.setframerate(sample_rate)
+                    wf.writeframes(pcm16.tobytes())
+                return buf.getvalue()
+            # Empty audio — fall through to generate_audio() (e.g. ZipVoice)
+        except Exception:
+            pass  # Fall through to generate_audio()
+
+    # ── Legacy API: generate_audio() writing to temp WAV files ────────────────
+    # ZipVoice and older mlx-audio models. _mlx_audio_model may be a repo-id
+    # string when load_model() failed due to API incompatibility.
+    from mlx_audio.tts.generate import generate_audio  # type: ignore
+    # Kokoro voice IDs (af_heart, am_adam, bf_emma…) are meaningless for mlx-audio.
+    # Only forward voice if it looks like an mlx-audio voice name.
+    _KOKORO_PREFIXES = ("af_", "am_", "bf_", "bm_")
+    mlx_voice = "" if (not voice or any(voice.startswith(p) for p in _KOKORO_PREFIXES)) else voice
     with tempfile.TemporaryDirectory() as tmpdir:
         prefix = os.path.join(tmpdir, "out")
-        # _mlx_audio_model is either a loaded model object or a repo-id string.
-        kwargs: dict = {"model": _mlx_audio_model, "text": text, "file_prefix": prefix}
+        kwargs: dict = {"model": model, "text": text, "file_prefix": prefix}
+        if mlx_voice:
+            kwargs["voice"] = mlx_voice
         if _ref_audio:
             kwargs["ref_audio"] = _ref_audio
         generate_audio(**kwargs)
-
         wav_files = _glob.glob(os.path.join(tmpdir, "*.wav"))
         if not wav_files:
-            raise RuntimeError("mlx-audio produced no audio output.")
+            raise RuntimeError(
+                "mlx-audio produced no audio output. "
+                "ZipVoice requires a reference audio file — set one in Settings → Offline model → TTS ref audio."
+            )
         with open(wav_files[0], "rb") as f:
             return f.read()
 
@@ -150,10 +196,10 @@ def list_voices() -> list[str]:
 def synthesize(text: str, voice: str = "af_heart", speed: float = 1.0) -> bytes:
     """
     Synthesize `text` and return WAV bytes.
-    `voice` and `speed` are used by the kokoro engine; mlx_audio ignores them.
+    `voice` is passed to both engines; `speed` is kokoro-only.
     """
     if _engine == "mlx_audio":
-        return _synthesize_mlx_audio(text)
+        return _synthesize_mlx_audio(text, voice=voice)
     return _synthesize_kokoro(text, voice=voice, speed=speed)
 
 
