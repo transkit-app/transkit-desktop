@@ -22,6 +22,63 @@ import { polishTranscript } from '../../utils/polishTranscript';
  * @param {string}  opts.polishPrompt     - reactive: resolved system prompt for the selected level
  * @param {string}  opts.polishServiceKey - reactive: voice_anywhere_polish_service config
  */
+function playSfx(type = 'start') {
+    try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        
+        const run = async () => {
+            if (ctx.state === 'suspended') await ctx.resume();
+            
+            const gain = ctx.createGain();
+            gain.connect(ctx.destination);
+
+            if (type === 'start') {
+                // iOS-style Start: Clean high-pitched chime (C6 + C7 harmonics)
+                const osc1 = ctx.createOscillator();
+                const osc2 = ctx.createOscillator();
+                
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(1046.5, ctx.currentTime); // C6
+                
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(2093.0, ctx.currentTime); // C7
+                
+                gain.gain.setValueAtTime(0, ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.12, ctx.currentTime + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+                
+                osc1.connect(gain);
+                osc2.connect(gain);
+                
+                osc1.start();
+                osc2.start();
+                osc1.stop(ctx.currentTime + 0.4);
+                osc2.stop(ctx.currentTime + 0.4);
+            } else {
+                // iOS-style Stop: Slightly lower and shorter chime (A5)
+                const osc = ctx.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, ctx.currentTime); // A5
+                
+                gain.gain.setValueAtTime(0.08, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+                
+                osc.connect(gain);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.25);
+            }
+            
+            setTimeout(() => ctx.close().catch(() => {}), 500);
+        };
+        
+        run();
+    } catch (e) {
+        console.warn('[VoiceAnywhere] Sfx failed', e);
+    }
+}
+
 export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, injectMode, action, autostart, preferAsyncApi, polishEnabled, polishPrompt, polishServiceKey }) {
     const { t } = useTranslation();
     const [fabState, setFabState] = useState('idle');
@@ -253,6 +310,10 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, injec
         interimRef.current = '';
         lastTranscriptRef.current = '';
         accumulatedRef.current = '';
+        
+        // Capture focus target immediately (in case user clicked FAB instead of hotkey)
+        await invoke('capture_voice_anywhere_target').catch(() => {});
+        playSfx('start');
 
         try {
             const client = await createSTTClient();
@@ -289,6 +350,7 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, injec
 
                 // User has already stopped (isRecordingRef = false) or realtime mode:
                 // combine any accumulated chunks with this final result and inject.
+                if (isRecordingRef.current) playSfx('stop');
                 const fullText = accumulatedRef.current
                     ? `${accumulatedRef.current} ${text}`
                     : text;
@@ -303,11 +365,21 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, injec
             };
             client.onStatusChange = (status) => {
                 if (status === 'error') setError('STT connection error');
-                if (status === 'disconnected' && finalizingRef.current) {
-                    const fallbackText = getBestTranscriptCandidate();
-                    if (fallbackText) {
-                        clearStopFallbackTimer();
-                        injectText(fallbackText);
+                if (status === 'disconnected') {
+                    if (isRecordingRef.current || finalizingRef.current) {
+                        const fallbackText = getBestTranscriptCandidate();
+                        if (fallbackText) {
+                            if (isRecordingRef.current) playSfx('stop');
+                            isRecordingRef.current = false;
+                            clearStopFallbackTimer();
+                            injectText(fallbackText);
+                        } else {
+                            if (isRecordingRef.current) {
+                                playSfx('stop');
+                                isRecordingRef.current = false;
+                                setFabState('idle');
+                            }
+                        }
                     }
                 }
             };
@@ -331,6 +403,7 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, injec
 
     const stopRecording = useCallback(async () => {
         if (!isRecordingRef.current) return;
+        playSfx('stop');
         isRecordingRef.current = false;
         finalizingRef.current = true;
         await invoke('stop_audio_capture').catch(() => {});

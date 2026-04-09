@@ -88,7 +88,7 @@ fn platform_focus_and_paste(app_name: &str) -> Result<(), String> {
         "tell application \"System Events\"\n\
             set frontmost of first process whose name is \"{safe}\" to true\n\
         end tell\n\
-        delay 0.15\n\
+        delay 0.3\n\
         tell application \"System Events\" to keystroke \"v\" using command down"
     );
     info!("[VoiceAnywhere] platform_focus_and_paste: activating '{}'", app_name);
@@ -195,6 +195,38 @@ fn platform_focus_and_paste(window_id: &str) -> Result<(), String> {
 }
 
 // ── Tauri commands ────────────────────────────────────────────────────────────
+
+/// Snapshots the currently focused Transkit window and external app.
+/// Called when recording starts to ensure we know where to inject the transcript.
+#[tauri::command]
+pub fn capture_voice_anywhere_target() -> Result<(), String> {
+    let app_handle = APP.get().ok_or("App handle not found")?;
+    
+    // 1. Record the currently focused Transkit window.
+    {
+        let state: tauri::State<VoiceAnywhereState> = app_handle.state();
+        let focused = app_handle
+            .windows()
+            .iter()
+            .find(|(label, w)| {
+                *label != "voice_anywhere" 
+                    && *label != "voice_anywhere_caption" 
+                    && w.is_focused().unwrap_or(false)
+            })
+            .map(|(label, _)| label.clone());
+        
+        // Only update if we actually found a focused Transkit window.
+        // If no Transkit window is focused, we keep the previous one or let external app capture handle it.
+        if let Some(label) = focused {
+            *state.focused_window.lock().unwrap() = Some(label);
+        }
+    }
+
+    // 2. Capture the frontmost external (non-Transkit) app.
+    capture_last_external_app(app_handle);
+    
+    Ok(())
+}
 
 /// Returns the window label that was focused when the Voice Anywhere hotkey last fired.
 #[tauri::command]

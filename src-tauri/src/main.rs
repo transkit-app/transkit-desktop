@@ -38,7 +38,7 @@ use voice_anywhere::{
     VoiceAnywhereState, get_current_voice_anywhere_target, get_voice_anywhere_focused,
     hide_voice_anywhere_caption, show_voice_anywhere_caption,
     voice_inject_to_window, voice_copy_to_clipboard, voice_focus_and_paste,
-    save_voice_anywhere_position,
+    save_voice_anywhere_position, capture_voice_anywhere_target,
 };
 use backup::*;
 use clipboard::*;
@@ -243,6 +243,7 @@ fn main() {
             voice_copy_to_clipboard,
             voice_focus_and_paste,
             save_voice_anywhere_position,
+            capture_voice_anywhere_target,
             show_voice_anywhere_window,
             hide_voice_anywhere_window,
             local_sidecar_start,
