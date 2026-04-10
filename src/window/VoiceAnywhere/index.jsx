@@ -25,6 +25,7 @@ export default function VoiceAnywhere() {
     const [injectMode, setInjectMode] = useConfig('voice_anywhere_inject_mode', 'replace');
     const [action, setAction] = useConfig('voice_anywhere_action', 'clipboard');
     const [autostart] = useConfig('voice_anywhere_autostart', true);
+    const [sfxEnabled] = useConfig('voice_anywhere_sfx_enabled', true);
     const [showContextMenu] = useConfig('voice_anywhere_show_context_menu', true);
     const [preferAsyncApi] = useConfig('voice_anywhere_prefer_async_api', true);
     const [fabSize] = useConfig('voice_anywhere_fab_size', 72);
@@ -60,6 +61,7 @@ export default function VoiceAnywhere() {
         polishEnabled,
         polishPrompt,
         polishServiceKey,
+        sfxEnabled,
     });
 
     const isRecording = fabState === 'listening';

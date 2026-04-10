@@ -101,6 +101,7 @@ export default function VoiceInput() {
 
     // Auto-start recording when hotkey fires
     const [autostart, setAutostart] = useConfig('voice_anywhere_autostart', true);
+    const [sfxEnabled, setSfxEnabled] = useConfig('voice_anywhere_sfx_enabled', true);
     const [showContextMenu, setShowContextMenu] = useConfig('voice_anywhere_show_context_menu', true);
     const [preferAsyncApi, setPreferAsyncApi] = useConfig('voice_anywhere_prefer_async_api', true);
 
@@ -273,6 +274,19 @@ export default function VoiceInput() {
                         <Switch
                             isSelected={autostart ?? true}
                             onValueChange={setAutostart}
+                        />
+                    </div>
+
+                    <div className='config-item'>
+                        <div>
+                            <h3>{t('config.voice_input.sfx_enabled', { defaultValue: 'Enable start/stop sounds' })}</h3>
+                            <p className='text-xs text-default-400 mt-0.5'>
+                                {t('config.voice_input.sfx_enabled_desc', { defaultValue: 'Play an auditory chime when recording starts or stops.' })}
+                            </p>
+                        </div>
+                        <Switch
+                            isSelected={sfxEnabled ?? true}
+                            onValueChange={setSfxEnabled}
                         />
                     </div>
 
