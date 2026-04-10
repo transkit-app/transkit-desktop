@@ -278,6 +278,7 @@
         "unit_chars": "ký tự",
         "unit_requests": "yêu cầu",
         "translate_label": "Dịch thuật",
+        "dictation_label": "Dictation",
         "powered_by_note": "AI & Dịch thuật: Gemini 2.5 Flash · TTS: ElevenLabs",
         "buy_more": "Mua thêm",
         "addon_remaining": "addon còn lại",
@@ -1000,7 +1001,7 @@
           "speaker_diarization_hint": "Phân biệt và gán nhãn từng người nói. Tắt để giảm độ trễ."
         },
         "transkit_cloud_stt": {
-          "title": "Transkit Cloud",
+          "title": "Transkit Cloud STT",
           "sign_in_desc": "Đăng nhập để dùng Transkit Cloud STT — không cần API key. Gói của bạn có sẵn phút dùng thử miễn phí và tự động chọn provider tốt nhất.",
           "continue_google": "Tiếp tục với Google",
           "continue_github": "Tiếp tục với GitHub",
@@ -1018,6 +1019,19 @@
           "endpointing_hint": "Khoảng lặng tối thiểu để xác nhận kết thúc câu. Thấp hơn = phản hồi nhanh hơn, cao hơn = câu đầy đủ hơn. Áp dụng khi provider hỗ trợ.",
           "speech_threshold": "Ngưỡng nhận giọng",
           "speech_threshold_hint": "Độ nhạy tối thiểu để phát hiện giọng nói. Cao hơn = ít false trigger hơn. Áp dụng khi provider hỗ trợ."
+        },
+        "transkit_cloud_dictation": {
+          "title": "Transkit Cloud Dictation",
+          "sign_in_desc": "Đăng nhập để dùng Cloud Dictation — tối ưu cho các phiên push-to-talk ngắn (Voice Anywhere, Narration PTT). Không cần API key.",
+          "continue_google": "Tiếp tục với Google",
+          "continue_github": "Tiếp tục với GitHub",
+          "sign_out": "Đăng xuất",
+          "dictation_usage": "Lượng Dictation đã dùng kỳ này",
+          "quota_reached": "Đã dùng hết quota.",
+          "upgrade_plan": "Nâng cấp gói",
+          "loading_usage": "Đang tải dữ liệu sử dụng…",
+          "not_available": "Transkit Cloud không khả dụng trong bản build này.",
+          "use_case_note": "Cloud Dictation tối ưu cho phiên ngắn. Để phiên dài liên tục, dùng Transkit Cloud (STT)."
         },
         "local_sidecar_stt": {
           "title": "Offline model STT"

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, memo } from 'react'
 import { Button, Avatar, Card, CardBody, Chip, Progress, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from '@nextui-org/react'
 import { FaGoogle, FaGithub } from 'react-icons/fa'
-import { MdLogout, MdSync, MdPerson, MdCloudDone, MdMic, MdVolumeUp, MdAutoAwesome, MdTranslate, MdOpenInNew } from 'react-icons/md'
+import { MdLogout, MdSync, MdPerson, MdCloudDone, MdMic, MdVolumeUp, MdAutoAwesome, MdTranslate, MdOpenInNew, MdRecordVoiceOver } from 'react-icons/md'
 import { open as openBrowser } from '@tauri-apps/api/shell'
 import toast, { Toaster } from 'react-hot-toast'
 import { useTranslation } from 'react-i18next'
@@ -334,12 +334,14 @@ function CloudPlanCard({ profile, usage, onRefresh }) {
   const plan = profile.plan ?? 'trial'
   const badgeColor = PLAN_BADGE_COLOR[plan] ?? 'default'
   const planLabel = t(`config.account.plan_badge_${plan}`, { defaultValue: plan.charAt(0).toUpperCase() + plan.slice(1) })
-  const sttLimit       = profile.plan_stt_limit
-  const sttAddonSeconds = profile.stt_addon_seconds ?? 0
-  const ttsLimit       = profile.plan_tts_chars_limit ?? 0
-  const aiLimit        = profile.plan_ai_requests_limit ?? 0
-  const translateLimit = profile.plan_translate_requests_limit ?? 0
-  const isUpgradeable  = plan === 'trial' || plan === 'starter'
+  const sttLimit          = profile.plan_stt_limit
+  const sttAddonSeconds   = profile.stt_addon_seconds ?? 0
+  const ttsLimit          = profile.plan_tts_chars_limit ?? 0
+  const aiLimit           = profile.plan_ai_requests_limit ?? 0
+  const translateLimit    = profile.plan_translate_requests_limit ?? 0
+  const dictationLimit    = profile.plan_dictation_limit ?? 0
+  const dictationAddonSec = profile.dictation_addon_seconds ?? 0
+  const isUpgradeable     = plan === 'trial' || plan === 'starter'
 
   // Subscription has ended but pg_cron hasn't downgraded yet
   const subscriptionExpired = profile.subscription_ends_at &&
@@ -441,6 +443,23 @@ function CloudPlanCard({ profile, usage, onRefresh }) {
             />
           ) : (
             <ServiceRow icon={<MdTranslate className='text-base' />} label={t('config.account.translate_label')} comingSoon t={t} />
+          )}
+
+          {/* Dictation */}
+          {dictationLimit !== 0 ? (
+            <ServiceRow
+              icon={<MdRecordVoiceOver className='text-base' />}
+              label={t('config.account.dictation_label', { defaultValue: 'Dictation' })}
+              used={usage.dictation}
+              limit={dictationLimit}
+              unlimited={dictationLimit === -1}
+              addonSeconds={dictationAddonSec}
+              upgradeUrl={`${PRICING_URL}?dictation`}
+              unit='minutes'
+              t={t}
+            />
+          ) : (
+            <ServiceRow icon={<MdRecordVoiceOver className='text-base' />} label={t('config.account.dictation_label', { defaultValue: 'Dictation' })} comingSoon t={t} />
           )}
         </div>
 
@@ -642,11 +661,13 @@ const FOCUS_REFRESH_COOLDOWN_MS = 30_000 // min 30s between focus-triggered refr
 // Extract usage counters from a profile object into a stable shape
 function extractUsage(p) {
   return {
-    stt:       p.stt_seconds_used         ?? 0,
-    stt_addon: p.stt_addon_seconds        ?? 0,
-    tts:       p.tts_chars_used           ?? 0,
-    ai:        p.ai_requests_used         ?? 0,
-    translate: p.translate_requests_used  ?? 0,
+    stt:              p.stt_seconds_used         ?? 0,
+    stt_addon:        p.stt_addon_seconds        ?? 0,
+    tts:              p.tts_chars_used           ?? 0,
+    ai:               p.ai_requests_used         ?? 0,
+    translate:        p.translate_requests_used  ?? 0,
+    dictation:        p.dictation_seconds_used   ?? 0,
+    dictation_addon:  p.dictation_addon_seconds  ?? 0,
   }
 }
 
@@ -673,7 +694,9 @@ export default function Account() {
           prev.stt_addon === next.stt_addon &&
           prev.tts === next.tts &&
           prev.ai === next.ai &&
-          prev.translate === next.translate) return prev
+          prev.translate === next.translate &&
+          prev.dictation === next.dictation &&
+          prev.dictation_addon === next.dictation_addon) return prev
       return next
     })
     lastFetchRef.current = Date.now()

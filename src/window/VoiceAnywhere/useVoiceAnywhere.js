@@ -24,58 +24,35 @@ import { polishTranscript } from '../../utils/polishTranscript';
  */
 function playSfx(type = 'start') {
     try {
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (!AudioCtx) return;
-        const ctx = new AudioCtx();
+        const sampleRate = 24000;
+        const duration = type === 'start' ? 0.4 : 0.25;
+        const numSamples = Math.floor(sampleRate * duration);
+        const buffer = new Float32Array(numSamples);
         
-        const run = async () => {
-            if (ctx.state === 'suspended') await ctx.resume();
-            
-            const gain = ctx.createGain();
-            gain.connect(ctx.destination);
-
+        for (let i = 0; i < numSamples; i++) {
+            const t = i / sampleRate;
             if (type === 'start') {
-                // iOS-style Start: Clean high-pitched chime (C6 + C7 harmonics)
-                const osc1 = ctx.createOscillator();
-                const osc2 = ctx.createOscillator();
-                
-                osc1.type = 'sine';
-                osc1.frequency.setValueAtTime(1046.5, ctx.currentTime); // C6
-                
-                osc2.type = 'sine';
-                osc2.frequency.setValueAtTime(2093.0, ctx.currentTime); // C7
-                
-                gain.gain.setValueAtTime(0, ctx.currentTime);
-                gain.gain.linearRampToValueAtTime(0.12, ctx.currentTime + 0.01);
-                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
-                
-                osc1.connect(gain);
-                osc2.connect(gain);
-                
-                osc1.start();
-                osc2.start();
-                osc1.stop(ctx.currentTime + 0.4);
-                osc2.stop(ctx.currentTime + 0.4);
+                // High-pitched chime (C6 + C7 harmonics)
+                const s1 = Math.sin(2 * Math.PI * 1046.5 * t);
+                const s2 = Math.sin(2 * Math.PI * 2093.0 * t);
+                const envelope = Math.exp(-t * 10) * Math.min(1, t * 100);
+                buffer[i] = (s1 * 0.5 + s2 * 0.5) * 0.12 * envelope;
             } else {
-                // iOS-style Stop: Slightly lower and shorter chime (A5)
-                const osc = ctx.createOscillator();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(880, ctx.currentTime); // A5
-                
-                gain.gain.setValueAtTime(0.08, ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
-                
-                osc.connect(gain);
-                osc.start();
-                osc.stop(ctx.currentTime + 0.25);
+                // Slightly lower and shorter chime (A5)
+                const s = Math.sin(2 * Math.PI * 880 * t);
+                const envelope = Math.exp(-t * 15) * Math.min(1, t * 100);
+                buffer[i] = s * 0.08 * envelope;
             }
-            
-            setTimeout(() => ctx.close().catch(() => {}), 500);
-        };
+        }
         
-        run();
+        // Convert Float32Array to Uint8Array for transport. 
+        // Tauri's invoke handles Uint8Array efficiently as binary data.
+        const bytes = new Uint8Array(buffer.buffer);
+        invoke('play_audio_bytes', { data: Array.from(bytes) }).catch(err => {
+            console.warn('[VoiceAnywhere] Native Sfx failed', err);
+        });
     } catch (e) {
-        console.warn('[VoiceAnywhere] Sfx failed', e);
+        console.warn('[VoiceAnywhere] Sfx generation failed', e);
     }
 }
 
@@ -204,7 +181,7 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, injec
         if (!service?.createClient) throw new Error(`Unknown STT service: ${serviceName}`);
 
         const config = (await store.get(svcKey)) ?? {};
-        const NO_KEY_SERVICES = ['transkit_cloud_stt', 'local_sidecar_stt'];
+        const NO_KEY_SERVICES = ['transkit_cloud_stt', 'transkit_cloud_dictation', 'local_sidecar_stt'];
         if (!NO_KEY_SERVICES.includes(serviceName) && !config.apiKey && !config.token) {
             throw new Error(`No API key for "${serviceName}". Configure it in Settings → Service.`);
         }
@@ -333,9 +310,11 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, injec
                 if (!text) return;
                 clearStopFallbackTimer();
 
-                if (isRecordingRef.current && preferAsyncRef.current) {
-                    // Mid-stream chunk-final while user is still recording (e.g. local_sidecar
-                    // sends is_final:true after every chunk). Accumulate — don't stop yet.
+                if (isRecordingRef.current) {
+                    // VoiceAnywhere is always PTT — never auto-inject mid-recording regardless
+                    // of whether the provider fires onOriginal (Deepgram endpointing, Soniox
+                    // auto-final, local_sidecar chunk-finals, etc.). Accumulate all mid-stream
+                    // finals; inject only when the user explicitly releases (stopRecording).
                     const joined = accumulatedRef.current
                         ? `${accumulatedRef.current} ${text}`
                         : text;
@@ -344,11 +323,11 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, injec
                     interimRef.current = '';
                     setInterim('');
                     setFinalText(joined);
-                    console.log('[VoiceAnywhere] onOriginal mid-stream (async), accumulated:', joined);
+                    console.log('[VoiceAnywhere] onOriginal mid-stream, accumulated:', joined);
                     return;
                 }
 
-                // User has already stopped (isRecordingRef = false) or realtime mode:
+                // User has already stopped (isRecordingRef = false):
                 // combine any accumulated chunks with this final result and inject.
                 if (isRecordingRef.current) playSfx('stop');
                 const fullText = accumulatedRef.current

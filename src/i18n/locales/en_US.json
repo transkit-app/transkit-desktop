@@ -278,6 +278,7 @@
         "unit_chars": "chars",
         "unit_requests": "requests",
         "translate_label": "Translation",
+        "dictation_label": "Dictation",
         "powered_by_note": "AI & Translation: Gemini 2.5 Flash · TTS: ElevenLabs",
         "buy_more": "Buy more",
         "addon_remaining": "addon remaining",
@@ -1001,7 +1002,7 @@
           "speaker_diarization_hint": "Identify and label different speakers. Disable to reduce latency."
         },
         "transkit_cloud_stt": {
-          "title": "Transkit Cloud",
+          "title": "Transkit Cloud STT",
           "sign_in_desc": "Sign in to use Transkit Cloud STT — no API key needed. Your plan includes free trial minutes and automatically uses the best available provider.",
           "continue_google": "Continue with Google",
           "continue_github": "Continue with GitHub",
@@ -1019,6 +1020,19 @@
           "endpointing_hint": "Silence duration that triggers utterance completion. Lower = faster response, higher = more complete sentences. Applied when the active provider supports it.",
           "speech_threshold": "Speech Threshold",
           "speech_threshold_hint": "Minimum confidence to detect speech activity. Higher = fewer false triggers. Applied when the active provider supports it."
+        },
+        "transkit_cloud_dictation": {
+          "title": "Transkit Cloud Dictation",
+          "sign_in_desc": "Sign in to use Cloud Dictation — optimised for short push-to-talk sessions (Voice Anywhere, Narration PTT). No API key needed.",
+          "continue_google": "Continue with Google",
+          "continue_github": "Continue with GitHub",
+          "sign_out": "Sign out",
+          "dictation_usage": "Dictation usage this period",
+          "quota_reached": "Quota reached.",
+          "upgrade_plan": "Upgrade your plan",
+          "loading_usage": "Loading usage data…",
+          "not_available": "Transkit Cloud is not available in this build.",
+          "use_case_note": "Cloud Dictation is optimised for short sessions. For continuous long-form transcription use Transkit Cloud (STT)."
         },
         "local_sidecar_stt": {
           "title": "Local Model STT"

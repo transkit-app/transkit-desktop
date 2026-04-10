@@ -16,7 +16,7 @@ export default function SelectModal(props) {
                     <>
                         <ModalHeader>{t('config.service.add_service')}</ModalHeader>
                         <ModalBody>
-                            {Object.keys(builtinServices).map((x) => (
+                            {Object.keys(builtinServices).filter((x) => !builtinServices[x].info?.voiceInputOnly).map((x) => (
                                 <div key={x}>
                                     <Button
                                         fullWidth

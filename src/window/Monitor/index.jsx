@@ -21,7 +21,7 @@ import AIPanel from './components/AIPanel';
 import NarrationPanel from './components/NarrationPanel';
 import * as transcriptionServices from '../../services/transcription';
 import { getTTSQueue } from './tts';
-import { reportUsage, CLOUD_ENABLED } from '../../lib/transkit-cloud';
+import { reportUsage, CLOUD_ENABLED, callCloudAI } from '../../lib/transkit-cloud';
 
 const MAX_ENTRIES = 100;
 const SUB_MODE_HEIGHT = 190;
@@ -51,8 +51,8 @@ function StatusDot({ status }) {
 // Short display label for service names shown in the bottom status bar
 const SVC_LABELS = {
     deepgram_stt: 'Deepgram', soniox_stt: 'Soniox', gladia_stt: 'Gladia',
-    transkit_cloud_stt: 'Transkit Cloud', openai_whisper_stt: 'Whisper',
-    assemblyai_stt: 'AssemblyAI', local_sidecar_stt: 'Local Model STT',
+    transkit_cloud_stt: 'Transkit Cloud STT', transkit_cloud_dictation: 'Transkit Cloud Dictation',
+    openai_whisper_stt: 'Whisper', assemblyai_stt: 'AssemblyAI', local_sidecar_stt: 'Local Model STT',
     edge_tts: 'Edge TTS', elevenlabs_tts: 'ElevenLabs', google_tts: 'Google TTS',
     google_cloud_tts: 'Google Cloud TTS',
     openai_tts: 'OpenAI TTS', vieneu_tts: 'VieNeu', lingva: 'Lingva',
@@ -451,27 +451,66 @@ export default function Monitor() {
         narrationClientKeyRef.current = '';
         const client = service.createClient();
 
-        client.onOriginal = (text, speaker) => {
-            pendingOriginalRef.current = { text, speaker };
-        };
-        client.onTranslation = (text) => {
-            pttAwaitingTranslationRef.current = false;
-            const pending = pendingOriginalRef.current;
-            pendingOriginalRef.current = null;
-            const entry = {
-                id: `${Date.now()}-${Math.random()}`,
-                original: pending?.text ?? '',
-                translation: text,
-                speaker: 'me',
-                isMe: true,
+        const isDictationClient = cfg.serviceName === 'transkit_cloud_dictation';
+
+        if (isDictationClient) {
+            // DictationClient only fires onOriginal (no provider-side translation).
+            // Translate the transcript client-side via Cloud AI, then enqueue TTS.
+            client.onOriginal = async (text) => {
+                pttAwaitingTranslationRef.current = false;
+                const entry = {
+                    id: `${Date.now()}-${Math.random()}`,
+                    original: text,
+                    translation: '',
+                    speaker: 'me',
+                    isMe: true,
+                };
+                if (reverseTargetLang && reverseTargetLang !== reverseSourceLang) {
+                    try {
+                        const result = await callCloudAI(
+                            [{ role: 'user', content: text }],
+                            'translate',
+                            { source_lang: reverseSourceLang, target_lang: reverseTargetLang }
+                        );
+                        entry.translation = result.text;
+                    } catch (e) {
+                        console.warn('[Narration PTT] translate failed:', e);
+                        entry.translation = text; // fall back to original
+                    }
+                } else {
+                    entry.translation = text;
+                }
+                setEntries(prev => {
+                    const next = [...prev, entry];
+                    return next.length > MAX_ENTRIES ? next.slice(-MAX_ENTRIES) : next;
+                });
+                setProvisional('');
+                getTTSQueue().enqueue(entry.translation, { injectNarration: true, force: true });
             };
-            setEntries(prev => {
-                const next = [...prev, entry];
-                return next.length > MAX_ENTRIES ? next.slice(-MAX_ENTRIES) : next;
-            });
-            setProvisional('');
-            getTTSQueue().enqueue(text, { injectNarration: true, force: true });
-        };
+            client.onTranslation = null;
+        } else {
+            client.onOriginal = (text, speaker) => {
+                pendingOriginalRef.current = { text, speaker };
+            };
+            client.onTranslation = (text) => {
+                pttAwaitingTranslationRef.current = false;
+                const pending = pendingOriginalRef.current;
+                pendingOriginalRef.current = null;
+                const entry = {
+                    id: `${Date.now()}-${Math.random()}`,
+                    original: pending?.text ?? '',
+                    translation: text,
+                    speaker: 'me',
+                    isMe: true,
+                };
+                setEntries(prev => {
+                    const next = [...prev, entry];
+                    return next.length > MAX_ENTRIES ? next.slice(-MAX_ENTRIES) : next;
+                });
+                setProvisional('');
+                getTTSQueue().enqueue(text, { injectNarration: true, force: true });
+            };
+        }
         client.onProvisional = (text) => setProvisional(text || '');
         client.onStatusChange = () => {};
         client.onError = (err) => console.warn('[Narration STT]', err);
@@ -744,8 +783,8 @@ export default function Monitor() {
         }
 
         // Non-cloud providers: require an API key / token before proceeding.
-        // transkit_cloud_stt and local_sidecar_stt handle credentials internally (no API key needed).
-        const NO_KEY_SERVICES = ['transkit_cloud_stt', 'local_sidecar_stt'];
+        // transkit_cloud_stt, transkit_cloud_dictation, and local_sidecar_stt handle credentials internally (no API key needed).
+        const NO_KEY_SERVICES = ['transkit_cloud_stt', 'transkit_cloud_dictation', 'local_sidecar_stt'];
         if (!NO_KEY_SERVICES.includes(serviceName) && !transcriptionConfig.apiKey && !transcriptionConfig.token) {
             setErrorMsg(t('monitor.no_api_key', {
                 service: t('config.service.label'),

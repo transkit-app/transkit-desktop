@@ -7,6 +7,7 @@ import { invoke } from '@tauri-apps/api/tauri';
 import { useConfig } from '../../../../hooks';
 import { getServiceName } from '../../../../utils/service_instance';
 import { store } from '../../../../utils/store';
+import * as builtinTranscriptionServices from '../../../../services/transcription';
 
 function getTranscriptionServiceLabel(instanceKey, t) {
     const serviceName = getServiceName(instanceKey);
@@ -163,6 +164,17 @@ export default function VoiceInput() {
                                     {svcDisplayNames[key] ?? getTranscriptionServiceLabel(key, t)}
                                 </SelectItem>
                             ))}
+                            {Object.keys(builtinTranscriptionServices)
+                                .filter((name) =>
+                                    builtinTranscriptionServices[name].info?.voiceInputOnly &&
+                                    !(transcriptionServiceList ?? []).some((k) => getServiceName(k) === name)
+                                )
+                                .map((name) => (
+                                    <SelectItem key={name}>
+                                        {t(`services.transcription.${name}.title`, { defaultValue: name })}
+                                    </SelectItem>
+                                ))
+                            }
                         </Select>
                     </div>
 

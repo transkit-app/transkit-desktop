@@ -244,7 +244,7 @@ export async function getUserProfile(): Promise<UserProfile | null> {
   // This avoids a second query to subscription_plans which requires separate table permissions.
   const { data: profileData, error: profileError } = await supabase
     .from('profiles')
-    .select('email, full_name, avatar_url, role, company, experience_level, expertise, notes, stt_seconds_used, stt_addon_seconds, plan, tts_chars_used, ai_requests_used, translate_requests_used, plan_stt_limit, plan_tts_chars_limit, plan_ai_requests_limit, plan_translate_requests_limit, subscription_ends_at')
+    .select('email, full_name, avatar_url, role, company, experience_level, expertise, notes, stt_seconds_used, stt_addon_seconds, plan, tts_chars_used, ai_requests_used, translate_requests_used, plan_stt_limit, plan_tts_chars_limit, plan_ai_requests_limit, plan_translate_requests_limit, subscription_ends_at, dictation_seconds_used, dictation_addon_seconds, plan_dictation_limit')
     .eq('id', user.id)
     .single()
 
@@ -265,6 +265,9 @@ export async function getUserProfile(): Promise<UserProfile | null> {
     tts_chars_used:                raw.tts_chars_used                 ?? 0,
     ai_requests_used:              raw.ai_requests_used               ?? 0,
     translate_requests_used:       raw.translate_requests_used        ?? 0,
+    dictation_seconds_used:        raw.dictation_seconds_used         ?? 0,
+    dictation_addon_seconds:       raw.dictation_addon_seconds        ?? 0,
+    plan_dictation_limit:          raw.plan_dictation_limit           ?? 0,
   } as UserProfile
 }
 
@@ -293,6 +296,10 @@ export interface UserProfile {
   // Translate quota
   translate_requests_used: number
   plan_translate_requests_limit: number
+  // Dictation quota
+  dictation_seconds_used: number
+  dictation_addon_seconds: number
+  plan_dictation_limit: number   // -1 = unlimited
 }
 
 export type ProfilePatch = Partial<Pick<UserProfile, 'full_name' | 'role' | 'company' | 'experience_level' | 'expertise' | 'notes'>>
