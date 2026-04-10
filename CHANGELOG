@@ -1,4 +1,24 @@
 # Changelog
+ 
+## 3.2.6 (2026-04-10)
+ 
+### Voice Anywhere & Dictation:
+- **Native Audio Feedback**: Restored start/stop recording sounds by bypassing browser restrictions using native Rust audio playback. Includes a new toggle in settings to enable/disable sound effects and increased volume for better noticeability.
+- **Integrated Translation**: Added **Target Language** support to Voice Anywhere. Speak in one language and have the app instantly translate and inject/pasted the result into any application.
+- **AI-Powered Polishing**: New "Polish" mode that uses AI to refine your dictated transcripts for grammar, tone, and professional clarity before they are injected.
+- **Cross-Platform Pasting**: Improved the reliability of automatic text pasting across macOS and Windows with intelligent focus-target capturing.
+- **Dictation Service**: Implemented a new dictation engine using Edge Function WebSocket proxies for high-speed, short-form speech recognition.
+ 
+### Local Sidecar & Offline Support:
+- **Offline AI Logic**: Full integration with the Transkit Local Sidecar, enabling private, offline LLM (Llama 3), STT (Whisper), and TTS services.
+- **Granular Control**: New settings to filter which local components are active and a quick-access button to manage the model cache directory.
+- **System Prompts**: Local AI models now support custom system prompts for tailored assistant behavior.
+ 
+### UI & Core Enhancements:
+- **STT Lifecycle Standard**: Standardized the `finalize()` method across all transcription providers to ensure clean session termination and consistent results.
+- **Protocol Normalization**: Refined how the frontend handles transcript events from various providers, ensuring a unified experience regardless of the selected service.
+- **Config UI Refinement**: Improved the layout and responsiveness of the configuration windows.
+
 
 ## 3.2.5 (2026-04-06)
 
