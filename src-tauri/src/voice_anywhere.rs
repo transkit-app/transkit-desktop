@@ -112,7 +112,7 @@ fn platform_get_frontmost_app() -> Option<String> {
     use windows::Win32::UI::WindowsAndMessaging::GetForegroundWindow;
     unsafe {
         let hwnd = GetForegroundWindow();
-        if hwnd.0 != 0 { Some(format!("{}", hwnd.0)) } else { None }
+        if !hwnd.0.is_null() { Some(format!("{}", hwnd.0 as usize)) } else { None }
     }
 }
 
@@ -130,7 +130,7 @@ fn platform_focus_and_paste(hwnd_str: &str) -> Result<(), String> {
         .map_err(|e| format!("Invalid HWND '{hwnd_str}': {e}"))?;
 
     unsafe {
-        let hwnd = HWND(hwnd_val);
+        let hwnd = HWND(hwnd_val as *mut _);
         ShowWindow(hwnd, SW_RESTORE);
         SetForegroundWindow(hwnd);
     }
