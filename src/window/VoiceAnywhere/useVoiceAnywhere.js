@@ -13,7 +13,8 @@ import { polishTranscript } from '../../utils/polishTranscript';
  * @param {object} opts
  * @param {string}  opts.sttServiceKey    - reactive: voice_anywhere_stt_service config
  * @param {string}  opts.monitorSvcKey    - reactive: transcription_active_service config
- * @param {string}  opts.language         - reactive: voice_anywhere_language config
+ * @param {string}  opts.language         - reactive: voice_anywhere_language config (source)
+ * @param {string}  opts.targetLanguage   - reactive: voice_anywhere_target_language config
  * @param {string}  opts.injectMode       - reactive: voice_anywhere_inject_mode ('replace'|'append') — Transkit windows only
  * @param {string}  opts.action           - reactive: voice_anywhere_action ('clipboard'|'paste') — external apps
  * @param {boolean} opts.autostart        - reactive: voice_anywhere_autostart config
@@ -22,7 +23,8 @@ import { polishTranscript } from '../../utils/polishTranscript';
  * @param {string}  opts.polishPrompt     - reactive: resolved system prompt for the selected level
  * @param {string}  opts.polishServiceKey - reactive: voice_anywhere_polish_service config
  */
-function playSfx(type = 'start') {
+function playSfx(type = 'start', enabled = true) {
+    if (!enabled) return;
     try {
         const sampleRate = 24000;
         const duration = type === 'start' ? 0.4 : 0.25;
@@ -32,21 +34,19 @@ function playSfx(type = 'start') {
         for (let i = 0; i < numSamples; i++) {
             const t = i / sampleRate;
             if (type === 'start') {
-                // High-pitched chime (C6 + C7 harmonics)
+                // High-pitched chime (C6 + C7 harmonics) - Louder (0.35)
                 const s1 = Math.sin(2 * Math.PI * 1046.5 * t);
                 const s2 = Math.sin(2 * Math.PI * 2093.0 * t);
                 const envelope = Math.exp(-t * 10) * Math.min(1, t * 100);
-                buffer[i] = (s1 * 0.5 + s2 * 0.5) * 0.12 * envelope;
+                buffer[i] = (s1 * 0.5 + s2 * 0.5) * 0.35 * envelope;
             } else {
-                // Slightly lower and shorter chime (A5)
+                // Slightly lower and shorter chime (A5) - Louder (0.25)
                 const s = Math.sin(2 * Math.PI * 880 * t);
                 const envelope = Math.exp(-t * 15) * Math.min(1, t * 100);
-                buffer[i] = s * 0.08 * envelope;
+                buffer[i] = s * 0.25 * envelope;
             }
         }
         
-        // Convert Float32Array to Uint8Array for transport. 
-        // Tauri's invoke handles Uint8Array efficiently as binary data.
         const bytes = new Uint8Array(buffer.buffer);
         invoke('play_audio_bytes', { data: Array.from(bytes) }).catch(err => {
             console.warn('[VoiceAnywhere] Native Sfx failed', err);
@@ -56,7 +56,7 @@ function playSfx(type = 'start') {
     }
 }
 
-export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, injectMode, action, autostart, preferAsyncApi, polishEnabled, polishPrompt, polishServiceKey }) {
+export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, targetLanguage, injectMode, action, autostart, preferAsyncApi, polishEnabled, polishPrompt, polishServiceKey, sfxEnabled }) {
     const { t } = useTranslation();
     const [fabState, setFabState] = useState('idle');
     const [interim, setInterim] = useState('');
@@ -73,6 +73,8 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, injec
     const interimRef = useRef('');
     const lastTranscriptRef = useRef('');
     const finalizingRef = useRef(false);
+    // Prevents concurrent injectText calls (race between fallback timer and onOriginal)
+    const isInjectingRef = useRef(false);
     // Accumulates chunk-finals that arrive while user is still recording
     // (e.g. local_sidecar sends is_final:true after each chunk even mid-dictation)
     const accumulatedRef = useRef('');
@@ -84,21 +86,25 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, injec
     const sttKeyRef = useRef(sttServiceKey);
     const monitorKeyRef = useRef(monitorSvcKey);
     const languageRef = useRef(language);
+    const targetLanguageRef = useRef(targetLanguage);
     const injectModeRef = useRef(injectMode);
     const actionRef = useRef(action);
     const preferAsyncRef = useRef(preferAsyncApi);
     const polishEnabledRef = useRef(polishEnabled);
     const polishPromptRef = useRef(polishPrompt);
     const polishServiceKeyRef = useRef(polishServiceKey);
+    const sfxEnabledRef = useRef(sfxEnabled);
     useEffect(() => { sttKeyRef.current = sttServiceKey; }, [sttServiceKey]);
     useEffect(() => { monitorKeyRef.current = monitorSvcKey; }, [monitorSvcKey]);
     useEffect(() => { languageRef.current = language; }, [language]);
+    useEffect(() => { targetLanguageRef.current = targetLanguage; }, [targetLanguage]);
     useEffect(() => { injectModeRef.current = injectMode; }, [injectMode]);
     useEffect(() => { actionRef.current = action; }, [action]);
     useEffect(() => { preferAsyncRef.current = preferAsyncApi; }, [preferAsyncApi]);
     useEffect(() => { polishEnabledRef.current = polishEnabled; }, [polishEnabled]);
     useEffect(() => { polishPromptRef.current = polishPrompt; }, [polishPrompt]);
     useEffect(() => { polishServiceKeyRef.current = polishServiceKey; }, [polishServiceKey]);
+    useEffect(() => { sfxEnabledRef.current = sfxEnabled; }, [sfxEnabled]);
 
     const clearInjectingTimer = () => {
         if (injectingTimerRef.current) {
@@ -188,10 +194,11 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, injec
 
         const lang = languageRef.current;
         const sourceLang = (lang && lang !== 'auto') ? lang : null;
+        const targetLang = (targetLanguageRef.current && targetLanguageRef.current !== 'none') ? targetLanguageRef.current : null;
 
         const preferAsync = !!preferAsyncRef.current;
         const client = service.createClient({ preferAsync });
-        client.connect({ ...config, sourceLanguage: sourceLang, targetLanguage: null });
+        client.connect({ ...config, sourceLanguage: sourceLang, targetLanguage: targetLang });
         return client;
     }, []); // no deps — reads from refs
 
@@ -218,6 +225,8 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, injec
 
     const injectText = useCallback(async (rawText) => {
         if (!rawText?.trim()) return;
+        if (isInjectingRef.current) return;  // prevent race between fallback timer and onOriginal
+        isInjectingRef.current = true;
         setFabState('processing');
         try {
             // ── Polish step (optional middleware) ─────────────────────────────
@@ -284,13 +293,14 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, injec
         clearStopFallbackTimer();
         disconnectClient();
         finalizingRef.current = false;
+        isInjectingRef.current = false;
         interimRef.current = '';
         lastTranscriptRef.current = '';
         accumulatedRef.current = '';
         
         // Capture focus target immediately (in case user clicked FAB instead of hotkey)
         await invoke('capture_voice_anywhere_target').catch(() => {});
-        playSfx('start');
+        playSfx('start', sfxEnabledRef.current ?? true);
 
         try {
             const client = await createSTTClient();
@@ -329,7 +339,7 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, injec
 
                 // User has already stopped (isRecordingRef = false):
                 // combine any accumulated chunks with this final result and inject.
-                if (isRecordingRef.current) playSfx('stop');
+                if (isRecordingRef.current) playSfx('stop', sfxEnabledRef.current ?? true);
                 const fullText = accumulatedRef.current
                     ? `${accumulatedRef.current} ${text}`
                     : text;
@@ -348,13 +358,13 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, injec
                     if (isRecordingRef.current || finalizingRef.current) {
                         const fallbackText = getBestTranscriptCandidate();
                         if (fallbackText) {
-                            if (isRecordingRef.current) playSfx('stop');
+                            if (isRecordingRef.current) playSfx('stop', sfxEnabledRef.current ?? true);
                             isRecordingRef.current = false;
                             clearStopFallbackTimer();
                             injectText(fallbackText);
                         } else {
                             if (isRecordingRef.current) {
-                                playSfx('stop');
+                                playSfx('stop', sfxEnabledRef.current ?? true);
                                 isRecordingRef.current = false;
                                 setFabState('idle');
                             }
@@ -382,7 +392,7 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, injec
 
     const stopRecording = useCallback(async () => {
         if (!isRecordingRef.current) return;
-        playSfx('stop');
+        playSfx('stop', sfxEnabledRef.current ?? true);
         isRecordingRef.current = false;
         finalizingRef.current = true;
         await invoke('stop_audio_capture').catch(() => {});

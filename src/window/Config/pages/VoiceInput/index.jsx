@@ -32,6 +32,7 @@ export default function VoiceInput() {
 
     // Language — inherits from Audio Monitor source lang by default
     const [voiceLanguage, setVoiceLanguage] = useConfig('voice_anywhere_language', 'auto');
+    const [targetLanguage, setTargetLanguage] = useConfig('voice_anywhere_target_language', 'none');
 
     // After-stop action for external apps: clipboard | paste
     const [action, setAction] = useConfig('voice_anywhere_action', 'clipboard');
@@ -180,7 +181,7 @@ export default function VoiceInput() {
                     </div>
 
                     <div className='config-item'>
-                        <h3 className='my-auto'>{t('config.voice_input.language', { defaultValue: 'Language' })}</h3>
+                        <h3 className='my-auto'>{t('config.voice_input.language', { defaultValue: 'Source Language' })}</h3>
                         <Select
                             variant='bordered'
                             selectedKeys={[voiceLanguage ?? 'auto']}
@@ -192,6 +193,34 @@ export default function VoiceInput() {
                         >
                             <SelectItem key='auto'>
                                 {t('config.voice_input.auto_detect', { defaultValue: 'Same as Audio Monitor' })}
+                            </SelectItem>
+                            <SelectItem key='en'>English</SelectItem>
+                            <SelectItem key='vi'>Tiếng Việt</SelectItem>
+                            <SelectItem key='zh'>中文</SelectItem>
+                            <SelectItem key='ja'>日本語</SelectItem>
+                            <SelectItem key='ko'>한국어</SelectItem>
+                            <SelectItem key='fr'>Français</SelectItem>
+                            <SelectItem key='de'>Deutsch</SelectItem>
+                            <SelectItem key='es'>Español</SelectItem>
+                            <SelectItem key='pt'>Português</SelectItem>
+                            <SelectItem key='ru'>Русский</SelectItem>
+                            <SelectItem key='ar'>العربية</SelectItem>
+                        </Select>
+                    </div>
+
+                    <div className='config-item'>
+                        <h3 className='my-auto'>{t('config.voice_input.target_language', { defaultValue: 'Target Language (Translate)' })}</h3>
+                        <Select
+                            variant='bordered'
+                            selectedKeys={[targetLanguage ?? 'none']}
+                            className='max-w-[50%]'
+                            onSelectionChange={(keys) => {
+                                const v = Array.from(keys)[0];
+                                if (v) setTargetLanguage(v);
+                            }}
+                        >
+                            <SelectItem key='none'>
+                                {t('config.voice_input.no_translate', { defaultValue: 'No translate (Dictation)' })}
                             </SelectItem>
                             <SelectItem key='en'>English</SelectItem>
                             <SelectItem key='vi'>Tiếng Việt</SelectItem>

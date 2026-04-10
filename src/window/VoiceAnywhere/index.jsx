@@ -22,6 +22,7 @@ export default function VoiceAnywhere() {
     const [voiceSttService, setVoiceSttService] = useConfig('voice_anywhere_stt_service', 'inherit');
     const [monitorSvcKey] = useConfig('transcription_active_service', '');
     const [voiceLanguage, setVoiceLanguage] = useConfig('voice_anywhere_language', 'auto');
+    const [targetLanguage] = useConfig('voice_anywhere_target_language', 'none');
     const [injectMode, setInjectMode] = useConfig('voice_anywhere_inject_mode', 'replace');
     const [action, setAction] = useConfig('voice_anywhere_action', 'clipboard');
     const [autostart] = useConfig('voice_anywhere_autostart', true);
@@ -54,6 +55,7 @@ export default function VoiceAnywhere() {
         sttServiceKey: voiceSttService,
         monitorSvcKey,
         language: voiceLanguage,
+        targetLanguage,
         injectMode,
         action,
         autostart,
