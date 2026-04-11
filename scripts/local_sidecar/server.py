@@ -19,6 +19,7 @@ Usage:
 import argparse
 import asyncio
 import json
+import os
 import sys
 import time
 
@@ -246,10 +247,15 @@ async def transcribe_ws(ws: WebSocket):
         chunk_seconds = int(cfg.get("chunk_seconds", _config.get("asr_chunk_seconds", 7)))
         stride_seconds = int(cfg.get("stride_seconds", _config.get("asr_stride_seconds", 5)))
 
+        # For ONNX backend, translate repo slug → local model directory path
+        if _config.get("asr_backend", "mlx") == "onnx":
+            import onnx_asr as asr  # type: ignore
+            repo = os.path.join(_onnx_model_dir(), repo.replace("/", "__"))
+        else:
+            import asr  # type: ignore
+
         task_label = " (translate→EN)" if task == "translate" else ""
         await ws.send_text(json.dumps({"type": "status", "message": f"Loading {repo}{task_label}…"}))
-
-        import asr  # type: ignore
 
         loop = asyncio.get_event_loop()
         transcript_queue: asyncio.Queue = asyncio.Queue()
@@ -320,6 +326,18 @@ async def transcribe_ws(ws: WebSocket):
 
 # ── Entry point ────────────────────────────────────────────────────────────────
 
+def _onnx_model_dir():
+    """Return the ONNX models storage directory (platform-specific)."""
+    import platform
+    if platform.system() == "Windows":
+        base = os.environ.get("APPDATA", os.path.expanduser("~"))
+    elif platform.system() == "Darwin":
+        base = os.path.expanduser("~/Library/Application Support")
+    else:
+        base = os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config"))
+    return os.path.join(base, "com.transkit.desktop", "onnx-models")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Transkit Local Sidecar server")
     parser.add_argument("--port", type=int, default=49152)
@@ -335,6 +353,8 @@ def main():
     parser.add_argument("--llm-temperature", type=float, default=0.3)
     parser.add_argument("--llm-max-tokens", type=int, default=512)
     parser.add_argument("--log-level", default="info")
+    parser.add_argument("--asr-backend", default="mlx", choices=["mlx", "onnx"],
+                        help="ASR backend: 'mlx' (mlx-whisper) or 'onnx' (sherpa-onnx)")
     # Comma-separated list of components explicitly installed by the user
     # (e.g. "llm,stt,tts").  Empty string means "use capability probe only".
     parser.add_argument("--installed-components", default="")
@@ -353,6 +373,7 @@ def main():
         "tts_ref_audio": args.tts_ref_audio,
         "llm_temperature": args.llm_temperature,
         "llm_max_tokens": args.llm_max_tokens,
+        "asr_backend": args.asr_backend,
     }
 
     # Configure TTS engine with user-specified engine + model (if any)
@@ -400,8 +421,12 @@ def main():
             import tts as _tts_mod  # type: ignore  # noqa
             tasks.append(_load("tts", _tts_mod.ensure_loaded))
         if "stt" in caps:
-            import asr as _asr  # type: ignore  # noqa
-            tasks.append(_load("stt", lambda: _asr.ensure_loaded(cfg["asr_model"])))
+            if cfg.get("asr_backend", "mlx") == "onnx":
+                # ONNX models load lazily on first WebSocket connect — skip eager preload
+                pass
+            else:
+                import asr as _asr  # type: ignore  # noqa
+                tasks.append(_load("stt", lambda: _asr.ensure_loaded(cfg["asr_model"])))
 
         await asyncio.gather(*tasks, return_exceptions=True)
 
