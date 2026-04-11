@@ -10,7 +10,7 @@ import { listen } from '@tauri-apps/api/event';
 import {
     MdMemory, MdPlayArrow, MdStop, MdDownload,
     MdMic, MdRecordVoiceOver, MdWarning, MdCheckCircle, MdError, MdDelete, MdStorage, MdRefresh,
-    MdFolderOpen, MdHourglassEmpty,
+    MdFolderOpen, MdHourglassEmpty, MdSettings,
 } from 'react-icons/md';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 
