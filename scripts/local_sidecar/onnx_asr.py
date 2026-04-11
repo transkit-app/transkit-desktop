@@ -362,6 +362,17 @@ class StreamingSession(object):
         # Read cursor into _buffer (bytes)
         self._read_pos = 0
 
+        # Guard: track whether any speech (above RMS threshold) was heard in
+        # the current segment.  Commits on pure-silence segments are suppressed
+        # so the model cannot hallucinate in a tight loop when the source is
+        # muted or stopped.
+        self._seg_has_speech = False
+
+        # Cross-commit dedup: remember the last emitted final text and the time
+        # it was emitted so we can suppress immediate exact repeats.
+        self._last_final_text = ""
+        self._last_final_time = 0.0
+
     def start(self):
         self._running = True
         self._worker = threading.Thread(target=self._loop, daemon=True)
@@ -426,8 +437,9 @@ class StreamingSession(object):
                 self._commit(recognizer)
                 return
         else:
-            # Speech frame — reset silence clock
+            # Speech frame — reset silence clock and mark speech present
             self._silence_start = None
+            self._seg_has_speech = True
 
         # Hard cap
         if self._seg_duration >= _MAX_SEGMENT_S:
@@ -463,10 +475,19 @@ class StreamingSession(object):
             return
 
         audio = np.concatenate(self._seg_samples)
+        had_speech = self._seg_has_speech
+
         self._seg_samples = []
         self._seg_duration = 0.0
         self._silence_start = None
         self._last_provisional_time = 0.0
+        self._seg_has_speech = False
+
+        # Skip inference on pure-silence segments — the model hallucinates when
+        # fed silence, causing an infinite loop of repeated transcripts when the
+        # audio source is muted or stopped.
+        if not had_speech:
+            return
 
         if len(audio) < int(SAMPLE_RATE * _MIN_COMMIT_S):
             return  # too short — likely mic noise, discard to avoid hallucination
@@ -476,7 +497,15 @@ class StreamingSession(object):
             stream.accept_waveform(SAMPLE_RATE, audio)
             recognizer.decode_stream(stream)
             text = _normalize_text(stream.result.text.strip())
-            if text and not _is_hallucination(text) and self.on_transcript:
+            if not text or _is_hallucination(text):
+                return
+            # Suppress exact duplicate emitted within 3 seconds (cross-commit dedup)
+            now = time.time()
+            if text == self._last_final_text and now - self._last_final_time < 3.0:
+                return
+            self._last_final_text = text
+            self._last_final_time = now
+            if self.on_transcript:
                 # Clear provisional then emit final
                 self.on_transcript("", False, None)
                 self.on_transcript(text, True, None)
