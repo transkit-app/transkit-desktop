@@ -56,7 +56,7 @@ const SVC_LABELS = {
     edge_tts: 'Edge TTS', elevenlabs_tts: 'ElevenLabs', google_tts: 'Google TTS',
     google_cloud_tts: 'Google Cloud TTS',
     openai_tts: 'OpenAI TTS', vieneu_tts: 'VieNeu', lingva: 'Lingva',
-    local_sidecar_tts: 'Local Model TTS',
+    local_sidecar_tts: 'Local Model TTS', onnx_stt: 'ONNX STT',
 };
 function _svcLabel(name) {
     return SVC_LABELS[name] ?? name.replace(/_stt|_tts/g, '').replace(/_/g, ' ');
@@ -263,6 +263,17 @@ export default function Monitor() {
     const [pickedStt, setPickedStt] = useState(null);
     const [pickedTts, setPickedTts] = useState(null);
     const pendingSvcOverrideRef = useRef(null); // service key to use on next start()
+
+    // ── Guard: activeTranscriptionService must be in the service list ────────
+    // If it points to an orphaned/deleted instance (not in list), auto-heal to
+    // the first item in the list so Monitor doesn't silently use a dangling key.
+    useEffect(() => {
+        if (!transcriptionServiceList || transcriptionServiceList.length === 0) return;
+        if (!activeTranscriptionService) return;
+        if (!transcriptionServiceList.includes(activeTranscriptionService)) {
+            setActiveTranscriptionService(transcriptionServiceList[0]);
+        }
+    }, [transcriptionServiceList]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // ── Backward migration: old context keys → new format ────────────────────
     useEffect(() => {
@@ -784,7 +795,7 @@ export default function Monitor() {
 
         // Non-cloud providers: require an API key / token before proceeding.
         // transkit_cloud_stt, transkit_cloud_dictation, and local_sidecar_stt handle credentials internally (no API key needed).
-        const NO_KEY_SERVICES = ['transkit_cloud_stt', 'transkit_cloud_dictation', 'local_sidecar_stt'];
+        const NO_KEY_SERVICES = ['transkit_cloud_stt', 'transkit_cloud_dictation', 'local_sidecar_stt', 'onnx_stt'];
         if (!NO_KEY_SERVICES.includes(serviceName) && !transcriptionConfig.apiKey && !transcriptionConfig.token) {
             setErrorMsg(t('monitor.no_api_key', {
                 service: t('config.service.label'),

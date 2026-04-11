@@ -407,6 +407,23 @@
           "voice": "Giọng đọc",
           "speed": "Tốc độ"
         }
+      },
+      "onnx_stt": {
+        "engine": {
+          "ready": "Đã cài đặt ONNX engine",
+          "not_installed": "Chưa cài đặt ONNX engine",
+          "platform_sidecar": "Sử dụng shared sidecar venv",
+          "install": "Cài đặt Engine"
+        },
+        "model": {
+          "active": "Mô hình đang dùng",
+          "active_hint": "HuggingFace repo ID của mô hình đã tải",
+          "download_title": "Tải mô hình",
+          "download_hint": "Nhập HuggingFace repo ID của mô hình Zipformer RNNT ONNX.",
+          "download_btn": "Tải về",
+          "downloaded": "Mô hình đã tải",
+          "incomplete": "(chưa hoàn tất)"
+        }
       }
     },
     "monitor": {
@@ -1030,11 +1047,13 @@
           "quota_reached": "Đã dùng hết quota.",
           "upgrade_plan": "Nâng cấp gói",
           "loading_usage": "Đang tải dữ liệu sử dụng…",
-          "not_available": "Transkit Cloud không khả dụng trong bản build này.",
-          "use_case_note": "Cloud Dictation tối ưu cho phiên ngắn. Để phiên dài liên tục, dùng Transkit Cloud (STT)."
+          "not_available": "Transkit Cloud không khả dụng trong bản build này."
         },
         "local_sidecar_stt": {
           "title": "Offline model STT"
+        },
+        "onnx_stt": {
+          "title": "Offline STT (ONNX)"
         }
       }
     },

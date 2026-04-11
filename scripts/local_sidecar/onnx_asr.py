@@ -1,11 +1,15 @@
 """
 Transkit Local Sidecar — ONNX ASR Engine (sherpa-onnx)
 
-Drop-in replacement for asr.py using sherpa-onnx instead of mlx-whisper.
-Supports Zipformer RNNT transducer models downloaded from HuggingFace.
+Supports offline (non-streaming) Zipformer RNNT / CTC / MedASR models from k2-fsa /
+csukuangfj exported with the standard icefall ONNX exporter.
 
-Accepts raw PCM (s16le, 16 kHz, mono) and transcribes using online (streaming)
-recognition with endpoint detection.
+Uses OfflineRecognizer with silence-based batching for real-time transcription:
+  - Accumulate audio into a rolling buffer
+  - Detect silence (RMS below threshold for N seconds)
+  - Feed the buffered segment to OfflineRecognizer and emit final text
+
+Accepts raw PCM (s16le, 16 kHz, mono).
 """
 
 import glob
@@ -19,11 +23,18 @@ import numpy as np
 # ── Globals ────────────────────────────────────────────────────────────────────
 
 _lock = threading.Lock()
-_recognizer_cache = {}   # model_dir -> sherpa_onnx.OnlineRecognizer
+_recognizer_cache = {}   # model_dir -> (sherpa_onnx.OfflineRecognizer, str loader_tag)
 _loaded_model_dir = None  # type: Optional[str]
 
 SAMPLE_RATE = 16000
 BYTES_PER_SAMPLE = 2  # s16le
+
+# ── Silence / batching constants ───────────────────────────────────────────────
+_SILENCE_RMS_THRESHOLD   = 0.008   # RMS below this = silence
+_SILENCE_COMMIT_S        = 0.7     # seconds of silence → commit buffered audio
+_MAX_SEGMENT_S           = 20.0    # hard cap: commit even without silence
+_PROVISIONAL_INTERVAL_S  = 2.5     # run inference during long speech for provisional text
+_POLL_INTERVAL_S         = 0.05    # 50 ms polling loop
 
 
 # ── Model file detection ───────────────────────────────────────────────────────
@@ -32,37 +43,48 @@ def _find_model_files(model_dir):
     # type: (str) -> dict
     """
     Auto-detect ONNX model files in a directory.
-    Prefers int8 quantized variants when available.
-
-    Returns dict with keys: encoder, decoder, joiner, tokens
+    Returns dict with keys: encoder, decoder, joiner, tokens, model_type
     Raises FileNotFoundError if required files are missing.
     """
+    if not os.path.isdir(model_dir):
+        raise FileNotFoundError(
+            "Model directory not found: '{}'. "
+            "Go to Settings → Offline STT and download the model first.".format(model_dir)
+        )
+
     def _pick(patterns):
-        # Try int8 first, then generic
+        # Prefer full-precision over int8 within each pattern group.
         for pat in patterns:
-            int8_matches = glob.glob(os.path.join(model_dir, "*.int8" + pat.lstrip("*")))
-            if int8_matches:
-                return int8_matches[0]
+            matches = sorted(glob.glob(os.path.join(model_dir, pat)))
+            non_int8 = [m for m in matches if ".int8." not in os.path.basename(m)]
+            if non_int8:
+                return non_int8[0]
         for pat in patterns:
-            matches = glob.glob(os.path.join(model_dir, pat))
+            matches = sorted(glob.glob(os.path.join(model_dir, pat)))
             if matches:
                 return matches[0]
         return None
 
-    encoder = _pick(["*encoder*.onnx"])
+    encoder = _pick(["*encoder*.onnx", "model.onnx", "model.int8.onnx", "*model*.onnx"])
     decoder = _pick(["*decoder*.onnx"])
     joiner  = _pick(["*joiner*.onnx"])
-    tokens  = os.path.join(model_dir, "tokens.txt")
+    tokens  = _pick(["tokens.txt", "*tokens*.txt", "*.model", "*vocab*.txt"])
+    # Separate single-file model (used by medasr_ctc, wenet_ctc, etc.)
+    single_model = _pick(["model.onnx", "model.int8.onnx"])
+
+    # CTC: no decoder AND no joiner
+    is_ctc = encoder and not decoder and not joiner
 
     missing = []
     if not encoder:
-        missing.append("encoder*.onnx")
-    if not decoder:
-        missing.append("decoder*.onnx")
-    if not joiner:
-        missing.append("joiner*.onnx")
-    if not os.path.isfile(tokens):
-        missing.append("tokens.txt")
+        missing.append("encoder*.onnx or model.onnx")
+    if not is_ctc:
+        if not decoder:
+            missing.append("decoder*.onnx")
+        if not joiner:
+            missing.append("joiner*.onnx")
+    if not tokens:
+        missing.append("tokens.txt (or *.model)")
 
     if missing:
         raise FileNotFoundError(
@@ -73,36 +95,138 @@ def _find_model_files(model_dir):
         )
 
     return {
-        "encoder": encoder,
-        "decoder": decoder,
-        "joiner":  joiner,
-        "tokens":  tokens,
+        "encoder":      encoder,
+        "decoder":      decoder,
+        "joiner":       joiner,
+        "tokens":       tokens,
+        "single_model": single_model,
+        "model_type":   "ctc" if is_ctc else "transducer",
     }
 
 
+def _read_onnx_metadata(onnx_path):
+    # type: (str) -> dict
+    """
+    Extract sherpa-onnx metadata from the tail of an ONNX file.
+    ONNX files are protobuf — metadata_props strings appear verbatim near the end.
+    Returns a dict of key→value strings found in the last 4 KB.
+    """
+    meta = {}
+    try:
+        size = os.path.getsize(onnx_path)
+        with open(onnx_path, "rb") as f:
+            f.seek(max(0, size - 4096))
+            tail = f.read()
+        # Convert to printable ASCII for pattern matching
+        text = tail.decode("latin-1")
+        # Protobuf string fields appear as: \x0a\x<len><key>\x12\x<len><value>
+        # We scan for known keys and grab the value that follows.
+        import re
+        for m in re.finditer(r'([a-zA-Z_][a-zA-Z0-9_]{2,30})\x00*\x12.{1,3}([^\x00-\x1f]{1,40})', text):
+            meta[m.group(1)] = m.group(2).split('\x00')[0].split('\r')[0].strip()
+        # Also look for simple "key..value" protobuf encoding patterns
+        for m in re.finditer(r'([a-zA-Z_][a-zA-Z0-9_]{2,30})[\x00-\x20]{2,4}([a-zA-Z0-9_\-\.]{1,40})', text):
+            k, v = m.group(1), m.group(2)
+            if k not in meta:
+                meta[k] = v
+    except Exception:
+        pass
+    return meta
+
+
+# ── Recognizer building ───────────────────────────────────────────────────────
+
 def _build_recognizer(model_dir):
-    # type: (str) -> object
-    """Build and return a sherpa_onnx.OnlineRecognizer for the given model dir."""
+    # type: (str) -> tuple
+    """
+    Build and return (OfflineRecognizer, loader_tag) for the given model dir.
+    Tries multiple loaders in order; raises RuntimeError if none succeed.
+    """
     import sherpa_onnx  # type: ignore
 
     files = _find_model_files(model_dir)
+    errors = []
 
-    recognizer = sherpa_onnx.OnlineRecognizer.from_transducer(
-        encoder=files["encoder"],
-        decoder=files["decoder"],
-        joiner=files["joiner"],
-        tokens=files["tokens"],
-        num_threads=2,
-        sample_rate=SAMPLE_RATE,
-        feature_dim=80,
-        enable_endpoint_detection=True,
-        rule1_min_trailing_silence=2.4,
-        rule2_min_trailing_silence=1.2,
-        rule3_min_utterance_length=20.0,
-        decoding_method="greedy_search",
-        max_active_paths=4,
+    # ── Transducer (RNNT) loaders ──────────────────────────────────────────────
+    if files["model_type"] == "transducer":
+        enc, dec, joi, tok = (
+            files["encoder"], files["decoder"], files["joiner"], files["tokens"]
+        )
+        bpe = _pick_bpe(model_dir)
+
+        for loader_tag in ("transducer",):
+            try:
+                r = sherpa_onnx.OfflineRecognizer.from_transducer(
+                    encoder=enc,
+                    decoder=dec,
+                    joiner=joi,
+                    tokens=tok,
+                    num_threads=2,
+                    sample_rate=SAMPLE_RATE,
+                    feature_dim=80,
+                    decoding_method="greedy_search",
+                    modeling_unit="bpe" if bpe else "cjkchar",
+                    bpe_vocab=bpe or "",
+                )
+                return r, loader_tag
+            except Exception as e:
+                errors.append("transducer: " + str(e))
+
+    # ── CTC / single-model loaders ─────────────────────────────────────────────
+    # Use the single-model file if available, fall back to encoder.
+    ctc_model = files["single_model"] or files["encoder"]
+    tok = files["tokens"]
+
+    # Try each known offline classmethod in preference order
+    ctc_loaders = [
+        ("medasr_ctc",    lambda: sherpa_onnx.OfflineRecognizer.from_medasr_ctc(
+            model=ctc_model, tokens=tok, num_threads=2)),
+        ("zipformer_ctc", lambda: sherpa_onnx.OfflineRecognizer.from_zipformer_ctc(
+            model=ctc_model, tokens=tok, num_threads=2)),
+        ("nemo_ctc",      lambda: sherpa_onnx.OfflineRecognizer.from_nemo_ctc(
+            model=ctc_model, tokens=tok, num_threads=2)),
+        ("wenet_ctc",     lambda: sherpa_onnx.OfflineRecognizer.from_wenet_ctc(
+            model=ctc_model, tokens=tok, num_threads=2)),
+    ]
+
+    for loader_tag, loader_fn in ctc_loaders:
+        if not hasattr(sherpa_onnx.OfflineRecognizer, "from_" + loader_tag):
+            continue
+        try:
+            return loader_fn(), loader_tag
+        except Exception as e:
+            errors.append(loader_tag + ": " + str(e))
+
+    # Also try transducer for CTC-detected models (sometimes misdetected)
+    if files["model_type"] == "ctc" and files.get("decoder") and files.get("joiner"):
+        try:
+            r = sherpa_onnx.OfflineRecognizer.from_transducer(
+                encoder=files["encoder"],
+                decoder=files["decoder"],
+                joiner=files["joiner"],
+                tokens=tok,
+                num_threads=2,
+                sample_rate=SAMPLE_RATE,
+                feature_dim=80,
+            )
+            return r, "transducer_fallback"
+        except Exception as e:
+            errors.append("transducer_fallback: " + str(e))
+
+    raise RuntimeError(
+        "No compatible sherpa-onnx loader found for model in '{}'.\n"
+        "Tried: {}\n"
+        "Make sure you downloaded a sherpa-onnx compatible model.".format(
+            model_dir, "; ".join(errors) if errors else "none"
+        )
     )
-    return recognizer
+
+
+def _pick_bpe(model_dir):
+    # type: (str) -> Optional[str]
+    """Return path to bpe.model if present, else None."""
+    path = os.path.join(model_dir, "bpe.model")
+    return path if os.path.isfile(path) else None
 
 
 # ── Public API ─────────────────────────────────────────────────────────────────
@@ -114,10 +238,7 @@ def is_loaded():
 
 def ensure_loaded(model_dir):
     # type: (str) -> None
-    """
-    Pre-load (and cache) the recognizer for the given model directory.
-    Thread-safe. Raises if model files are missing or sherpa_onnx is not installed.
-    """
+    """Pre-load and cache the recognizer. Thread-safe."""
     global _loaded_model_dir
     with _lock:
         if model_dir not in _recognizer_cache:
@@ -128,14 +249,13 @@ def ensure_loaded(model_dir):
                     "sherpa-onnx is not installed. "
                     "Go to Settings → Offline STT and click Install Engine."
                 )
-            recognizer = _build_recognizer(model_dir)
-            _recognizer_cache[model_dir] = recognizer
+            _recognizer_cache[model_dir] = _build_recognizer(model_dir)
         _loaded_model_dir = model_dir
 
 
 def _get_recognizer(model_dir):
-    # type: (str) -> object
-    """Get cached recognizer, building if needed (lock must NOT be held by caller)."""
+    # type: (str) -> tuple
+    """Get cached (recognizer, loader_tag), building if needed."""
     with _lock:
         if model_dir not in _recognizer_cache:
             _recognizer_cache[model_dir] = _build_recognizer(model_dir)
@@ -144,63 +264,78 @@ def _get_recognizer(model_dir):
 
 def _pcm_to_float(pcm_bytes):
     # type: (bytes) -> np.ndarray
-    """Convert raw s16le PCM bytes -> float32 numpy array."""
     samples = np.frombuffer(pcm_bytes, dtype=np.int16).astype(np.float32)
     return samples / 32768.0
 
 
+def _rms(samples):
+    # type: (np.ndarray) -> float
+    if len(samples) == 0:
+        return 0.0
+    return float(np.sqrt(np.mean(samples ** 2)))
+
+
+def _normalize_text(text):
+    # type: (str) -> str
+    """
+    LibriSpeech-trained k2-fsa models output ALL-CAPS.
+    If >70% of alphabetic chars are uppercase, convert to lowercase.
+    """
+    if not text:
+        return text
+    letters = [c for c in text if c.isalpha()]
+    if letters and sum(c.isupper() for c in letters) / len(letters) > 0.7:
+        return text.lower()
+    return text
+
+
 # ── Streaming session ──────────────────────────────────────────────────────────
-
-# Two-tier realtime constants
-_PROVISIONAL_INTERVAL_S = 0.3    # how often to poll for provisional text
-_SILENCE_RMS_THRESHOLD  = 0.008  # RMS below this = silence
-_CHUNK_STEP_SAMPLES     = int(SAMPLE_RATE * 0.05)  # 50ms feed step
-
 
 class StreamingSession(object):
     """
-    Maintains an audio buffer fed by raw PCM bytes.
-    Fires on_transcript(text, is_final, language) when segments are ready.
+    Buffers PCM audio and transcribes using OfflineRecognizer with silence detection.
 
-    Uses sherpa-onnx's built-in endpoint detection for commit decisions.
-    Provisional text is emitted periodically from the current online result.
+    Audio is accumulated until either:
+      - Silence (_SILENCE_RMS_THRESHOLD RMS) lasts >= _SILENCE_COMMIT_S seconds
+      - Segment duration reaches _MAX_SEGMENT_S (hard cap)
 
-    API is compatible with the mlx-whisper StreamingSession in asr.py.
+    When committed, the buffered audio is fed to OfflineRecognizer and the
+    transcript is emitted as a final result.
+
+    API is identical to the mlx-whisper StreamingSession in asr.py.
     """
 
     def __init__(
         self,
-        repo,            # type: str  (local model directory path)
-        language=None,   # type: Optional[str]  (not used for ONNX, kept for API compat)
-        chunk_seconds=7,   # kept for API compat — not used
-        stride_seconds=5,  # kept for API compat — not used
-        task="transcribe",  # kept for API compat — ONNX is always transcribe
+        repo,
+        language=None,       # kept for API compat — not used for offline ONNX
+        chunk_seconds=7,     # kept for API compat
+        stride_seconds=5,    # kept for API compat
+        task="transcribe",   # kept for API compat
         on_transcript=None,  # type: Optional[Callable]
         on_status=None,      # type: Optional[Callable]
     ):
-        self.model_dir = repo  # repo here is already the local path
+        self.model_dir    = repo
         self.on_transcript = on_transcript
-        self.on_status = on_status
+        self.on_status     = on_status
 
-        self._buffer = bytearray()
-        self._buffer_lock = threading.Lock()
-        self._running = False
-        self._worker = None  # type: Optional[threading.Thread]
+        self._buffer      = bytearray()
+        self._buf_lock    = threading.Lock()
+        self._running     = False
+        self._worker      = None  # type: Optional[threading.Thread]
 
-        # Feed position: how many bytes have been fed to the stream
-        self._fed_pos = 0
-        # Committed position in _buffer: bytes before this are finalized
-        self._committed_pos = 0
+        # Segment buffer: audio since last commit (as list of float32 arrays)
+        self._seg_samples = []    # type: list
+        self._seg_duration = 0.0  # seconds
 
-        # Accumulated text within current utterance (between resets)
-        self._utterance_text = ""
-        # Last provisional text emitted
-        self._last_provisional = ""
+        # Silence tracking
+        self._silence_start = None  # type: Optional[float]  wall-clock time silence began
+
+        # Provisional inference tracking
         self._last_provisional_time = 0.0
 
-        # sherpa-onnx recognizer and stream (created in worker thread after ensure_loaded)
-        self._recognizer = None
-        self._stream = None
+        # Read cursor into _buffer (bytes)
+        self._read_pos = 0
 
     def start(self):
         self._running = True
@@ -214,111 +349,112 @@ class StreamingSession(object):
 
     def feed(self, pcm_bytes):
         # type: (bytes) -> None
-        with self._buffer_lock:
+        with self._buf_lock:
             self._buffer.extend(pcm_bytes)
 
     # ── Internal ────────────────────────────────────────────────────────────────
 
     def _loop(self):
-        # Initialize recognizer and create a streaming session
         try:
-            self._recognizer = _get_recognizer(self.model_dir)
-            self._stream = self._recognizer.create_stream()
+            recognizer, loader_tag = _get_recognizer(self.model_dir)
         except Exception as e:
             if self.on_status:
-                self.on_status("ONNX ASR load error: " + str(e))
+                self.on_status("ONNX load error: " + str(e))
             return
 
         if self.on_status:
             self.on_status("ONNX ASR ready")
 
         while self._running:
-            time.sleep(0.05)  # 50ms polling interval
-            self._process_pending()
+            time.sleep(_POLL_INTERVAL_S)
+            self._ingest(recognizer)
 
-        # Drain remaining audio on stop
-        self._drain()
+        # Drain on stop
+        self._commit(recognizer)
 
-    def _process_pending(self):
-        """Feed any new PCM bytes to the stream and handle results."""
-        with self._buffer_lock:
-            buf = bytes(self._buffer)
+    def _ingest(self, recognizer):
+        """Read new PCM from buffer, update segment, detect silence, maybe commit."""
+        with self._buf_lock:
+            buf_snapshot = bytes(self._buffer)
 
-        total_bytes = len(buf)
-        if total_bytes <= self._fed_pos:
+        total = len(buf_snapshot)
+        if total <= self._read_pos:
             return
 
-        # Feed new audio to the stream in chunks
-        new_bytes = buf[self._fed_pos:total_bytes]
+        new_bytes = buf_snapshot[self._read_pos:total]
+        self._read_pos = total
+
         samples = _pcm_to_float(new_bytes)
+        chunk_rms = _rms(samples)
+        now = time.time()
 
-        step_bytes = _CHUNK_STEP_SAMPLES * BYTES_PER_SAMPLE
-        offset = 0
-        while offset < len(samples):
-            chunk = samples[offset:offset + _CHUNK_STEP_SAMPLES]
-            if len(chunk) == 0:
-                break
-            self._stream.accept_waveform(SAMPLE_RATE, chunk)
-            while self._recognizer.is_ready(self._stream):
-                self._recognizer.decode_stream(self._stream)
-            offset += _CHUNK_STEP_SAMPLES
+        # Accumulate into current segment
+        self._seg_samples.append(samples)
+        self._seg_duration += len(samples) / SAMPLE_RATE
 
-        self._fed_pos = total_bytes
+        if chunk_rms < _SILENCE_RMS_THRESHOLD:
+            # Silence frame
+            if self._silence_start is None:
+                self._silence_start = now
+            silence_dur = now - self._silence_start
+            if silence_dur >= _SILENCE_COMMIT_S and self._seg_duration > 0.2:
+                self._commit(recognizer)
+                return
+        else:
+            # Speech frame — reset silence clock
+            self._silence_start = None
 
-        # Check for endpoint detection
-        if self._recognizer.is_endpoint(self._stream):
-            current_text = self._recognizer.get_result(self._stream).text.strip()
-            # Combine with any previously accumulated utterance text
-            full_text = (self._utterance_text + " " + current_text).strip()
-
-            if full_text:
-                # Clear provisional before emitting final
-                if self.on_transcript:
-                    self.on_transcript("", False, None)
-                if self.on_transcript:
-                    self.on_transcript(full_text, True, None)
-
-            # Reset the stream for the next utterance
-            self._recognizer.reset(self._stream)
-            self._committed_pos = total_bytes
-            self._utterance_text = ""
-            self._last_provisional = ""
+        # Hard cap
+        if self._seg_duration >= _MAX_SEGMENT_S:
+            self._commit(recognizer)
             return
 
-        # Emit provisional text periodically
-        now = time.time()
-        if now - self._last_provisional_time >= _PROVISIONAL_INTERVAL_S:
-            current_text = self._recognizer.get_result(self._stream).text.strip()
-            combined = (self._utterance_text + " " + current_text).strip()
-            if combined and combined != self._last_provisional:
-                if self.on_transcript:
-                    self.on_transcript(combined, False, None)
-                self._last_provisional = combined
-            self._last_provisional_time = now
+        # Provisional inference during long continuous speech
+        if (self._seg_duration > 1.0 and
+                now - self._last_provisional_time >= _PROVISIONAL_INTERVAL_S):
+            self._run_provisional(recognizer)
 
-    def _drain(self):
-        """Flush any remaining audio after stop() is called."""
-        if self._stream is None or self._recognizer is None:
+    def _run_provisional(self, recognizer):
+        """Run inference on current buffer and emit provisional text."""
+        if not self._seg_samples:
+            return
+        audio = np.concatenate(self._seg_samples)
+        if len(audio) < int(SAMPLE_RATE * 0.5):
             return
         try:
-            with self._buffer_lock:
-                buf = bytes(self._buffer)
-            total_bytes = len(buf)
-            if total_bytes > self._fed_pos:
-                new_bytes = buf[self._fed_pos:total_bytes]
-                samples = _pcm_to_float(new_bytes)
-                self._stream.accept_waveform(SAMPLE_RATE, samples)
-                while self._recognizer.is_ready(self._stream):
-                    self._recognizer.decode_stream(self._stream)
-                self._fed_pos = total_bytes
+            stream = recognizer.create_stream()
+            stream.accept_waveform(SAMPLE_RATE, audio)
+            recognizer.decode_stream(stream)
+            text = _normalize_text(stream.result.text.strip())
+            if text and self.on_transcript:
+                self.on_transcript(text, False, None)  # is_final=False
+        except Exception:
+            pass
+        self._last_provisional_time = time.time()
 
-            final_text = self._recognizer.get_result(self._stream).text.strip()
-            full_text = (self._utterance_text + " " + final_text).strip()
-            if full_text:
-                if self.on_transcript:
-                    self.on_transcript("", False, None)
-                if self.on_transcript:
-                    self.on_transcript(full_text, True, None)
+    def _commit(self, recognizer):
+        """Transcribe accumulated segment and emit final result."""
+        if not self._seg_samples:
+            return
+
+        audio = np.concatenate(self._seg_samples)
+        self._seg_samples = []
+        self._seg_duration = 0.0
+        self._silence_start = None
+        self._last_provisional_time = 0.0
+
+        if len(audio) < int(SAMPLE_RATE * 0.1):
+            return  # too short to transcribe
+
+        try:
+            stream = recognizer.create_stream()
+            stream.accept_waveform(SAMPLE_RATE, audio)
+            recognizer.decode_stream(stream)
+            text = _normalize_text(stream.result.text.strip())
+            if text and self.on_transcript:
+                # Clear provisional then emit final
+                self.on_transcript("", False, None)
+                self.on_transcript(text, True, None)
         except Exception as e:
             if self.on_status:
-                self.on_status("ONNX ASR drain error: " + str(e))
+                self.on_status("ONNX decode error: " + str(e))

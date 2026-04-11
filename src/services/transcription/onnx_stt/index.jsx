@@ -1,3 +1,9 @@
-export { OnnxSTTClient as STTClient } from './client';
-export { default as info } from './info';
-export { Config } from './Config';
+import { OnnxSTTClient } from './client';
+import { info } from './info';
+import { Config } from './Config';
+
+export { OnnxSTTClient as STTClient, info, Config };
+
+export function createClient(options = {}) {
+    return new OnnxSTTClient();
+}

@@ -71,10 +71,11 @@ pub struct OnnxModel {
     pub repo_id:     String,
     pub path:        String,
     pub size_bytes:  u64,
-    pub has_encoder: bool,
+    pub has_encoder: bool,  // true for encoder*.onnx OR model*.onnx (CTC)
     pub has_decoder: bool,
     pub has_joiner:  bool,
     pub has_tokens:  bool,
+    pub is_ctc:      bool,  // CTC model: no decoder/joiner needed
 }
 
 // ── Config passed from frontend ───────────────────────────────────────────────
@@ -531,7 +532,7 @@ pub fn onnx_engine_start(
     let port = find_free_port(49200);
     info!("[OnnxEngine] Starting on port {}", port);
 
-    let asr_model = config.asr_model.unwrap_or_else(|| "hynt/Zipformer-30M-RNNT-6000h".to_string());
+    let asr_model = config.asr_model.unwrap_or_else(|| "csukuangfj/sherpa-onnx-streaming-zipformer-small-en-2023-06-26".to_string());
     let log_level = config.log_level.unwrap_or_else(|| "info".to_string());
 
     let (home, path_env) = base_env();
@@ -753,11 +754,19 @@ async fn download_model_async(repo: &str, repo_dir: &PathBuf, window: &Window) -
         .and_then(|s| s.as_array())
         .ok_or("HuggingFace API response missing 'siblings' field")?;
 
-    // Filter for .onnx files and tokens.txt
+    // Filter for .onnx files, tokens, models, and config files
     let files_to_download: Vec<String> = siblings
         .iter()
         .filter_map(|s| s.get("rfilename").and_then(|f| f.as_str()).map(|f| f.to_string()))
-        .filter(|f| f.ends_with(".onnx") || f == "tokens.txt")
+        .filter(|f| {
+            let lf = f.to_lowercase();
+            f.ends_with(".onnx") ||
+            lf.contains("tokens") ||
+            f.ends_with(".model") ||
+            f.ends_with(".yaml") ||
+            f.ends_with(".json") ||
+            lf.contains("vocab")
+        })
         .collect();
 
     if files_to_download.is_empty() {
@@ -879,10 +888,16 @@ pub fn onnx_model_list() -> Vec<OnnxModel> {
         // Convert back to repo_id: "hynt__Zipformer-30M" -> "hynt/Zipformer-30M"
         let repo_id = dir_name.replacen("__", "/", 1);
 
-        let has_encoder = has_glob(&path, "encoder");
+        let has_encoder_file = has_glob(&path, "encoder");
+        let has_model_file   = has_glob(&path, "model");   // CTC: model.onnx / model.int8.onnx
+        let has_encoder = has_encoder_file || has_model_file;
         let has_decoder = has_glob(&path, "decoder");
-        let has_joiner = has_glob(&path, "joiner");
-        let has_tokens = path.join("tokens.txt").exists();
+        let has_joiner  = has_glob(&path, "joiner");
+        let has_tokens  = path.join("tokens.txt").exists() ||
+                         has_glob(&path, "tokens") ||
+                         has_glob(&path, ".model") ||
+                         has_glob(&path, "vocab");
+        let is_ctc = has_encoder && !has_decoder && !has_joiner;
         let size_bytes = dir_size(&path);
 
         models.push(OnnxModel {
@@ -893,6 +908,7 @@ pub fn onnx_model_list() -> Vec<OnnxModel> {
             has_decoder,
             has_joiner,
             has_tokens,
+            is_ctc,
         });
     }
 
@@ -909,8 +925,14 @@ fn has_glob(dir: &PathBuf, pattern: &str) -> bool {
             .file_name()
             .to_string_lossy()
             .to_lowercase();
-        if name.contains(pattern) && name.ends_with(".onnx") {
-            return true;
+        if matches!(pattern, "encoder" | "decoder" | "joiner" | "model") {
+            if name.contains(pattern) && name.ends_with(".onnx") {
+                return true;
+            }
+        } else {
+            if name.contains(pattern) {
+                return true;
+            }
         }
     }
     false

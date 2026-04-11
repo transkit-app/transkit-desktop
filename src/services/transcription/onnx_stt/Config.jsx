@@ -24,7 +24,7 @@ export function Config(props) {
         instanceKey,
         {
             [INSTANCE_NAME_CONFIG_KEY]: t('services.transcription.onnx_stt.title', { defaultValue: 'Offline STT (ONNX)' }),
-            asrModel: 'hynt/Zipformer-30M-RNNT-6000h',
+            asrModel: 'csukuangfj/sherpa-onnx-streaming-zipformer-small-en-2023-06-26',
         },
         { sync: false }
     );
@@ -36,6 +36,7 @@ export function Config(props) {
     const [installProgress, setInstallProgress] = useState(null);
     const [downloading, setDownloading] = useState(false);
     const [downloadProgress, setDownloadProgress] = useState(null);
+    const [engineStatus, setEngineStatus] = useState({ running: false, port: 0 });
 
     const refreshSetup = useCallback(() => {
         invoke('onnx_engine_check_setup').then(setSetupStatus).catch(() => {});
@@ -45,10 +46,15 @@ export function Config(props) {
         invoke('onnx_model_list').then(setModels).catch(() => {});
     }, []);
 
+    const refreshStatus = useCallback(() => {
+        invoke('onnx_engine_status').then(setEngineStatus).catch(() => {});
+    }, []);
+
     useEffect(() => {
         refreshSetup();
         refreshModels();
-    }, [refreshSetup, refreshModels]);
+        refreshStatus();
+    }, [refreshSetup, refreshModels, refreshStatus]);
 
     // Listen for install progress events
     useEffect(() => {
@@ -68,6 +74,18 @@ export function Config(props) {
         }).then(fn => { unlisten = fn; }).catch(() => {});
         return () => { if (unlisten) unlisten(); };
     }, [refreshSetup]);
+
+    // Listen for engine status events
+    useEffect(() => {
+        const listeners = [];
+        listen('onnx-engine://ready', (e) => {
+            setEngineStatus({ running: true, port: e.payload.port });
+        }).then(fn => listeners.push(fn));
+        listen('onnx-engine://stopped', () => {
+            setEngineStatus({ running: false, port: 0 });
+        }).then(fn => listeners.push(fn));
+        return () => { listeners.forEach(fn => fn()); };
+    }, []);
 
     // Listen for model download progress events
     useEffect(() => {
@@ -99,16 +117,42 @@ export function Config(props) {
         }
     };
 
-    const handleDownload = async () => {
-        const repo = repoInput.trim();
-        if (!repo) return;
+    const downloadRepo = async (repo) => {
+        const r = (repo || '').trim();
+        if (!r) return;
         setDownloading(true);
-        setDownloadProgress({ message: `Starting download of ${repo}...`, percent: 0 });
+        setDownloadProgress({ message: `Starting download of ${r}...`, percent: 0 });
         try {
-            await invoke('onnx_model_download', { repo });
+            await invoke('onnx_model_download', { repo: r });
         } catch (err) {
             setDownloading(false);
             setDownloadProgress({ message: `Failed: ${err}`, percent: 0, error: true });
+        }
+    };
+
+    const handleDownload = async () => {
+        await downloadRepo(repoInput);
+    };
+
+    const handleStart = async () => {
+        try {
+            await invoke('onnx_engine_start', {
+                config: {
+                    asr_model: config.asrModel || undefined,
+                }
+            });
+            refreshStatus();
+        } catch (err) {
+            console.error('[OnnxSTT] Start failed:', err);
+        }
+    };
+
+    const handleStop = async () => {
+        try {
+            await invoke('onnx_engine_stop');
+            refreshStatus();
+        } catch (err) {
+            console.error('[OnnxSTT] Stop failed:', err);
         }
     };
 
@@ -145,7 +189,7 @@ export function Config(props) {
                         ? <MdCheckCircle className='text-lg flex-shrink-0' />
                         : <MdHourglassEmpty className='text-lg flex-shrink-0' />}
                     <div className='flex flex-col gap-0.5 min-w-0'>
-                        <span>
+                        <span className='font-medium'>
                             {isReady
                                 ? t('config.onnx_stt.engine.ready', { defaultValue: 'ONNX engine installed' })
                                 : t('config.onnx_stt.engine.not_installed', { defaultValue: 'ONNX engine not installed' })}
@@ -158,17 +202,52 @@ export function Config(props) {
                             </span>
                         )}
                     </div>
-                    {!isReady && !installing && (
-                        <Button
-                            size='sm'
-                            color='warning'
-                            variant='flat'
-                            className='ml-auto flex-shrink-0'
-                            onPress={handleInstall}
-                        >
-                            {t('config.onnx_stt.engine.install', { defaultValue: 'Install Engine' })}
-                        </Button>
-                    )}
+                </div>
+
+                {/* Server controls */}
+                <div className='flex flex-col gap-3 p-3 bg-content2 rounded-lg'>
+                    <div className='flex items-center justify-between'>
+                        <div className='flex flex-col'>
+                            <span className='text-sm font-medium'>{t('config.onnx_stt.server.title', { defaultValue: 'ONNX Server' })}</span>
+                            <span className='text-xs text-default-400'>
+                                {engineStatus?.running 
+                                    ? t('config.onnx_stt.server.running', { defaultValue: 'Running on port {{port}}', port: engineStatus.port })
+                                    : t('config.onnx_stt.server.stopped', { defaultValue: 'Server is stopped' })}
+                            </span>
+                        </div>
+                        <div className='flex gap-2'>
+                            {!engineStatus?.running ? (
+                                <Button
+                                    size='sm'
+                                    color='primary'
+                                    variant='flat'
+                                    isDisabled={!isReady || installing}
+                                    onPress={handleStart}
+                                >
+                                    {t('common.start', { defaultValue: 'Start' })}
+                                </Button>
+                            ) : (
+                                <Button
+                                    size='sm'
+                                    color='danger'
+                                    variant='flat'
+                                    onPress={handleStop}
+                                >
+                                    {t('common.stop', { defaultValue: 'Stop' })}
+                                </Button>
+                            )}
+                            {!isReady && !installing && (
+                                <Button
+                                    size='sm'
+                                    color='warning'
+                                    variant='flat'
+                                    onPress={handleInstall}
+                                >
+                                    {t('config.onnx_stt.engine.install', { defaultValue: 'Install Engine' })}
+                                </Button>
+                            )}
+                        </div>
+                    </div>
                 </div>
 
                 {/* Install progress */}
@@ -189,67 +268,92 @@ export function Config(props) {
                 )}
 
                 {/* Instance name */}
-                <div className='config-item'>
-                    <h3 className='my-auto text-sm'>{t('services.instance_name')}</h3>
-                    <input
-                        className='input-base max-w-[60%]'
+                <div className='config-item flex-col items-stretch'>
+                    <Input
+                        label={t('services.instance_name')}
+                        labelPlacement='outside'
                         value={config[INSTANCE_NAME_CONFIG_KEY] ?? ''}
-                        onChange={e => setConfig({ ...config, [INSTANCE_NAME_CONFIG_KEY]: e.target.value })}
+                        variant='bordered'
+                        classNames={{ label: 'text-xs text-default-500 pb-1' }}
+                        onValueChange={v => setConfig({ ...config, [INSTANCE_NAME_CONFIG_KEY]: v })}
                     />
                 </div>
 
                 {/* Active model selector */}
-                <div className='config-item'>
-                    <div>
-                        <h3 className='text-sm'>
-                            {t('config.onnx_stt.model.active', { defaultValue: 'Active model' })}
-                        </h3>
-                        <p className='text-xs text-default-400'>
-                            {t('config.onnx_stt.model.active_hint', { defaultValue: 'HuggingFace repo ID of the downloaded model' })}
-                        </p>
+                <div className='config-item flex-col items-start gap-1'>
+                    <div className='flex items-end gap-2 w-full'>
+                        <Input
+                            label={t('config.onnx_stt.model.active', { defaultValue: 'Active model' })}
+                            labelPlacement='outside'
+                            placeholder='e.g. csukuangfj/sherpa-onnx-streaming-zipformer-small-en-2023-06-26'
+                            variant='bordered'
+                            className='flex-1'
+                            classNames={{ label: 'text-xs text-default-500 pb-1' }}
+                            value={config.asrModel ?? ''}
+                            onValueChange={v => setConfig({ ...config, asrModel: v })}
+                        />
+                        {(() => {
+                            const repo = (config.asrModel ?? '').trim();
+                            if (!repo) return null;
+                            const isDownloaded = models.some(m => m.repo_id === repo);
+                            return isDownloaded ? (
+                                <Button size='sm' color='success' variant='flat' isDisabled startContent={<MdCheckCircle />} className='h-10'>
+                                    {t('config.onnx_stt.model.downloaded_badge', { defaultValue: 'Downloaded' })}
+                                </Button>
+                            ) : (
+                                <Button
+                                    size='sm'
+                                    color='primary'
+                                    variant='flat'
+                                    startContent={<MdDownload />}
+                                    onPress={() => downloadRepo(repo)}
+                                    isLoading={downloading}
+                                    isDisabled={downloading}
+                                    className='h-10'
+                                >
+                                    {t('config.onnx_stt.model.download_btn', { defaultValue: 'Download' })}
+                                </Button>
+                            );
+                        })()}
                     </div>
-                    <input
-                        className='input-base max-w-[60%]'
-                        value={config.asrModel ?? ''}
-                        onChange={e => setConfig({ ...config, asrModel: e.target.value })}
-                        placeholder='e.g. hynt/Zipformer-30M-RNNT-6000h'
-                    />
+                    <p className='text-xs text-default-400'>
+                        {t('config.onnx_stt.model.active_hint', { defaultValue: 'HuggingFace repo ID of the downloaded model' })}
+                    </p>
                 </div>
 
                 {/* Download model section */}
-                <div className='flex flex-col gap-2'>
-                    <h3 className='text-sm font-medium'>
-                        {t('config.onnx_stt.model.download_title', { defaultValue: 'Download model' })}
-                    </h3>
-                    <p className='text-xs text-default-400'>
-                        {t('config.onnx_stt.model.download_hint', { defaultValue: 'Enter a HuggingFace repo ID for a Zipformer RNNT ONNX model.' })}
-                    </p>
-                    <div className='flex gap-2'>
+                <div className='config-item flex-col items-start gap-1'>
+                    <div className='flex items-end gap-2 w-full'>
                         <Input
-                            size='sm'
+                            label={t('config.onnx_stt.model.download_title', { defaultValue: 'Download model' })}
+                            labelPlacement='outside'
+                            placeholder='csukuangfj/sherpa-onnx-streaming-zipformer-small-en-2023-06-26'
                             variant='bordered'
-                            placeholder='hynt/Zipformer-30M-RNNT-6000h'
+                            className='flex-1'
+                            classNames={{ label: 'text-xs text-default-500 pb-1' }}
                             value={repoInput}
                             onValueChange={setRepoInput}
-                            className='flex-1'
                             isDisabled={downloading}
                         />
                         <Button
-                            size='sm'
                             color='primary'
                             variant='flat'
                             startContent={<MdDownload />}
                             onPress={handleDownload}
                             isLoading={downloading}
                             isDisabled={!repoInput.trim() || downloading}
+                            className='h-10'
                         >
                             {t('config.onnx_stt.model.download_btn', { defaultValue: 'Download' })}
                         </Button>
                     </div>
+                    <p className='text-xs text-default-400'>
+                        {t('config.onnx_stt.model.download_hint', { defaultValue: 'Enter a HuggingFace repo ID for a sherpa-onnx compatible Zipformer model (e.g. csukuangfj/sherpa-onnx-streaming-zipformer-*).' })}
+                    </p>
 
                     {/* Download progress */}
                     {downloadProgress && (
-                        <div className='flex flex-col gap-1'>
+                        <div className='flex flex-col gap-1 w-full'>
                             <p className={`text-xs ${downloadProgress.error ? 'text-danger-500' : 'text-default-500'}`}>
                                 {downloadProgress.message}
                             </p>
@@ -282,7 +386,7 @@ export function Config(props) {
                                         <span className='font-mono text-xs truncate'>{model.repo_id}</span>
                                         <span className='text-xs text-default-400'>
                                             {formatBytes(model.size_bytes)}
-                                            {(!model.has_encoder || !model.has_decoder || !model.has_joiner || !model.has_tokens) && (
+                                            {(!model.has_encoder || !model.has_tokens || (!model.is_ctc && (!model.has_decoder || !model.has_joiner))) && (
                                                 <span className='text-warning-500 ml-1'>
                                                     {t('config.onnx_stt.model.incomplete', { defaultValue: '(incomplete)' })}
                                                 </span>

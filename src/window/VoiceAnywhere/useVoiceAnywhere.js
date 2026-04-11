@@ -187,7 +187,7 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, targe
         if (!service?.createClient) throw new Error(`Unknown STT service: ${serviceName}`);
 
         const config = (await store.get(svcKey)) ?? {};
-        const NO_KEY_SERVICES = ['transkit_cloud_stt', 'transkit_cloud_dictation', 'local_sidecar_stt'];
+        const NO_KEY_SERVICES = ['transkit_cloud_stt', 'transkit_cloud_dictation', 'local_sidecar_stt', 'onnx_stt'];
         if (!NO_KEY_SERVICES.includes(serviceName) && !config.apiKey && !config.token) {
             throw new Error(`No API key for "${serviceName}". Configure it in Settings → Service.`);
         }

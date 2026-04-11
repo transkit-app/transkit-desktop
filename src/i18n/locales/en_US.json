@@ -407,6 +407,23 @@
           "voice": "Voice",
           "speed": "Speed"
         }
+      },
+      "onnx_stt": {
+        "engine": {
+          "ready": "ONNX engine installed",
+          "not_installed": "ONNX engine not installed",
+          "platform_sidecar": "Uses shared sidecar venv",
+          "install": "Install Engine"
+        },
+        "model": {
+          "active": "Active model",
+          "active_hint": "HuggingFace repo ID of the downloaded model",
+          "download_title": "Download model",
+          "download_hint": "Enter a HuggingFace repo ID for a Zipformer RNNT ONNX model.",
+          "download_btn": "Download",
+          "downloaded": "Downloaded models",
+          "incomplete": "(incomplete)"
+        }
       }
     },
     "monitor": {
@@ -1030,12 +1047,13 @@
           "dictation_usage": "Dictation usage this period",
           "quota_reached": "Quota reached.",
           "upgrade_plan": "Upgrade your plan",
-          "loading_usage": "Loading usage data…",
-          "not_available": "Transkit Cloud is not available in this build.",
-          "use_case_note": "Cloud Dictation is optimised for short sessions. For continuous long-form transcription use Transkit Cloud (STT)."
+          "loading_usage": "Loading usage data…"
         },
         "local_sidecar_stt": {
           "title": "Local Model STT"
+        },
+        "onnx_stt": {
+          "title": "Offline STT (ONNX)"
         }
       }
     },
