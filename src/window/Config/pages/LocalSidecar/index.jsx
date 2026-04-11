@@ -1,7 +1,7 @@
 import {
     Card, CardBody, CardHeader,
     Button, Switch, Select, SelectItem, Slider, Chip, Checkbox, Input, Progress,
-    Tabs, Tab,
+    Tabs, Tab, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem,
 } from '@nextui-org/react';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/tauri';
@@ -17,6 +17,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useConfig } from '../../../../hooks/useConfig';
 import { store } from '../../../../utils/store';
 import { osType } from '../../../../utils/env';
+import { getServiceName } from '../../../../utils/service_instance';
 
 const LLM_MODELS = [
     { key: 'mlx-community/gemma-3-4b-it-qat-4bit',    label: 'Gemma 4B  (recommended, ~3 GB)' },
@@ -119,6 +120,10 @@ export default function LocalSidecar() {
         const el = logContainerRef.current;
         if (el) el.scrollTop = el.scrollHeight;
     }, []);
+
+    // ── Offline STT translate ──────────────────────────────────────────────────
+    const [offlineTranslateService, setOfflineTranslateService] = useConfig('offline_stt_translate_service', 'none');
+    const [translateServiceList] = useConfig('translate_service_list', []);
 
     // ── ONNX state ─────────────────────────────────────────────────────────────
     const [onnxActiveModel,  setOnnxActiveModel]  = useConfig('onnx_active_model', '');
@@ -1283,6 +1288,67 @@ export default function LocalSidecar() {
         </>
     );
 
+    // ── Offline STT translate card (shared by both engines) ───────────────────
+    const renderOfflineTranslateCard = () => {
+        const selectedLabel = offlineTranslateService === 'none' || !offlineTranslateService
+            ? t('config.local_sidecar.offline_stt_translate.none', { defaultValue: 'No translation' })
+            : (() => {
+                try {
+                    const svcName = getServiceName(offlineTranslateService);
+                    return t(`services.translate.${svcName}.title`, { defaultValue: svcName });
+                } catch { return offlineTranslateService; }
+            })();
+
+        return (
+            <Card>
+                <CardHeader className='flex gap-2 items-center pb-0'>
+                    <MdRecordVoiceOver className='text-lg text-brand-500' />
+                    <h3 className='font-semibold text-sm'>
+                        {t('config.local_sidecar.offline_stt_translate.section', { defaultValue: 'Translate Transcripts' })}
+                    </h3>
+                </CardHeader>
+                <CardBody className='flex flex-col gap-3'>
+                    <div className='flex items-center justify-between gap-3'>
+                        <div className='flex flex-col gap-0.5 flex-1'>
+                            <span className='text-sm'>
+                                {t('config.local_sidecar.offline_stt_translate.service', { defaultValue: 'Translate service' })}
+                            </span>
+                            <span className='text-xs text-default-400'>
+                                {t('config.local_sidecar.offline_stt_translate.service_hint', {
+                                    defaultValue: 'After speech is recognized, translate to the target language set in Monitor / Voice Anywhere.',
+                                })}
+                            </span>
+                        </div>
+                        <Dropdown>
+                            <DropdownTrigger>
+                                <Button variant='bordered' size='sm' className='min-w-[160px] justify-start'>
+                                    {selectedLabel}
+                                </Button>
+                            </DropdownTrigger>
+                            <DropdownMenu
+                                aria-label='Offline STT translate service'
+                                className='max-h-[50vh] overflow-y-auto'
+                                onAction={(key) => setOfflineTranslateService(String(key))}
+                            >
+                                <DropdownItem key='none'>
+                                    {t('config.local_sidecar.offline_stt_translate.none', { defaultValue: 'No translation' })}
+                                </DropdownItem>
+                                {(translateServiceList ?? []).map((svcKey) => {
+                                    let label = svcKey;
+                                    try {
+                                        const svcName = getServiceName(svcKey);
+                                        label = t(`services.translate.${svcName}.title`, { defaultValue: svcName });
+                                    } catch { /* keep raw key */ }
+                                    return <DropdownItem key={svcKey}>{label}</DropdownItem>;
+                                })}
+                            </DropdownMenu>
+                        </Dropdown>
+                    </div>
+                </CardBody>
+            </Card>
+        );
+    };
+
     // ── Main render ────────────────────────────────────────────────────────────
     // On macOS: show MLX / ONNX tabs (same Tabs pattern as Service/index.jsx).
     // On Windows / Linux: ONNX only — render directly without tabs.
@@ -1298,11 +1364,13 @@ export default function LocalSidecar() {
                 <Tab key='mlx' title={t('config.local_sidecar.engine_tab.mlx', { defaultValue: 'MLX' })}>
                     <div className='flex flex-col gap-4'>
                         {renderMLXPanel()}
+                        {renderOfflineTranslateCard()}
                     </div>
                 </Tab>
                 <Tab key='onnx' title={t('config.local_sidecar.engine_tab.onnx', { defaultValue: 'ONNX' })}>
                     <div className='flex flex-col gap-4'>
                         {renderONNXPanel()}
+                        {renderOfflineTranslateCard()}
                     </div>
                 </Tab>
             </Tabs>
@@ -1312,6 +1380,7 @@ export default function LocalSidecar() {
     return (
         <div className='flex flex-col gap-4'>
             {renderONNXPanel()}
+            {renderOfflineTranslateCard()}
         </div>
     );
 }
