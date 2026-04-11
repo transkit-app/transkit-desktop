@@ -640,15 +640,35 @@ export default function LocalSidecar() {
 
                     {/* Default model for server */}
                     <div className='flex flex-col gap-1'>
-                        <Input
-                            label={t('config.onnx_stt.model.active', { defaultValue: 'Default model' })}
-                            labelPlacement='outside'
-                            placeholder='e.g. hynt/Zipformer-30M-RNNT-6000h'
-                            variant='bordered'
-                            classNames={{ label: 'text-xs text-default-500 pb-1' }}
-                            value={onnxActiveModel ?? ''}
-                            onValueChange={setOnnxActiveModel}
-                        />
+                        {onnxModels.length > 0 ? (
+                            <Select
+                                label={t('config.onnx_stt.model.active', { defaultValue: 'Default model' })}
+                                labelPlacement='outside'
+                                variant='bordered'
+                                classNames={{ label: 'text-xs text-default-500 pb-1' }}
+                                selectedKeys={onnxActiveModel ? [onnxActiveModel] : []}
+                                onSelectionChange={keys => {
+                                    const v = Array.from(keys)[0];
+                                    if (v) setOnnxActiveModel(String(v));
+                                }}
+                            >
+                                {onnxModels.map(m => (
+                                    <SelectItem key={m.repo_id} textValue={m.repo_id}>
+                                        <span className='font-mono text-xs'>{m.repo_id}</span>
+                                    </SelectItem>
+                                ))}
+                            </Select>
+                        ) : (
+                            <Input
+                                label={t('config.onnx_stt.model.active', { defaultValue: 'Default model' })}
+                                labelPlacement='outside'
+                                placeholder='e.g. hynt/Zipformer-30M-RNNT-6000h'
+                                variant='bordered'
+                                classNames={{ label: 'text-xs text-default-500 pb-1' }}
+                                value={onnxActiveModel ?? ''}
+                                onValueChange={setOnnxActiveModel}
+                            />
+                        )}
                         <p className='text-xs text-default-400'>
                             {t('config.onnx_stt.model.active_hint', { defaultValue: 'Model loaded at server startup (each service instance can override this)' })}
                         </p>
