@@ -1,6 +1,7 @@
 import {
     Card, CardBody, CardHeader,
-    Button, Switch, Select, SelectItem, Slider, Chip, Checkbox, Input,
+    Button, Switch, Select, SelectItem, Slider, Chip, Checkbox, Input, Progress,
+    Tabs, Tab,
 } from '@nextui-org/react';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/tauri';
@@ -9,12 +10,13 @@ import { listen } from '@tauri-apps/api/event';
 import {
     MdMemory, MdPlayArrow, MdStop, MdDownload,
     MdMic, MdRecordVoiceOver, MdWarning, MdCheckCircle, MdError, MdDelete, MdStorage, MdRefresh,
-    MdFolderOpen,
+    MdFolderOpen, MdHourglassEmpty,
 } from 'react-icons/md';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 import { useConfig } from '../../../../hooks/useConfig';
 import { store } from '../../../../utils/store';
+import { osType } from '../../../../utils/env';
 
 const LLM_MODELS = [
     { key: 'mlx-community/gemma-3-4b-it-qat-4bit',    label: 'Gemma 4B  (recommended, ~3 GB)' },
@@ -61,6 +63,12 @@ const INSTALL_STATE = {
 export default function LocalSidecar() {
     const { t } = useTranslation();
 
+    // ── Engine selection ───────────────────────────────────────────────────────
+    const [activeEngine, setActiveEngine] = useConfig('local_model_engine', null);
+    const isMacOS = osType === 'Darwin';
+    const effectiveEngine = activeEngine ?? (isMacOS ? 'mlx' : 'onnx');
+
+    // ── MLX state ─────────────────────────────────────────────────────────────
     const [enabled,       setEnabled]       = useConfig('local_sidecar_enabled',           false);
     const [llmModel,      setLlmModel]       = useConfig('local_sidecar_llm_model',         'mlx-community/gemma-3-4b-it-qat-4bit');
     const [asrModel,      setAsrModel]       = useConfig('local_sidecar_asr_model',         'mlx-community/whisper-large-v3-turbo');
@@ -83,18 +91,15 @@ export default function LocalSidecar() {
     const [prereqs,       setPrereqs]        = useState(null);
     const [errorMsg,      setErrorMsg]       = useState('');
 
-    // Model preload status: 'idle' | 'loading' | 'ready' | 'error'
     const [modelStatus, setModelStatus] = useState({ llm: 'idle', tts: 'idle', stt: 'idle' });
     const [modelTook,   setModelTook]   = useState({});
     const [modelError,  setModelError]  = useState({});
 
-    // Component selection — initialised from marker after setup loads
     const [compLlm,       setCompLlm]        = useState(false);
     const [compStt,       setCompStt]        = useState(true);
     const [compTts,       setCompTts]        = useState(false);
     const [ttsPackage,    setTtsPackage]     = useState(DEFAULT_TTS_PACKAGE);
 
-    // Keep install package in sync with chosen engine
     useEffect(() => {
         const eng = TTS_ENGINES.find(e => e.key === ttsEngine);
         if (eng) setTtsPackage(eng.pkg);
@@ -104,12 +109,10 @@ export default function LocalSidecar() {
     const [deletingModel,  setDeletingModel]  = useState(null);
     const [restartNeeded,  setRestartNeeded]  = useState(false);
 
-    // Per-model download state
     const [downloadingRepo,   setDownloadingRepo]   = useState(null);
     const [downloadProgress,  setDownloadProgress]  = useState(0);
     const [downloadMessage,   setDownloadMessage]   = useState('');
 
-    // Scroll: ref to the log container div (not its last child)
     const logContainerRef = useRef(null);
 
     const scrollLogToBottom = useCallback(() => {
@@ -117,7 +120,18 @@ export default function LocalSidecar() {
         if (el) el.scrollTop = el.scrollHeight;
     }, []);
 
-    // Load initial status and sync installed-components checkboxes from marker
+    // ── ONNX state ─────────────────────────────────────────────────────────────
+    const [onnxActiveModel,  setOnnxActiveModel]  = useConfig('onnx_active_model', '');
+    const [onnxSetup,        setOnnxSetup]        = useState(null);
+    const [onnxEngineStatus, setOnnxEngineStatus] = useState({ running: false, port: 0 });
+    const [onnxModels,       setOnnxModels]       = useState([]);
+    const [onnxRepoInput,    setOnnxRepoInput]    = useState('hynt/Zipformer-30M-RNNT-6000h');
+    const [onnxInstalling,   setOnnxInstalling]   = useState(false);
+    const [onnxInstallProgress, setOnnxInstallProgress] = useState(null);
+    const [onnxDownloading,  setOnnxDownloading]  = useState(false);
+    const [onnxDownloadProgress, setOnnxDownloadProgress] = useState(null);
+
+    // ── MLX initial load ───────────────────────────────────────────────────────
     useEffect(() => {
         invoke('local_sidecar_check_setup').then((s) => {
             setSetupStatus(s);
@@ -131,11 +145,17 @@ export default function LocalSidecar() {
             setRunning(s.running);
             setRunningPort(s.port);
         }).catch(console.error);
-        // Auto-load cached models so download buttons show correct state immediately
         invoke('local_sidecar_list_cached_models').then(setCachedModels).catch(() => setCachedModels([]));
     }, []);
 
-    // Listen for sidecar events
+    // ── ONNX initial load ──────────────────────────────────────────────────────
+    useEffect(() => {
+        invoke('onnx_engine_check_setup').then(setOnnxSetup).catch(() => {});
+        invoke('onnx_engine_status').then(setOnnxEngineStatus).catch(() => {});
+        invoke('onnx_model_list').then(setOnnxModels).catch(() => {});
+    }, []);
+
+    // ── MLX event listeners ────────────────────────────────────────────────────
     useEffect(() => {
         const listeners = [];
 
@@ -191,20 +211,13 @@ export default function LocalSidecar() {
         listen('local-sidecar://setup-progress', (e) => {
             const p = e.payload;
             if (!p) return;
-
-            if (p.message) {
-                setSetupLog((prev) => [...prev, p.message]);
-            }
-            if (p.percent != null) {
-                setSetupProgress(p.percent);
-            }
-
+            if (p.message) setSetupLog((prev) => [...prev, p.message]);
+            if (p.percent != null) setSetupProgress(p.percent);
             if (p.type === 'done') {
                 setInstallState(INSTALL_STATE.SUCCESS);
                 setSetupProgress(100);
                 invoke('local_sidecar_check_setup').then(setSetupStatus).catch(console.error);
             }
-
             if (p.type === 'error') {
                 const msg = p.message || 'Unknown error';
                 setErrorMsg(msg);
@@ -216,12 +229,52 @@ export default function LocalSidecar() {
         return () => { listeners.forEach((fn) => fn()); };
     }, []);
 
-    // Scroll log container to bottom whenever log grows — but only within the container
+    // ── ONNX event listeners ───────────────────────────────────────────────────
     useEffect(() => {
-        scrollLogToBottom();
-    }, [setupLog, scrollLogToBottom]);
+        const listeners = [];
 
-    // ── Download helpers ───────────────────────────────────────────────────────
+        listen('onnx-engine://setup-progress', (e) => {
+            const payload = e.payload;
+            if (payload.type === 'done') {
+                setOnnxInstalling(false);
+                setOnnxInstallProgress(null);
+                invoke('onnx_engine_check_setup').then(setOnnxSetup).catch(() => {});
+            } else if (payload.type === 'error') {
+                setOnnxInstalling(false);
+                setOnnxInstallProgress({ message: `Error: ${payload.message}`, percent: 0, error: true });
+            } else {
+                setOnnxInstallProgress({ message: payload.message, percent: payload.percent ?? 0 });
+            }
+        }).then(fn => listeners.push(fn)).catch(() => {});
+
+        listen('onnx-engine://ready', (e) => {
+            setOnnxEngineStatus({ running: true, port: e.payload.port });
+        }).then(fn => listeners.push(fn)).catch(() => {});
+
+        listen('onnx-engine://stopped', () => {
+            setOnnxEngineStatus({ running: false, port: 0 });
+        }).then(fn => listeners.push(fn)).catch(() => {});
+
+        listen('onnx-model://progress', (e) => {
+            const payload = e.payload;
+            if (payload.step === 'done') {
+                setOnnxDownloading(false);
+                setOnnxDownloadProgress(null);
+                invoke('onnx_model_list').then(setOnnxModels).catch(() => {});
+            } else if (payload.step === 'error') {
+                setOnnxDownloading(false);
+                setOnnxDownloadProgress({ message: `Error: ${payload.message}`, percent: 0, error: true });
+            } else {
+                setOnnxDownloadProgress({ message: payload.message, percent: payload.percent ?? 0 });
+            }
+        }).then(fn => listeners.push(fn)).catch(() => {});
+
+        return () => { listeners.forEach(fn => fn()); };
+    }, []);
+
+    useEffect(() => { scrollLogToBottom(); }, [setupLog, scrollLogToBottom]);
+
+    // ── MLX helpers ────────────────────────────────────────────────────────────
     const isModelCached = useCallback((repoId) =>
         repoId && cachedModels?.some(m => m.repo_id === repoId), [cachedModels]);
 
@@ -282,7 +335,6 @@ export default function LocalSidecar() {
         ttsModel:          ttsModel ?? '',
         ttsRefAudio:       ttsRefAudio ?? '',
         logLevel:          'info',
-        // Pass enabled components so Rust only preloads what the user has checked
         enabledComponents: [compLlm && 'llm', compStt && 'stt', compTts && 'tts'].filter(Boolean).join(','),
     }), [llmModel, asrModel, asrTask, temperature, maxTokens, chunkSeconds, ttsEngine, ttsModel, ttsRefAudio, compLlm, compStt, compTts]);
 
@@ -291,13 +343,9 @@ export default function LocalSidecar() {
         if (compLlm) parts.push('llm');
         if (compStt) parts.push('stt');
         if (compTts) parts.push('tts');
-        return {
-            components: parts.join(','),
-            ttsPackage: compTts ? (ttsPackage.trim() || '') : '',
-        };
+        return { components: parts.join(','), ttsPackage: compTts ? (ttsPackage.trim() || '') : '' };
     }, [compLlm, compStt, compTts, ttsPackage]);
 
-    // Step 1: pre-check
     const handleInstallClick = useCallback(async () => {
         if (!compLlm && !compStt && !compTts) return;
         setInstallState(INSTALL_STATE.CHECKING);
@@ -314,7 +362,6 @@ export default function LocalSidecar() {
         }
     }, [compLlm, compStt, compTts]);
 
-    // Step 2: confirmed — run setup
     const handleConfirmInstall = useCallback(() => {
         const { components, ttsPackage: tpkg } = buildComponentArgs();
         setInstallState(INSTALL_STATE.INSTALLING);
@@ -387,7 +434,61 @@ export default function LocalSidecar() {
     const isInstalling = installState === INSTALL_STATE.INSTALLING;
     const nothingSelected = !compLlm && !compStt && !compTts;
 
-    // ── Prereq confirmation ────────────────────────────────────────────────────
+    // ── ONNX handlers ──────────────────────────────────────────────────────────
+    const handleOnnxInstall = async () => {
+        setOnnxInstalling(true);
+        setOnnxInstallProgress({ message: 'Starting installation...', percent: 0 });
+        try {
+            await invoke('onnx_engine_install');
+        } catch (err) {
+            setOnnxInstalling(false);
+            setOnnxInstallProgress({ message: `Failed: ${err}`, percent: 0, error: true });
+        }
+    };
+
+    const handleOnnxStart = async () => {
+        try {
+            await invoke('onnx_engine_start', {
+                config: { asr_model: onnxActiveModel || undefined }
+            });
+            invoke('onnx_engine_status').then(setOnnxEngineStatus).catch(() => {});
+        } catch (err) {
+            console.error('[OnnxSTT] Start failed:', err);
+        }
+    };
+
+    const handleOnnxStop = async () => {
+        try {
+            await invoke('onnx_engine_stop');
+            invoke('onnx_engine_status').then(setOnnxEngineStatus).catch(() => {});
+        } catch (err) {
+            console.error('[OnnxSTT] Stop failed:', err);
+        }
+    };
+
+    const handleOnnxDownload = async () => {
+        const r = onnxRepoInput.trim();
+        if (!r) return;
+        setOnnxDownloading(true);
+        setOnnxDownloadProgress({ message: `Starting download of ${r}...`, percent: 0 });
+        try {
+            await invoke('onnx_model_download', { repo: r });
+        } catch (err) {
+            setOnnxDownloading(false);
+            setOnnxDownloadProgress({ message: `Failed: ${err}`, percent: 0, error: true });
+        }
+    };
+
+    const handleOnnxDelete = async (repoId) => {
+        try {
+            await invoke('onnx_model_delete', { repo: repoId });
+            invoke('onnx_model_list').then(setOnnxModels).catch(() => {});
+        } catch (err) {
+            console.error('[OnnxSTT] Delete failed:', err);
+        }
+    };
+
+    // ── Prereq confirmation (MLX) ──────────────────────────────────────────────
     const renderConfirm = () => {
         if (!prereqs) return null;
         const canInstall = prereqs.python_found || prereqs.homebrew_found;
@@ -404,7 +505,6 @@ export default function LocalSidecar() {
                 <p className='font-medium text-sm'>
                     {t('config.local_sidecar.setup.confirm_title', { defaultValue: 'The following will be installed:' })}
                 </p>
-
                 <ul className='flex flex-col gap-1.5 text-xs'>
                     {prereqs.python_found ? (
                         <li className='flex items-center gap-2 text-success-600'>
@@ -437,7 +537,6 @@ export default function LocalSidecar() {
                         Core: numpy, fastapi, uvicorn, websockets
                     </li>
                 </ul>
-
                 {!canInstall && (
                     <p className='text-xs text-danger-600 font-medium'>
                         {t('config.local_sidecar.setup.install_blocked', {
@@ -445,7 +544,6 @@ export default function LocalSidecar() {
                         })}
                     </p>
                 )}
-
                 <div className='flex gap-2 mt-1'>
                     <Button size='sm' color='primary' onPress={handleConfirmInstall} isDisabled={!canInstall}>
                         {t('config.local_sidecar.setup.confirm_button', { defaultValue: 'Confirm & Install' })}
@@ -458,9 +556,220 @@ export default function LocalSidecar() {
         );
     };
 
-    return (
-        <div className='flex flex-col gap-4'>
+    // ── ONNX Panel ─────────────────────────────────────────────────────────────
+    const renderONNXPanel = () => (
+        <>
+            {/* ONNX Environment */}
+            <Card>
+                <CardHeader className='flex gap-2 items-center pb-0'>
+                    <MdDownload className='text-lg text-brand-500' />
+                    <h3 className='font-semibold text-sm'>
+                        {t('config.local_sidecar.setup.title', { defaultValue: 'Environment' })}
+                    </h3>
+                    {onnxSetup && (
+                        <Chip size='sm' color={onnxSetup.ready ? 'success' : 'warning'} variant='flat' className='ml-auto'>
+                            {onnxSetup.ready
+                                ? t('config.local_sidecar.setup.ready', { defaultValue: 'Ready' })
+                                : t('config.local_sidecar.setup.not_installed', { defaultValue: 'Not installed' })}
+                        </Chip>
+                    )}
+                </CardHeader>
+                <CardBody className='flex flex-col gap-3'>
+                    <div className={`flex items-center gap-2 p-3 rounded-lg text-sm ${
+                        onnxSetup?.ready
+                            ? 'bg-success-50 dark:bg-success-900/20 text-success-700 dark:text-success-400'
+                            : 'bg-warning-50 dark:bg-warning-900/20 text-warning-700 dark:text-warning-400'
+                    }`}>
+                        {onnxSetup?.ready
+                            ? <MdCheckCircle className='text-lg flex-shrink-0' />
+                            : <MdHourglassEmpty className='text-lg flex-shrink-0' />}
+                        <div className='flex flex-col gap-0.5 min-w-0'>
+                            <span className='font-medium'>
+                                {onnxSetup?.ready
+                                    ? t('config.onnx_stt.engine.ready', { defaultValue: 'ONNX engine installed' })
+                                    : t('config.onnx_stt.engine.not_installed', { defaultValue: 'ONNX engine not installed' })}
+                            </span>
+                            {onnxSetup?.platform && (
+                                <span className='text-xs opacity-70'>
+                                    {onnxSetup.platform === 'macos_mlx_venv'
+                                        ? t('config.onnx_stt.engine.platform_sidecar', { defaultValue: 'Uses shared sidecar venv' })
+                                        : onnxSetup.platform}
+                                </span>
+                            )}
+                        </div>
+                    </div>
 
+                    {!onnxSetup?.ready && !onnxInstalling && (
+                        <Button size='sm' color='warning' variant='flat' onPress={handleOnnxInstall} className='self-start'>
+                            {t('config.onnx_stt.engine.install', { defaultValue: 'Install Engine' })}
+                        </Button>
+                    )}
+
+                    {onnxInstallProgress && (
+                        <div className='flex flex-col gap-1'>
+                            <p className={`text-xs ${onnxInstallProgress.error ? 'text-danger-500' : 'text-default-500'}`}>
+                                {onnxInstallProgress.message}
+                            </p>
+                            {!onnxInstallProgress.error && (
+                                <Progress size='sm' value={onnxInstallProgress.percent} color='primary' aria-label='Install progress' />
+                            )}
+                        </div>
+                    )}
+                </CardBody>
+            </Card>
+
+            {/* ONNX Server */}
+            <Card>
+                <CardHeader className='flex gap-2 items-center pb-0'>
+                    <MdPlayArrow className='text-lg text-brand-500' />
+                    <h3 className='font-semibold text-sm'>
+                        {t('config.onnx_stt.server.title', { defaultValue: 'ONNX Server' })}
+                    </h3>
+                    <Chip size='sm' color={onnxEngineStatus.running ? 'success' : 'default'} variant='flat' className='ml-auto'>
+                        {onnxEngineStatus.running
+                            ? t('config.local_sidecar.startup.status_running', { defaultValue: 'Running' })
+                            : t('config.local_sidecar.startup.status_stopped', { defaultValue: 'Stopped' })}
+                    </Chip>
+                </CardHeader>
+                <CardBody className='flex flex-col gap-3'>
+                    {onnxEngineStatus.running && (
+                        <p className='text-xs text-default-400'>
+                            {t('config.onnx_stt.server.running', { defaultValue: 'Running on port {{port}}', port: onnxEngineStatus.port })}
+                        </p>
+                    )}
+
+                    {/* Default model for server */}
+                    <div className='flex flex-col gap-1'>
+                        <Input
+                            label={t('config.onnx_stt.model.active', { defaultValue: 'Default model' })}
+                            labelPlacement='outside'
+                            placeholder='e.g. hynt/Zipformer-30M-RNNT-6000h'
+                            variant='bordered'
+                            classNames={{ label: 'text-xs text-default-500 pb-1' }}
+                            value={onnxActiveModel ?? ''}
+                            onValueChange={setOnnxActiveModel}
+                        />
+                        <p className='text-xs text-default-400'>
+                            {t('config.onnx_stt.model.active_hint', { defaultValue: 'Model loaded at server startup (each service instance can override this)' })}
+                        </p>
+                    </div>
+
+                    <div className='flex gap-2'>
+                        <Button size='sm' color='primary' variant='flat'
+                            isDisabled={!onnxSetup?.ready || onnxEngineStatus.running}
+                            startContent={<MdPlayArrow />}
+                            onPress={handleOnnxStart}>
+                            {t('config.local_sidecar.startup.start', { defaultValue: 'Start' })}
+                        </Button>
+                        <Button size='sm' color='danger' variant='flat'
+                            isDisabled={!onnxEngineStatus.running}
+                            startContent={<MdStop />}
+                            onPress={handleOnnxStop}>
+                            {t('config.local_sidecar.startup.stop', { defaultValue: 'Stop' })}
+                        </Button>
+                    </div>
+                </CardBody>
+            </Card>
+
+            {/* ONNX Models */}
+            <Card>
+                <CardHeader className='flex gap-2 items-center pb-0'>
+                    <MdStorage className='text-lg text-brand-500' />
+                    <h3 className='font-semibold text-sm'>
+                        {t('config.onnx_stt.model.download_title', { defaultValue: 'Models' })}
+                    </h3>
+                    <Button size='sm' variant='light' isIconOnly className='ml-auto'
+                        onPress={() => invoke('onnx_model_list').then(setOnnxModels).catch(() => {})}
+                        title='Refresh'>
+                        <MdRefresh className='text-base' />
+                    </Button>
+                </CardHeader>
+                <CardBody className='flex flex-col gap-3'>
+                    {/* Download input */}
+                    <div className='flex items-end gap-2'>
+                        <Input
+                            label={t('config.onnx_stt.model.download_title', { defaultValue: 'Download from HuggingFace' })}
+                            labelPlacement='outside'
+                            placeholder='hynt/Zipformer-30M-RNNT-6000h'
+                            variant='bordered'
+                            className='flex-1'
+                            classNames={{ label: 'text-xs text-default-500 pb-1' }}
+                            value={onnxRepoInput}
+                            onValueChange={setOnnxRepoInput}
+                            isDisabled={onnxDownloading}
+                        />
+                        <Button
+                            color='primary' variant='flat'
+                            startContent={<MdDownload />}
+                            onPress={handleOnnxDownload}
+                            isLoading={onnxDownloading}
+                            isDisabled={!onnxRepoInput.trim() || onnxDownloading}
+                            className='h-10'
+                        >
+                            {t('config.onnx_stt.model.download_btn', { defaultValue: 'Download' })}
+                        </Button>
+                    </div>
+                    <p className='text-xs text-default-400'>
+                        {t('config.onnx_stt.model.download_hint', { defaultValue: 'Enter a HuggingFace repo ID for a sherpa-onnx compatible Zipformer model.' })}
+                    </p>
+
+                    {onnxDownloadProgress && (
+                        <div className='flex flex-col gap-1'>
+                            <p className={`text-xs ${onnxDownloadProgress.error ? 'text-danger-500' : 'text-default-500'}`}>
+                                {onnxDownloadProgress.message}
+                            </p>
+                            {!onnxDownloadProgress.error && (
+                                <Progress size='sm' value={onnxDownloadProgress.percent} color='primary' aria-label='Download progress' />
+                            )}
+                        </div>
+                    )}
+
+                    {/* Downloaded models list */}
+                    {onnxModels.length > 0 && (
+                        <div className='flex flex-col gap-2 mt-1'>
+                            <p className='text-xs font-medium text-default-500'>
+                                {t('config.onnx_stt.model.downloaded', { defaultValue: 'Downloaded models' })}
+                            </p>
+                            <div className='flex flex-col gap-1'>
+                                {onnxModels.map(model => (
+                                    <div key={model.repo_id}
+                                        className='flex items-center justify-between px-3 py-2 rounded-lg bg-content2 text-sm group'>
+                                        <div className='flex flex-col min-w-0'>
+                                            <span className='font-mono text-xs truncate'>{model.repo_id}</span>
+                                            <span className='text-xs text-default-400'>
+                                                {formatBytes(model.size_bytes)}
+                                                {(!model.has_encoder || !model.has_tokens || (!model.is_ctc && (!model.has_decoder || !model.has_joiner))) && (
+                                                    <span className='text-warning-500 ml-1'>
+                                                        {t('config.onnx_stt.model.incomplete', { defaultValue: '(incomplete)' })}
+                                                    </span>
+                                                )}
+                                            </span>
+                                        </div>
+                                        <Button size='sm' variant='light' color='danger' isIconOnly
+                                            onPress={() => handleOnnxDelete(model.repo_id)}
+                                            className='opacity-0 group-hover:opacity-100 transition-opacity'
+                                            title={t('common.delete', { defaultValue: 'Delete' })}>
+                                            <MdDelete className='text-base' />
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {onnxModels.length === 0 && (
+                        <p className='text-xs text-default-400'>
+                            {t('config.local_sidecar.cache.empty', { defaultValue: 'No models downloaded yet.' })}
+                        </p>
+                    )}
+                </CardBody>
+            </Card>
+        </>
+    );
+
+    // ── MLX Panel (existing content) ───────────────────────────────────────────
+    const renderMLXPanel = () => (
+        <>
             {/* Environment */}
             <Card>
                 <CardHeader className='flex gap-2 items-center pb-0'>
@@ -481,51 +790,33 @@ export default function LocalSidecar() {
                         <p className='text-xs text-default-400'>{setupStatus.env_dir}</p>
                     )}
 
-                    {/* Component selection — shown when not yet installing */}
                     {installState !== INSTALL_STATE.INSTALLING && installState !== INSTALL_STATE.CONFIRM && (
                         <div className='flex flex-col gap-2'>
                             <p className='text-xs text-default-500 font-medium'>
                                 {t('config.local_sidecar.setup.select_components', { defaultValue: 'Select components to install:' })}
                             </p>
-
                             <div className='flex flex-col gap-1.5 pl-1'>
-                                <Checkbox
-                                    size='sm'
-                                    isSelected={compLlm}
-                                    onValueChange={setCompLlm}
-                                >
+                                <Checkbox size='sm' isSelected={compLlm} onValueChange={setCompLlm}>
                                     <span className='text-xs'>
                                         {t('config.local_sidecar.setup.comp_llm', { defaultValue: 'Translate & AI (LLM)' })}
                                         <span className='text-default-400 ml-1'>— mlx-lm, ~2 GB</span>
                                     </span>
                                 </Checkbox>
-
-                                <Checkbox
-                                    size='sm'
-                                    isSelected={compStt}
-                                    onValueChange={setCompStt}
-                                >
+                                <Checkbox size='sm' isSelected={compStt} onValueChange={setCompStt}>
                                     <span className='text-xs'>
                                         {t('config.local_sidecar.setup.comp_stt', { defaultValue: 'Speech Recognition (STT)' })}
                                         <span className='text-default-400 ml-1'>— mlx-whisper, ~800 MB</span>
                                     </span>
                                 </Checkbox>
-
                                 <div className='flex flex-col gap-1.5'>
-                                    <Checkbox
-                                        size='sm'
-                                        isSelected={compTts}
-                                        onValueChange={setCompTts}
-                                    >
+                                    <Checkbox size='sm' isSelected={compTts} onValueChange={setCompTts}>
                                         <span className='text-xs'>
                                             {t('config.local_sidecar.setup.comp_tts', { defaultValue: 'Text to Speech (TTS)' })}
                                         </span>
                                     </Checkbox>
                                     {compTts && (
                                         <div className='pl-6'>
-                                            <Input
-                                                size='sm'
-                                                variant='bordered'
+                                            <Input size='sm' variant='bordered'
                                                 label={t('config.local_sidecar.setup.tts_package', { defaultValue: 'pip package name' })}
                                                 placeholder='kokoro-mlx'
                                                 value={ttsPackage}
@@ -539,13 +830,11 @@ export default function LocalSidecar() {
                             </div>
 
                             {!setupStatus?.ready && (
-                                <Button
-                                    color='primary' size='sm'
+                                <Button color='primary' size='sm'
                                     isDisabled={nothingSelected || installState === INSTALL_STATE.CHECKING}
                                     isLoading={installState === INSTALL_STATE.CHECKING}
                                     onPress={handleInstallClick}
-                                    className='self-start mt-1'
-                                >
+                                    className='self-start mt-1'>
                                     {installState === INSTALL_STATE.CHECKING
                                         ? t('config.local_sidecar.setup.checking', { defaultValue: 'Checking prerequisites…' })
                                         : t('config.local_sidecar.setup.install_button', { defaultValue: 'Install Selected Components' })}
@@ -553,13 +842,11 @@ export default function LocalSidecar() {
                             )}
 
                             {setupStatus?.ready && (
-                                <Button
-                                    color='default' size='sm' variant='flat'
+                                <Button color='default' size='sm' variant='flat'
                                     isDisabled={nothingSelected || installState === INSTALL_STATE.CHECKING}
                                     isLoading={installState === INSTALL_STATE.CHECKING}
                                     onPress={handleInstallClick}
-                                    className='self-start mt-1'
-                                >
+                                    className='self-start mt-1'>
                                     {installState === INSTALL_STATE.CHECKING
                                         ? t('config.local_sidecar.setup.checking', { defaultValue: 'Checking prerequisites…' })
                                         : t('config.local_sidecar.setup.add_components', { defaultValue: 'Install / Update Selected' })}
@@ -568,25 +855,19 @@ export default function LocalSidecar() {
                         </div>
                     )}
 
-                    {/* Confirmation panel */}
                     {installState === INSTALL_STATE.CONFIRM && renderConfirm()}
 
-                    {/* Installing */}
                     {isInstalling && (
                         <>
                             <Button color='primary' size='sm' isLoading className='self-start'>
                                 {t('config.local_sidecar.setup.installing', { defaultValue: 'Installing…' })}
                             </Button>
                             <div className='w-full bg-content2 rounded-full h-1.5 overflow-hidden'>
-                                <div
-                                    className='bg-brand-500 h-full transition-all duration-500'
-                                    style={{ width: `${setupProgress}%` }}
-                                />
+                                <div className='bg-brand-500 h-full transition-all duration-500' style={{ width: `${setupProgress}%` }} />
                             </div>
                         </>
                     )}
 
-                    {/* Error state */}
                     {installState === INSTALL_STATE.ERROR && (
                         <div className='flex flex-col gap-2 p-3 bg-danger-50 border border-danger-200 rounded-lg'>
                             <div className='flex items-start gap-2 text-danger-700'>
@@ -599,7 +880,6 @@ export default function LocalSidecar() {
                         </div>
                     )}
 
-                    {/* Success banner */}
                     {installState === INSTALL_STATE.SUCCESS && (
                         <div className='flex items-center gap-2 p-3 bg-success-50 dark:bg-success-900/20 border border-success-200 dark:border-success-700 rounded-lg'>
                             <MdCheckCircle className='shrink-0 text-success-600 dark:text-success-400 text-base' />
@@ -612,16 +892,11 @@ export default function LocalSidecar() {
                         </div>
                     )}
 
-                    {/* Log output — scroll within the box, not the page */}
                     {setupLog.length > 0 && (
-                        <div
-                            ref={logContainerRef}
-                            className='bg-content2 rounded-lg p-3 max-h-40 overflow-y-auto font-mono text-xs text-default-600 space-y-0.5'
-                        >
+                        <div ref={logContainerRef}
+                            className='bg-content2 rounded-lg p-3 max-h-40 overflow-y-auto font-mono text-xs text-default-600 space-y-0.5'>
                             {setupLog.map((line, i) => (
-                                <div key={i} className={line.startsWith('Error:') ? 'text-danger-600' : ''}>
-                                    {line}
-                                </div>
+                                <div key={i} className={line.startsWith('Error:') ? 'text-danger-600' : ''}>{line}</div>
                             ))}
                         </div>
                     )}
@@ -663,17 +938,10 @@ export default function LocalSidecar() {
                                 {t('config.local_sidecar.startup.enable_hint', { defaultValue: 'Start the inference server when Transkit launches' })}
                             </p>
                         </div>
-                        <Switch
-                            isSelected={!!enabled}
-                            isDisabled={!setupStatus?.ready}
-                            onValueChange={handleEnabledChange}
-                        />
+                        <Switch isSelected={!!enabled} isDisabled={!setupStatus?.ready} onValueChange={handleEnabledChange} />
                     </div>
-                    {running && (
-                        <p className='text-xs text-default-400'>Port: {runningPort}</p>
-                    )}
+                    {running && <p className='text-xs text-default-400'>Port: {runningPort}</p>}
 
-                    {/* Performance warning */}
                     {running && (
                         <div className='flex items-start gap-2 p-2.5 rounded-lg bg-warning-50 dark:bg-warning-900/20 text-warning-700 dark:text-warning-400 text-xs'>
                             <MdWarning className='text-base flex-shrink-0 mt-0.5' />
@@ -681,7 +949,6 @@ export default function LocalSidecar() {
                         </div>
                     )}
 
-                    {/* Model preload status */}
                     {running && Object.entries(modelStatus).some(([, s]) => s !== 'idle') && (
                         <div className='flex flex-col gap-1.5'>
                             <p className='text-xs font-medium text-default-500'>{t('config.local_sidecar.startup.models_title', { defaultValue: 'Model Status' })}</p>
@@ -711,6 +978,7 @@ export default function LocalSidecar() {
                             })}
                         </div>
                     )}
+
                     <div className='flex gap-2'>
                         <Button size='sm' color='primary' variant='flat'
                             isDisabled={!setupStatus?.ready || running}
@@ -751,17 +1019,12 @@ export default function LocalSidecar() {
                         <div>
                             <h3 className='text-sm'>{t('config.local_sidecar.llm.temperature', { defaultValue: 'Temperature' })}</h3>
                             <p className='text-xs text-default-400'>
-                                {t('config.local_sidecar.llm.temperature_hint', { defaultValue: 'Lower = more deterministic' })}
+                                {t('config.local_sidecar.llm.temperature_hint', { defaultValue: 'Lower = more deterministic, higher = more creative' })}
                             </p>
                         </div>
                         <div className='flex items-center gap-3 max-w-[55%] w-full'>
-                            <Slider minValue={0} maxValue={1} step={0.05}
-                                value={temperature ?? 0.3}
-                                onChange={setTemperature}
-                                aria-label='Temperature' />
-                            <span className='text-sm text-default-500 w-8 text-right'>
-                                {(temperature ?? 0.3).toFixed(2)}
-                            </span>
+                            <Slider minValue={0} maxValue={1} step={0.05} value={temperature ?? 0.3} onChange={setTemperature} aria-label='Temperature' />
+                            <span className='text-sm text-default-500 w-8 text-right'>{(temperature ?? 0.3).toFixed(2)}</span>
                         </div>
                     </div>
                     <div className='config-item'>
@@ -844,7 +1107,8 @@ export default function LocalSidecar() {
                     </div>
                     <div className='config-item'>
                         <h3 className='my-auto text-sm'>{t('config.local_sidecar.asr.chunk_seconds', { defaultValue: 'Chunk size' })}</h3>
-                        <Select key={`chunk-${chunkSeconds ?? 7}`} variant='bordered' disallowEmptySelection selectedKeys={chunkSeconds ? [String(chunkSeconds)] : ['7']} className='max-w-[40%]'
+                        <Select key={`chunk-${chunkSeconds ?? 7}`} variant='bordered' disallowEmptySelection
+                            selectedKeys={chunkSeconds ? [String(chunkSeconds)] : ['7']} className='max-w-[40%]'
                             onSelectionChange={(keys) => { const v = Array.from(keys)[0]; if (v) setChunkSeconds(Number(v)); }}>
                             {CHUNK_OPTIONS.map(s => <SelectItem key={String(s)} textValue={`${s}s`}>{s}s</SelectItem>)}
                         </Select>
@@ -863,9 +1127,7 @@ export default function LocalSidecar() {
                 <CardBody className='flex flex-col gap-4'>
                     <div className='config-item'>
                         <h3 className='my-auto text-sm'>{t('config.local_sidecar.tts.engine', { defaultValue: 'Engine' })}</h3>
-                        <Select variant='bordered'
-                            selectedKeys={ttsEngine ? [ttsEngine] : ['kokoro']}
-                            className='max-w-[60%]'
+                        <Select variant='bordered' selectedKeys={ttsEngine ? [ttsEngine] : ['kokoro']} className='max-w-[60%]'
                             onSelectionChange={(keys) => {
                                 const v = Array.from(keys)[0];
                                 if (v) { setTtsEngine(v); if (running) setRestartNeeded(true); }
@@ -881,9 +1143,7 @@ export default function LocalSidecar() {
                             </p>
                         </div>
                         <div className='flex items-center gap-2 max-w-[60%] w-full'>
-                            <Input
-                                size='sm'
-                                variant='bordered'
+                            <Input size='sm' variant='bordered'
                                 placeholder={TTS_ENGINES.find(e => e.key === (ttsEngine ?? 'kokoro'))?.placeholder ?? ''}
                                 value={ttsModel ?? ''}
                                 onValueChange={(v) => { setTtsModel(v); if (running) setRestartNeeded(true); }}
@@ -904,28 +1164,19 @@ export default function LocalSidecar() {
                     {(ttsEngine ?? 'kokoro') === 'mlx_audio' && (
                         <div className='config-item'>
                             <h3 className='my-auto text-sm'>{t('config.local_sidecar.tts.voice', { defaultValue: 'Voice' })}</h3>
-                            <Input
-                                size='sm'
-                                variant='bordered'
-                                placeholder='e.g. serena'
-                                value={ttsVoice ?? ''}
-                                onValueChange={(v) => setTtsVoice(v)}
-                                className='max-w-[50%]'
-                            />
+                            <Input size='sm' variant='bordered' placeholder='e.g. serena'
+                                value={ttsVoice ?? ''} onValueChange={(v) => setTtsVoice(v)} className='max-w-[50%]' />
                         </div>
                     )}
                     {(ttsEngine ?? 'kokoro') === 'mlx_audio' && (
                         <div className='config-item'>
                             <h3 className='my-auto text-sm'>{t('config.local_sidecar.tts.ref_audio', { defaultValue: 'Ref audio (optional)' })}</h3>
                             <div className='flex gap-2 flex-1'>
-                                <Input
-                                    size='sm'
-                                    variant='bordered'
+                                <Input size='sm' variant='bordered'
                                     placeholder={t('config.local_sidecar.tts.ref_audio_placeholder', { defaultValue: 'Select a .wav file…' })}
                                     value={ttsRefAudio ?? ''}
                                     onValueChange={(v) => { setTtsRefAudio(v); if (running) setRestartNeeded(true); }}
-                                    className='flex-1'
-                                    isReadOnly
+                                    className='flex-1' isReadOnly
                                 />
                                 <Button size='sm' variant='flat' onPress={async () => {
                                     const path = await openFileDialog({ filters: [{ name: 'Audio', extensions: ['wav', 'mp3', 'm4a', 'flac'] }] });
@@ -934,7 +1185,8 @@ export default function LocalSidecar() {
                                     {t('common.browse', { defaultValue: 'Browse' })}
                                 </Button>
                                 {ttsRefAudio && (
-                                    <Button size='sm' variant='flat' color='danger' isIconOnly onPress={() => { setTtsRefAudio(''); if (running) setRestartNeeded(true); }}>✕</Button>
+                                    <Button size='sm' variant='flat' color='danger' isIconOnly
+                                        onPress={() => { setTtsRefAudio(''); if (running) setRestartNeeded(true); }}>✕</Button>
                                 )}
                             </div>
                         </div>
@@ -950,18 +1202,12 @@ export default function LocalSidecar() {
                         {t('config.local_sidecar.cache.section', { defaultValue: 'Cached Models' })}
                     </h3>
                     <div className='ml-auto flex gap-1'>
-                        <Button
-                            size='sm' variant='light' isIconOnly
+                        <Button size='sm' variant='light' isIconOnly
                             onPress={() => invoke('local_sidecar_reveal_cache').catch(console.error)}
-                            title='Open cache folder'
-                        >
+                            title='Open cache folder'>
                             <MdFolderOpen className='text-base' />
                         </Button>
-                        <Button
-                            size='sm' variant='light' isIconOnly
-                            onPress={loadCachedModels}
-                            title='Refresh'
-                        >
+                        <Button size='sm' variant='light' isIconOnly onPress={loadCachedModels} title='Refresh'>
                             <MdRefresh className='text-base' />
                         </Button>
                     </div>
@@ -983,13 +1229,11 @@ export default function LocalSidecar() {
                                         <p className='text-xs font-mono truncate'>{m.repo_id}</p>
                                         <p className='text-xs text-default-400'>{formatBytes(m.size_bytes)}</p>
                                     </div>
-                                    <Button
-                                        size='sm' variant='light' color='danger' isIconOnly
+                                    <Button size='sm' variant='light' color='danger' isIconOnly
                                         isLoading={deletingModel === m.repo_id}
                                         onPress={() => handleDeleteModel(m.repo_id)}
                                         className='opacity-0 group-hover:opacity-100 transition-opacity'
-                                        title={t('config.local_sidecar.cache.delete', { defaultValue: 'Delete from cache' })}
-                                    >
+                                        title={t('config.local_sidecar.cache.delete', { defaultValue: 'Delete from cache' })}>
                                         <MdDelete className='text-base' />
                                     </Button>
                                 </div>
@@ -1004,7 +1248,36 @@ export default function LocalSidecar() {
                     )}
                 </CardBody>
             </Card>
+        </>
+    );
 
+    // ── Main render ────────────────────────────────────────────────────────────
+    // On macOS: show MLX / ONNX tabs (same Tabs pattern as Service/index.jsx).
+    // On Windows / Linux: ONNX only — render directly without tabs.
+    if (isMacOS) {
+        return (
+            <Tabs
+                selectedKey={effectiveEngine}
+                onSelectionChange={key => setActiveEngine(String(key))}
+                aria-label='Local Model Engine'
+            >
+                <Tab key='mlx' title={t('config.local_sidecar.engine_tab.mlx', { defaultValue: 'MLX' })}>
+                    <div className='flex flex-col gap-4'>
+                        {renderMLXPanel()}
+                    </div>
+                </Tab>
+                <Tab key='onnx' title={t('config.local_sidecar.engine_tab.onnx', { defaultValue: 'ONNX' })}>
+                    <div className='flex flex-col gap-4'>
+                        {renderONNXPanel()}
+                    </div>
+                </Tab>
+            </Tabs>
+        );
+    }
+
+    return (
+        <div className='flex flex-col gap-4'>
+            {renderONNXPanel()}
         </div>
     );
 }

@@ -406,6 +406,10 @@
           "engine": "Engine",
           "voice": "Voice",
           "speed": "Speed"
+        },
+        "engine_tab": {
+          "mlx": "MLX",
+          "onnx": "ONNX"
         }
       },
       "onnx_stt": {
@@ -422,8 +426,16 @@
           "download_hint": "Enter a HuggingFace repo ID for a Zipformer RNNT ONNX model.",
           "download_btn": "Download",
           "downloaded": "Downloaded models",
-          "incomplete": "(incomplete)"
-        }
+          "incomplete": "(incomplete)",
+          "downloaded_badge": "Downloaded",
+          "select_hint": "Select from downloaded models"
+        },
+        "server": {
+          "title": "ONNX Server",
+          "running": "Running on port {{port}}",
+          "stopped": "Server is stopped"
+        },
+        "manage_in_settings": "Manage engine and models in Settings → Local Models"
       }
     },
     "monitor": {
@@ -896,7 +908,7 @@
           "api_key_hint_enable": "enable Cloud Text-to-Speech API, then create an API key."
         },
         "local_sidecar_tts": {
-          "title": "Local Model TTS"
+          "title": "Offline TTS (MLX)"
         }
       },
       "ai": {
@@ -935,7 +947,7 @@
           "not_available": "Transkit Cloud is not available in this build."
         },
         "local_sidecar_ai": {
-          "title": "Local Model AI",
+          "title": "Offline AI (MLX)",
           "hint": "Uses the Local Model LLM for AI analysis. Configure the model in Settings → Local Model."
         }
       },
@@ -1050,7 +1062,7 @@
           "loading_usage": "Loading usage data…"
         },
         "local_sidecar_stt": {
-          "title": "Local Model STT"
+          "title": "Offline STT (MLX)"
         },
         "onnx_stt": {
           "title": "Offline STT (ONNX)"

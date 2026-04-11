@@ -16,7 +16,7 @@ export function Config(props) {
     const [config, setConfig] = useConfig(
         instanceKey,
         {
-            [INSTANCE_NAME_CONFIG_KEY]: t('services.transcription.local_sidecar_stt.title', { defaultValue: 'Local Model STT' }),
+            [INSTANCE_NAME_CONFIG_KEY]: t('services.transcription.local_sidecar_stt.title', { defaultValue: 'Offline STT (MLX)' }),
             task:          'transcribe',
             chunkSeconds:  7,
             strideSeconds: 5,

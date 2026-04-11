@@ -406,6 +406,10 @@
           "engine": "Engine",
           "voice": "Giọng đọc",
           "speed": "Tốc độ"
+        },
+        "engine_tab": {
+          "mlx": "MLX",
+          "onnx": "ONNX"
         }
       },
       "onnx_stt": {
@@ -422,8 +426,16 @@
           "download_hint": "Nhập HuggingFace repo ID của mô hình Zipformer RNNT ONNX.",
           "download_btn": "Tải về",
           "downloaded": "Mô hình đã tải",
-          "incomplete": "(chưa hoàn tất)"
-        }
+          "incomplete": "(chưa hoàn tất)",
+          "downloaded_badge": "Đã tải",
+          "select_hint": "Chọn từ mô hình đã tải"
+        },
+        "server": {
+          "title": "ONNX Server",
+          "running": "Đang chạy trên cổng {{port}}",
+          "stopped": "Server đã dừng"
+        },
+        "manage_in_settings": "Quản lý engine và mô hình trong Cài đặt → Local Models"
       }
     },
     "monitor": {
@@ -895,7 +907,7 @@
           "api_key_hint_enable": "bật Cloud Text-to-Speech API, sau đó tạo API key."
         },
         "local_sidecar_tts": {
-          "title": "Offline model TTS"
+          "title": "Offline TTS (MLX)"
         }
       },
       "ai": {
@@ -934,7 +946,7 @@
           "not_available": "Transkit Cloud không khả dụng trong bản build này."
         },
         "local_sidecar_ai": {
-          "title": "Offline model AI",
+          "title": "Offline AI (MLX)",
           "hint": "Dùng LLM Offline model cho phân tích AI. Cấu hình mô hình tại Cài đặt → Offline model."
         }
       },
@@ -1050,7 +1062,7 @@
           "not_available": "Transkit Cloud không khả dụng trong bản build này."
         },
         "local_sidecar_stt": {
-          "title": "Offline model STT"
+          "title": "Offline STT (MLX)"
         },
         "onnx_stt": {
           "title": "Offline STT (ONNX)"

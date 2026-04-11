@@ -30,11 +30,12 @@ SAMPLE_RATE = 16000
 BYTES_PER_SAMPLE = 2  # s16le
 
 # ── Silence / batching constants ───────────────────────────────────────────────
-_SILENCE_RMS_THRESHOLD   = 0.008   # RMS below this = silence
-_SILENCE_COMMIT_S        = 0.7     # seconds of silence → commit buffered audio
+_SILENCE_RMS_THRESHOLD   = 0.015   # RMS below this = silence (raised from 0.008 to cut mic-noise hallucinations)
+_SILENCE_COMMIT_S        = 0.8     # seconds of silence → commit buffered audio
 _MAX_SEGMENT_S           = 20.0    # hard cap: commit even without silence
 _PROVISIONAL_INTERVAL_S  = 2.5     # run inference during long speech for provisional text
 _POLL_INTERVAL_S         = 0.05    # 50 ms polling loop
+_MIN_COMMIT_S            = 0.5     # discard segments shorter than this (avoids hallucination on tiny noise bursts)
 
 
 # ── Model file detection ───────────────────────────────────────────────────────
@@ -289,6 +290,30 @@ def _normalize_text(text):
     return text
 
 
+def _is_hallucination(text):
+    # type: (str) -> bool
+    """
+    Detect common hallucination patterns produced by offline models on silence/noise:
+      - A single token repeated 3+ times (e.g. "Đây Đây Đây" or "và và và và")
+      - Result is suspiciously short (≤ 2 chars) — corner-case noise burst
+    """
+    import re
+    if not text or len(text) <= 2:
+        return True
+    # Split into words; if any word repeats 3+ consecutive times, it's a hallucination
+    words = text.split()
+    for i in range(len(words) - 2):
+        if words[i].lower() == words[i + 1].lower() == words[i + 2].lower():
+            return True
+    # Also catch punctuation-separated repetitions like "và, và, và"
+    tokens = re.split(r'[\s,\.]+', text.lower())
+    tokens = [w for w in tokens if w]
+    for i in range(len(tokens) - 2):
+        if tokens[i] == tokens[i + 1] == tokens[i + 2]:
+            return True
+    return False
+
+
 # ── Streaming session ──────────────────────────────────────────────────────────
 
 class StreamingSession(object):
@@ -443,15 +468,15 @@ class StreamingSession(object):
         self._silence_start = None
         self._last_provisional_time = 0.0
 
-        if len(audio) < int(SAMPLE_RATE * 0.1):
-            return  # too short to transcribe
+        if len(audio) < int(SAMPLE_RATE * _MIN_COMMIT_S):
+            return  # too short — likely mic noise, discard to avoid hallucination
 
         try:
             stream = recognizer.create_stream()
             stream.accept_waveform(SAMPLE_RATE, audio)
             recognizer.decode_stream(stream)
             text = _normalize_text(stream.result.text.strip())
-            if text and self.on_transcript:
+            if text and not _is_hallucination(text) and self.on_transcript:
                 # Clear provisional then emit final
                 self.on_transcript("", False, None)
                 self.on_transcript(text, True, None)

@@ -52,7 +52,7 @@ function StatusDot({ status }) {
 const SVC_LABELS = {
     deepgram_stt: 'Deepgram', soniox_stt: 'Soniox', gladia_stt: 'Gladia',
     transkit_cloud_stt: 'Transkit Cloud STT', transkit_cloud_dictation: 'Transkit Cloud Dictation',
-    openai_whisper_stt: 'Whisper', assemblyai_stt: 'AssemblyAI', local_sidecar_stt: 'Local Model STT',
+    openai_whisper_stt: 'Whisper', assemblyai_stt: 'AssemblyAI', local_sidecar_stt: 'Offline STT (MLX)',
     edge_tts: 'Edge TTS', elevenlabs_tts: 'ElevenLabs', google_tts: 'Google TTS',
     google_cloud_tts: 'Google Cloud TTS',
     openai_tts: 'OpenAI TTS', vieneu_tts: 'VieNeu', lingva: 'Lingva',
