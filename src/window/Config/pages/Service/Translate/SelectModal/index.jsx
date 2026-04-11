@@ -8,6 +8,7 @@ import { createServiceInstanceKey } from '../../../../../../utils/service_instan
 // Global services - shown by default
 const globalServices = [
     'transkit_cloud_translate',
+    'google_cloud_translate',
     'deepl',
     'google',
     'bing',

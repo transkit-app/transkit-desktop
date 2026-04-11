@@ -1,4 +1,5 @@
 import * as _transkit_cloud_translate from './transkit_cloud_translate';
+import * as _google_cloud_translate from './google_cloud_translate';
 import * as _deepl from './deepl';
 import * as _bing from './bing';
 import * as _yandex from './yandex';
@@ -25,6 +26,7 @@ import * as _groq from './groq';
 import * as _local_sidecar from './local_sidecar';
 
 export const transkit_cloud_translate = _transkit_cloud_translate;
+export const google_cloud_translate = _google_cloud_translate;
 export const deepl = _deepl;
 export const bing = _bing;
 export const yandex = _yandex;

@@ -410,6 +410,12 @@
         "engine_tab": {
           "mlx": "MLX",
           "onnx": "ONNX"
+        },
+        "offline_stt_translate": {
+          "section": "Translate Transcripts",
+          "service": "Translate service",
+          "service_hint": "After speech is recognized, translate the transcript to the target language. Uses the target language configured in Monitor / Voice Anywhere.",
+          "none": "No translation"
         }
       },
       "onnx_stt": {
@@ -772,6 +778,12 @@
         "local_sidecar": {
           "title": "Local Model",
           "hint": "Uses the Local Model LLM for translation. Configure the model in Settings → Local Model."
+        },
+        "google_cloud_translate": {
+          "title": "Google Cloud Translation",
+          "api_key": "API Key",
+          "api_key_hint": "Get your API key at",
+          "api_key_hint_enable": "enable Cloud Translation API first."
         }
       },
       "recognize": {

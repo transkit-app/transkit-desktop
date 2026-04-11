@@ -20,6 +20,7 @@ import ContextPanel from './components/ContextPanel';
 import AIPanel from './components/AIPanel';
 import NarrationPanel from './components/NarrationPanel';
 import * as transcriptionServices from '../../services/transcription';
+import * as translateServices from '../../services/translate';
 import { getTTSQueue } from './tts';
 import { reportUsage, CLOUD_ENABLED, callCloudAI } from '../../lib/transkit-cloud';
 
@@ -163,6 +164,9 @@ export default function Monitor() {
     const [ttsServiceList] = useConfig('tts_service_list', ['google_tts', 'edge_tts']);
     const [ttsPlaybackRate] = useConfig('tts_playback_rate', 1);
     const [ttsVolume, setTtsVolume] = useConfig('tts_volume', 1.0);
+
+    // Offline STT translate service
+    const [offlineTranslateService] = useConfig('offline_stt_translate_service', 'none');
 
     // Active AI service (for context generation)
     const [aiServiceList] = useConfig('ai_service_list', []);
@@ -868,6 +872,45 @@ export default function Monitor() {
                 getTTSQueue().enqueue(text, { injectNarration: false });
             }
         };
+        // Offline STT translate: for ONNX / MLX STT, the engine only transcribes.
+        // If the user has configured a translate service, wrap onTranslation to
+        // translate the transcript before creating the entry.
+        const OFFLINE_STT_SERVICES = ['onnx_stt', 'local_sidecar_stt'];
+        if (
+            OFFLINE_STT_SERVICES.includes(serviceName) &&
+            offlineTranslateService && offlineTranslateService !== 'none' &&
+            targetLang && sourceLang !== targetLang
+        ) {
+            const translateSvcName = getServiceName(offlineTranslateService);
+            const translateModule = translateServices[translateSvcName];
+            if (translateModule?.translate) {
+                const translateCfg = (await store.get(offlineTranslateService)) ?? {};
+                const _origOnTranslation = client.onTranslation;
+                client.onTranslation = async (text) => {
+                    let translated = text;
+                    try {
+                        let setResultValue = null;
+                        const returned = await translateModule.translate(
+                            text,
+                            sourceLang === 'auto' ? 'auto' : sourceLang,
+                            targetLang,
+                            { config: translateCfg, setResult: (r) => { setResultValue = r; } }
+                        );
+                        if (typeof returned === 'string' && returned) {
+                            translated = returned;
+                        } else if (typeof returned === 'object' && returned?.translation) {
+                            translated = returned.translation;
+                        } else if (setResultValue !== null) {
+                            translated = setResultValue;
+                        }
+                    } catch (err) {
+                        console.warn('[Monitor] Offline STT translate failed:', err);
+                    }
+                    _origOnTranslation(translated);
+                };
+            }
+        }
+
         client.onProvisional = (text) => setProvisional(text || '');
         client.onStatusChange = (s) => {
             setStatus(s);
