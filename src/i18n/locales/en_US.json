@@ -428,14 +428,18 @@
           "downloaded": "Downloaded models",
           "incomplete": "(incomplete)",
           "downloaded_badge": "Downloaded",
-          "select_hint": "Select from downloaded models"
+          "select_hint": "Select from downloaded models",
+          "active_readonly": "Active model (managed in Local Models settings)",
+          "no_model": "No model selected — configure in Settings → Local Models"
         },
         "server": {
           "title": "ONNX Server",
           "running": "Running on port {{port}}",
-          "stopped": "Server is stopped"
+          "stopped": "Server is stopped",
+          "no_model_warning": "No model downloaded yet. Download a model in the Models section below before starting the server."
         },
-        "manage_in_settings": "Manage engine and models in Settings → Local Models"
+        "manage_in_settings": "Manage engine and models in Settings → Local Models",
+        "usage_hint": "To use ONNX speech recognition, go to Settings → Services → Transcription and add an \"Offline STT (ONNX)\" service instance."
       }
     },
     "monitor": {

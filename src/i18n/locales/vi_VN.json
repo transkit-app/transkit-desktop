@@ -428,14 +428,18 @@
           "downloaded": "Mô hình đã tải",
           "incomplete": "(chưa hoàn tất)",
           "downloaded_badge": "Đã tải",
-          "select_hint": "Chọn từ mô hình đã tải"
+          "select_hint": "Chọn từ mô hình đã tải",
+          "active_readonly": "Mô hình đang dùng (quản lý tại Local Models)",
+          "no_model": "Chưa chọn mô hình — cấu hình tại Cài đặt → Local Models"
         },
         "server": {
           "title": "ONNX Server",
           "running": "Đang chạy trên cổng {{port}}",
-          "stopped": "Server đã dừng"
+          "stopped": "Server đã dừng",
+          "no_model_warning": "Chưa tải mô hình nào. Hãy tải mô hình ở mục bên dưới trước khi khởi động server."
         },
-        "manage_in_settings": "Quản lý engine và mô hình trong Cài đặt → Local Models"
+        "manage_in_settings": "Quản lý engine và mô hình trong Cài đặt → Local Models",
+        "usage_hint": "Để dùng ONNX STT, vào Cài đặt → Services → Transcription và thêm service \"Offline STT (ONNX)\"."
       }
     },
     "monitor": {

@@ -125,7 +125,7 @@ export default function LocalSidecar() {
     const [onnxSetup,        setOnnxSetup]        = useState(null);
     const [onnxEngineStatus, setOnnxEngineStatus] = useState({ running: false, port: 0 });
     const [onnxModels,       setOnnxModels]       = useState([]);
-    const [onnxRepoInput,    setOnnxRepoInput]    = useState('hynt/Zipformer-30M-RNNT-6000h');
+    const [onnxRepoInput,    setOnnxRepoInput]    = useState('csukuangfj2/sherpa-onnx-zipformer-vi-30M-int8-2026-02-09');
     const [onnxInstalling,   setOnnxInstalling]   = useState(false);
     const [onnxInstallProgress, setOnnxInstallProgress] = useState(null);
     const [onnxDownloading,  setOnnxDownloading]  = useState(false);
@@ -662,7 +662,7 @@ export default function LocalSidecar() {
                             <Input
                                 label={t('config.onnx_stt.model.active', { defaultValue: 'Default model' })}
                                 labelPlacement='outside'
-                                placeholder='e.g. hynt/Zipformer-30M-RNNT-6000h'
+                                placeholder='e.g. csukuangfj2/sherpa-onnx-zipformer-vi-30M-int8-2026-02-09'
                                 variant='bordered'
                                 classNames={{ label: 'text-xs text-default-500 pb-1' }}
                                 value={onnxActiveModel ?? ''}
@@ -674,9 +674,15 @@ export default function LocalSidecar() {
                         </p>
                     </div>
 
+                    {onnxSetup?.ready && onnxModels.length === 0 && !onnxEngineStatus.running && (
+                        <div className='flex items-start gap-2 p-2.5 rounded-lg bg-warning-50 dark:bg-warning-900/20 text-warning-700 dark:text-warning-400 text-xs'>
+                            <MdWarning className='text-base flex-shrink-0 mt-0.5' />
+                            <span>{t('config.onnx_stt.server.no_model_warning', { defaultValue: 'No model downloaded yet. Download a model in the Models section below before starting the server.' })}</span>
+                        </div>
+                    )}
                     <div className='flex gap-2'>
                         <Button size='sm' color='primary' variant='flat'
-                            isDisabled={!onnxSetup?.ready || onnxEngineStatus.running}
+                            isDisabled={!onnxSetup?.ready || onnxEngineStatus.running || onnxModels.length === 0}
                             startContent={<MdPlayArrow />}
                             onPress={handleOnnxStart}>
                             {t('config.local_sidecar.startup.start', { defaultValue: 'Start' })}
@@ -710,7 +716,7 @@ export default function LocalSidecar() {
                         <Input
                             label={t('config.onnx_stt.model.download_title', { defaultValue: 'Download from HuggingFace' })}
                             labelPlacement='outside'
-                            placeholder='hynt/Zipformer-30M-RNNT-6000h'
+                            placeholder='csukuangfj2/sherpa-onnx-zipformer-vi-30M-int8-2026-02-09'
                             variant='bordered'
                             className='flex-1'
                             classNames={{ label: 'text-xs text-default-500 pb-1' }}
@@ -784,6 +790,12 @@ export default function LocalSidecar() {
                     )}
                 </CardBody>
             </Card>
+
+            {/* Usage hint */}
+            <div className='flex items-start gap-2 p-3 rounded-lg bg-content2 text-xs text-default-500'>
+                <MdSettings className='flex-shrink-0 text-sm mt-0.5' />
+                <span>{t('config.onnx_stt.usage_hint', { defaultValue: 'To use ONNX speech recognition, go to Settings → Services → Transcription and add an "Offline STT (ONNX)" service instance.' })}</span>
+            </div>
         </>
     );
 
