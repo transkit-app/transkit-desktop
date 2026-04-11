@@ -1,5 +1,17 @@
 # Changelog
  
+## 3.2.7 (2026-04-11)
+ 
+### ONNX STT Engine & Models:
+- **Enhanced Model Detection**: Fixed logic to correctly identify and load various Zipformer model structures (standard ONNX vs shared sidecar weights).
+- **Improved Downloader**: Refined HuggingFace model downloading with better error handling and progress reporting.
+- **Engine Reliability**: Optimized the local sidecar engine for more stable WebSocket connections and faster initialization.
+ 
+### UI & Refinement:
+- **Config UI Modernization**: Refactored the ONNX STT configuration page with a premium vertical layout using NextUI components, consistent with the app's design system.
+- **Standardized Inputs**: Improved usability of STT provider settings with better label placement and aligned action buttons.
+ 
+ 
 ## 3.2.6 (2026-04-10)
  
 ### Voice Anywhere & Dictation:
