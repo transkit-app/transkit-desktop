@@ -1292,6 +1292,8 @@ export default function LocalSidecar() {
                 selectedKey={effectiveEngine}
                 onSelectionChange={key => setActiveEngine(String(key))}
                 aria-label='Local Model Engine'
+                className='w-full'
+                classNames={{ panel: 'w-full px-0 pt-3' }}
             >
                 <Tab key='mlx' title={t('config.local_sidecar.engine_tab.mlx', { defaultValue: 'MLX' })}>
                     <div className='flex flex-col gap-4'>
