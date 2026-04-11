@@ -13,6 +13,7 @@ mod error;
 mod hotkey;
 mod local_sidecar;
 mod narration;
+mod onnx_engine;
 mod screenshot;
 mod server;
 mod system_ocr;
@@ -28,6 +29,13 @@ use local_sidecar::{
     local_sidecar_check_setup, local_sidecar_check_prereqs, local_sidecar_run_setup,
     local_sidecar_list_cached_models, local_sidecar_delete_cached_model,
     local_sidecar_download_model, local_sidecar_get_port, local_sidecar_reveal_cache,
+};
+use onnx_engine::{
+    OnnxEngineState,
+    onnx_engine_check_setup, onnx_engine_install,
+    onnx_engine_start, onnx_engine_stop, onnx_engine_status,
+    onnx_engine_get_port,
+    onnx_model_download, onnx_model_list, onnx_model_delete,
 };
 use narration::{
     narration_detect_devices, narration_get_status, narration_inject_audio, narration_list_devices,
@@ -126,6 +134,7 @@ fn main() {
             app.manage(NarrationState::new());
             app.manage(VoiceAnywhereState::new());
             app.manage(LocalSidecarState::new());
+            app.manage(OnnxEngineState::new());
             // Update Tray Menu
             update_tray(app.app_handle(), "".to_string(), "".to_string());
             // Start http server
@@ -256,7 +265,16 @@ fn main() {
             local_sidecar_delete_cached_model,
             local_sidecar_download_model,
             local_sidecar_get_port,
-            local_sidecar_reveal_cache
+            local_sidecar_reveal_cache,
+            onnx_engine_check_setup,
+            onnx_engine_install,
+            onnx_engine_start,
+            onnx_engine_stop,
+            onnx_engine_status,
+            onnx_engine_get_port,
+            onnx_model_download,
+            onnx_model_list,
+            onnx_model_delete
         ])
         .on_system_tray_event(tray_event_handler)
         .build(tauri::generate_context!())

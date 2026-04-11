@@ -15,8 +15,17 @@ def _importable(module_name: str) -> bool:
 
 def probe() -> dict:
     llm_ok = _importable("mlx_lm")
-    asr_ok = _importable("mlx_whisper")
+    mlx_asr_ok = _importable("mlx_whisper")
+    onnx_asr_ok = _importable("sherpa_onnx")
+    asr_ok = mlx_asr_ok or onnx_asr_ok
     tts_ok = _importable("kokoro_mlx")
+
+    if mlx_asr_ok:
+        asr_backend = "mlx-whisper"
+    elif onnx_asr_ok:
+        asr_backend = "sherpa-onnx"
+    else:
+        asr_backend = None
 
     return {
         "llm": {
@@ -25,7 +34,7 @@ def probe() -> dict:
         },
         "asr": {
             "available": asr_ok,
-            "backend": "mlx-whisper" if asr_ok else None,
+            "backend": asr_backend,
         },
         "tts": {
             "available": tts_ok,
