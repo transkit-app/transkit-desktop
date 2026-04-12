@@ -31,7 +31,7 @@ export default function Updater() {
         checkUpdate().then(
             (update) => {
                 if (update.shouldUpdate) {
-                    setBody(update.manifest.body);
+                    setBody(update.manifest?.notes ?? update.manifest?.body ?? '');
                 } else {
                     setBody(t('updater.latest'));
                 }

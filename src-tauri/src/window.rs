@@ -443,6 +443,10 @@ pub fn updater_window() {
         .unwrap();
     window.set_size(tauri::LogicalSize::new(600, 400)).unwrap();
     window.center().unwrap();
+    window.set_always_on_top(true).unwrap_or_default();
+    window.show().unwrap_or_default();
+    window.unminimize().unwrap_or_default();
+    window.set_focus().unwrap_or_default();
     #[cfg(target_os = "windows")]
     window.set_skip_taskbar(false).unwrap_or_default();
 }
