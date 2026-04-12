@@ -4,6 +4,7 @@ import { invoke } from '@tauri-apps/api/tauri';
 import { useTranslation } from 'react-i18next';
 import { store } from '../../utils/store';
 import { getServiceName } from '../../utils/service_instance';
+import { normalizeAppLanguageToVoiceCode, normalizeVoiceLanguageToAppKey } from '../../utils/voiceLanguage';
 import * as transcriptionServices from '../../services/transcription';
 import * as translateServices from '../../services/translate';
 import { polishTranscript } from '../../utils/polishTranscript';
@@ -233,8 +234,10 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, targe
             STT_FRIENDLY_NAMES[serviceName] || serviceName;
 
         const lang = languageRef.current;
-        const sourceLang = (lang && lang !== 'auto') ? lang : null;
-        const targetLang = (targetLanguageRef.current && targetLanguageRef.current !== 'none') ? targetLanguageRef.current : null;
+        const sourceLang = (lang && lang !== 'auto') ? normalizeAppLanguageToVoiceCode(lang) : null;
+        const targetLang = (targetLanguageRef.current && targetLanguageRef.current !== 'none')
+            ? normalizeAppLanguageToVoiceCode(targetLanguageRef.current)
+            : null;
 
         const preferAsync = !!preferAsyncRef.current;
         const client = service.createClient({ preferAsync });
@@ -288,8 +291,8 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, targe
                         let setResultValue = null;
                         const returned = await translateModule.translate(
                             text,
-                            srcLang === 'auto' ? 'auto' : (srcLang || 'auto'),
-                            tgtLang,
+                            srcLang === 'auto' ? 'auto' : normalizeVoiceLanguageToAppKey(srcLang || 'auto'),
+                            normalizeVoiceLanguageToAppKey(tgtLang),
                             { config: translateCfg, setResult: (r) => { setResultValue = r; } }
                         );
                         if (typeof returned === 'string' && returned) {

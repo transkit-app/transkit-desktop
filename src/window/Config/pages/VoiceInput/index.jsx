@@ -7,6 +7,7 @@ import { invoke } from '@tauri-apps/api/tauri';
 import { useConfig } from '../../../../hooks';
 import { getServiceName } from '../../../../utils/service_instance';
 import { store } from '../../../../utils/store';
+import { VOICE_INPUT_TARGET_LANGUAGES, normalizeVoiceLanguageToAppKey } from '../../../../utils/voiceLanguage';
 import * as builtinTranscriptionServices from '../../../../services/transcription';
 
 function getTranscriptionServiceLabel(instanceKey, t) {
@@ -33,6 +34,13 @@ export default function VoiceInput() {
     // Language — inherits from Audio Monitor source lang by default
     const [voiceLanguage, setVoiceLanguage] = useConfig('voice_anywhere_language', 'auto');
     const [targetLanguage, setTargetLanguage] = useConfig('voice_anywhere_target_language', 'none');
+
+    React.useEffect(() => {
+        const normalizedTargetLanguage = normalizeVoiceLanguageToAppKey(targetLanguage);
+        if (normalizedTargetLanguage !== targetLanguage) {
+            setTargetLanguage(normalizedTargetLanguage);
+        }
+    }, [targetLanguage, setTargetLanguage]);
 
     // After-stop action for external apps: clipboard | paste
     const [action, setAction] = useConfig('voice_anywhere_action', 'clipboard');
@@ -246,17 +254,11 @@ export default function VoiceInput() {
                             <SelectItem key='none'>
                                 {t('config.voice_input.no_translate', { defaultValue: 'No translate (Dictation)' })}
                             </SelectItem>
-                            <SelectItem key='en'>English</SelectItem>
-                            <SelectItem key='vi'>Tiếng Việt</SelectItem>
-                            <SelectItem key='zh'>中文</SelectItem>
-                            <SelectItem key='ja'>日本語</SelectItem>
-                            <SelectItem key='ko'>한국어</SelectItem>
-                            <SelectItem key='fr'>Français</SelectItem>
-                            <SelectItem key='de'>Deutsch</SelectItem>
-                            <SelectItem key='es'>Español</SelectItem>
-                            <SelectItem key='pt'>Português</SelectItem>
-                            <SelectItem key='ru'>Русский</SelectItem>
-                            <SelectItem key='ar'>العربية</SelectItem>
+                            {VOICE_INPUT_TARGET_LANGUAGES.map((language) => (
+                                <SelectItem key={language}>
+                                    {t(`languages.${language}`, { defaultValue: language })}
+                                </SelectItem>
+                            ))}
                         </Select>
                     </div>
 
