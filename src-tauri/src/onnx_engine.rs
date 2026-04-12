@@ -30,7 +30,7 @@ use std::net::TcpListener;
 use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
-use tauri::{Manager, State, Window};
+use tauri::{AppHandle, Manager, State, Window};
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
@@ -514,8 +514,16 @@ pub fn onnx_engine_start(
     window: Window,
     state: State<'_, OnnxEngineState>,
 ) -> Result<(), String> {
+    start_with_handle(config, window.app_handle(), &state)
+}
+
+pub fn start_with_handle(
+    config: OnnxSttConfig,
+    app_handle: AppHandle,
+    state: &OnnxEngineState,
+) -> Result<(), String> {
     // Stop any existing process
-    stop_inner(&state);
+    stop_inner(state);
 
     let script = server_script()
         .ok_or("Server script not found. Ensure scripts/local_sidecar/server.py exists.")?;
@@ -567,8 +575,6 @@ pub fn onnx_engine_start(
 
     let stdout = child.stdout.take().ok_or("Failed to get stdout")?;
     let stderr = child.stderr.take().ok_or("Failed to get stderr")?;
-
-    let app_handle = window.app_handle();
 
     std::thread::spawn(move || {
         use std::io::BufRead;

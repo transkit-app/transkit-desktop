@@ -138,6 +138,13 @@ export default function VoiceInput() {
         ).then((pairs) => setSvcDisplayNames(Object.fromEntries(pairs)));
     }, [transcriptionServiceList, t]);
 
+    // Sync tray menu whenever VA quick-access settings change from this UI.
+    // Rust handlers already call update_tray() for tray-initiated changes;
+    // this covers changes made inside the Config window.
+    React.useEffect(() => {
+        invoke('update_tray', { language: '', copyMode: '' }).catch(() => {});
+    }, [voiceSttService, voiceLanguage, action, injectMode]);
+
     return (
         <div className='flex flex-col gap-4'>
             {/* STT Service */}

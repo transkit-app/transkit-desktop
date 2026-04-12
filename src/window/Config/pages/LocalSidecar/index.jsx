@@ -135,6 +135,7 @@ export default function LocalSidecar() {
     const [onnxInstallProgress, setOnnxInstallProgress] = useState(null);
     const [onnxDownloading,  setOnnxDownloading]  = useState(false);
     const [onnxDownloadProgress, setOnnxDownloadProgress] = useState(null);
+    const [onnxEnabled,      setOnnxEnabled]      = useConfig('onnx_engine_enabled', false);
 
     // ── MLX initial load ───────────────────────────────────────────────────────
     useEffect(() => {
@@ -452,10 +453,13 @@ export default function LocalSidecar() {
     };
 
     const handleOnnxStart = async () => {
+        const selectedModel = onnxActiveModel || onnxModels[0]?.repo_id;
+        if (!selectedModel) return;
         try {
             await invoke('onnx_engine_start', {
-                config: { asr_model: onnxActiveModel || undefined }
+                config: { asr_model: selectedModel }
             });
+            if (!onnxActiveModel) setOnnxActiveModel(selectedModel);
             invoke('onnx_engine_status').then(setOnnxEngineStatus).catch(() => {});
         } catch (err) {
             console.error('[OnnxSTT] Start failed:', err);
@@ -470,6 +474,15 @@ export default function LocalSidecar() {
             console.error('[OnnxSTT] Stop failed:', err);
         }
     };
+
+    const handleOnnxEnabledChange = useCallback((value) => {
+        setOnnxEnabled(value);
+        if (value && onnxSetup?.ready && onnxModels.length > 0) {
+            handleOnnxStart();
+        } else if (!value) {
+            handleOnnxStop();
+        }
+    }, [setOnnxEnabled, onnxSetup, onnxModels, handleOnnxStart, handleOnnxStop]);
 
     const handleOnnxDownload = async () => {
         const r = onnxRepoInput.trim();
@@ -637,6 +650,22 @@ export default function LocalSidecar() {
                     </Chip>
                 </CardHeader>
                 <CardBody className='flex flex-col gap-3'>
+                    <div className='config-item'>
+                        <div>
+                            <h3 className='text-sm'>
+                                {t('config.onnx_stt.startup.enable', { defaultValue: 'Start when open Transkit' })}
+                            </h3>
+                            <p className='text-xs text-default-400'>
+                                {t('config.onnx_stt.startup.enable_hint', { defaultValue: 'Automatically start the ONNX server when Transkit launches if a downloaded model is available.' })}
+                            </p>
+                        </div>
+                        <Switch
+                            isSelected={!!onnxEnabled}
+                            isDisabled={!onnxSetup?.ready || onnxModels.length === 0}
+                            onValueChange={handleOnnxEnabledChange}
+                        />
+                    </div>
+
                     {onnxEngineStatus.running && (
                         <p className='text-xs text-default-400'>
                             {t('config.onnx_stt.server.running', { defaultValue: 'Running on port {{port}}', port: onnxEngineStatus.port })}

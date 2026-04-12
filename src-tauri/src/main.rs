@@ -192,6 +192,30 @@ fn main() {
                     log::warn!("[LocalSidecar] Auto-start failed: {}", e);
                 }
             }
+            if get("onnx_engine_enabled")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false)
+            {
+                let downloaded_models = onnx_engine::onnx_model_list();
+                let active_model = get("onnx_active_model").and_then(|v| v.as_str().map(|s| s.to_string()));
+                let start_model = active_model
+                    .filter(|repo| downloaded_models.iter().any(|model| model.repo_id == *repo))
+                    .or_else(|| downloaded_models.first().map(|model| model.repo_id.clone()));
+
+                if let Some(asr_model) = start_model {
+                    let onnx_state = app.state::<OnnxEngineState>();
+                    let config = onnx_engine::OnnxSttConfig {
+                        asr_model: Some(asr_model),
+                        asr_language: None,
+                        log_level: None,
+                    };
+                    if let Err(e) = onnx_engine::start_with_handle(config, app.handle(), &onnx_state) {
+                        log::warn!("[OnnxEngine] Auto-start failed: {}", e);
+                    }
+                } else {
+                    log::info!("[OnnxEngine] Auto-start skipped: no downloaded model available");
+                }
+            }
             // Check Update
             check_update(app.handle());
             let clipboard_monitor = match get("clipboard_monitor") {

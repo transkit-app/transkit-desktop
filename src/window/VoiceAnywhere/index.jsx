@@ -203,6 +203,12 @@ export default function VoiceAnywhere() {
         return () => { p.then((f) => f()); };
     }, [ctxMenu, closeCtxMenu]);
 
+    // Sync tray menu whenever VA settings change (covers tray-independent changes
+    // made via the FAB context menu while this window is mounted).
+    useEffect(() => {
+        invoke('update_tray', { language: '', copyMode: '' }).catch(() => {});
+    }, [voiceSttService, voiceLanguage, action, injectMode]);
+
     const services = (transcriptionServiceList ?? []).map((key) => ({
         key,
         label: svcDisplayNames[key] ?? getServiceName(key),
