@@ -29,6 +29,8 @@ use serde::{Deserialize, Serialize};
 use std::net::TcpListener;
 use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
+#[cfg(target_os = "windows")]
+use std::sync::Arc;
 use std::sync::Mutex;
 use tauri::{AppHandle, Manager, State, Window};
 
@@ -425,9 +427,13 @@ pub fn onnx_engine_install(window: Window) -> Result<(), String> {
             }
         }
 
-        // Step 2: get-pip.py if pip not present
-        let pip_exe = python_dir.join("Scripts").join("pip.exe");
-        if !pip_exe.exists() {
+        // Step 2: get-pip.py if pip is not importable yet
+        let pip_check = Command::new(&python_exe)
+            .args(["-m", "pip", "--version"])
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status();
+        if !pip_check.map(|status| status.success()).unwrap_or(false) {
             emit_progress(&window, "download_pip", "Downloading pip...", 30);
 
             let get_pip_url = "https://bootstrap.pypa.io/get-pip.py";
@@ -457,9 +463,11 @@ pub fn onnx_engine_install(window: Window) -> Result<(), String> {
         let packages = ["sherpa-onnx", "fastapi", "uvicorn", "websockets", "numpy"];
         let window_clone = window.clone();
         let engine_dir_clone = engine_dir.clone();
+        let stderr_lines = Arc::new(Mutex::new(Vec::<String>::new()));
+        let stderr_lines_clone = Arc::clone(&stderr_lines);
 
-        let mut child = Command::new(&pip_exe)
-            .arg("install")
+        let mut child = Command::new(&python_exe)
+            .args(["-m", "pip", "install"])
             .args(&packages)
             .arg("--no-warn-script-location")
             .arg("--quiet")
@@ -481,6 +489,26 @@ pub fn onnx_engine_install(window: Window) -> Result<(), String> {
             }
         });
 
+        let stderr = child.stderr.take().ok_or("No stderr")?;
+        std::thread::spawn(move || {
+            use std::io::BufRead;
+            let reader = std::io::BufReader::new(stderr);
+            for line in reader.lines() {
+                if let Ok(line) = line {
+                    let trimmed = line.trim();
+                    if trimmed.is_empty() {
+                        continue;
+                    }
+                    warn!("[OnnxEngine:pip stderr] {}", trimmed);
+                    if let Ok(mut lines) = stderr_lines_clone.lock() {
+                        if lines.len() < 20 {
+                            lines.push(trimmed.to_string());
+                        }
+                    }
+                }
+            }
+        });
+
         let window_wait = window.clone();
         std::thread::spawn(move || {
             match child.wait() {
@@ -492,7 +520,20 @@ pub fn onnx_engine_install(window: Window) -> Result<(), String> {
                     emit_done(&window_wait);
                 }
                 Ok(status) => {
-                    emit_error(&window_wait, &format!("pip exited with code {}", status.code().unwrap_or(-1)));
+                    let stderr_summary = stderr_lines
+                        .lock()
+                        .map(|lines| lines.join("\n"))
+                        .unwrap_or_default();
+                    let message = if stderr_summary.is_empty() {
+                        format!("pip exited with code {}", status.code().unwrap_or(-1))
+                    } else {
+                        format!(
+                            "pip exited with code {}: {}",
+                            status.code().unwrap_or(-1),
+                            stderr_summary
+                        )
+                    };
+                    emit_error(&window_wait, &message);
                 }
                 Err(e) => {
                     emit_error(&window_wait, &format!("pip error: {}", e));
