@@ -96,6 +96,47 @@ pub fn update_tray(app_handle: tauri::AppHandle, mut language: String, mut copy_
             .unwrap(),
         _ => {}
     }
+
+    // ── Voice Anywhere state ─────────────────────────────────────────────────
+    // STT service — fall back to "inherit" when empty or unset
+    let va_stt = match get("voice_anywhere_stt_service") {
+        Some(v) => v.as_str().unwrap_or("").to_string(),
+        None => String::new(),
+    };
+    let va_stt_id = if va_stt.is_empty() || va_stt == "inherit" {
+        "va_stt_inherit".to_string()
+    } else {
+        format!("va_stt_{}", va_stt)
+    };
+    // Ignore errors: the item may not be in the list if transcription_service_list changed
+    let _ = tray_handle.get_item(&va_stt_id).set_selected(true);
+
+    // Language
+    let va_lang = match get("voice_anywhere_language") {
+        Some(v) => v.as_str().unwrap_or("auto").to_string(),
+        None => "auto".to_string(),
+    };
+    let _ = tray_handle
+        .get_item(&format!("va_lang_{}", va_lang))
+        .set_selected(true);
+
+    // After-stop action
+    let va_action = match get("voice_anywhere_action") {
+        Some(v) => v.as_str().unwrap_or("clipboard").to_string(),
+        None => "clipboard".to_string(),
+    };
+    let _ = tray_handle
+        .get_item(&format!("va_action_{}", va_action))
+        .set_selected(true);
+
+    // Inject mode (Transkit windows)
+    let va_inject = match get("voice_anywhere_inject_mode") {
+        Some(v) => v.as_str().unwrap_or("replace").to_string(),
+        None => "replace".to_string(),
+    };
+    let _ = tray_handle
+        .get_item(&format!("va_inject_{}", va_inject))
+        .set_selected(true);
 }
 
 pub fn tray_event_handler<'a>(app: &'a AppHandle, event: SystemTrayEvent) {
@@ -112,11 +153,21 @@ pub fn tray_event_handler<'a>(app: &'a AppHandle, event: SystemTrayEvent) {
             "ocr_recognize" => on_ocr_recognize_click(),
             "ocr_translate" => on_ocr_translate_click(),
             "audio_monitor" => on_audio_monitor_click(),
-            "config" => on_config_click(),
+            // va_config opens the Config window (same as "config")
+            "config" | "va_config" => on_config_click(),
             "check_update" => on_check_update_click(),
             "view_log" => on_view_log_click(app),
             "restart" => on_restart_click(app),
             "quit" => on_quit_click(app),
+            // Voice Anywhere: fixed action/inject items
+            "va_action_paste"      => on_va_action_click(app, "paste"),
+            "va_action_clipboard"  => on_va_action_click(app, "clipboard"),
+            "va_inject_replace"    => on_va_inject_click(app, "replace"),
+            "va_inject_append"     => on_va_inject_click(app, "append"),
+            // Voice Anywhere: dynamic STT service items (prefix match)
+            s if s.starts_with("va_stt_") => on_va_stt_click(app, &s["va_stt_".len()..]),
+            // Voice Anywhere: language items (prefix match)
+            s if s.starts_with("va_lang_") => on_va_lang_click(app, &s["va_lang_".len()..]),
             _ => {}
         },
         _ => {}
@@ -210,6 +261,143 @@ fn on_quit_click(app: &AppHandle) {
     app.exit(0);
 }
 
+// ── Voice Anywhere helpers ─────────────────────────────────────────────────
+
+/// Maps a service instance key (e.g. "deepgram_stt" or "deepgram_stt@abc123")
+/// to a short human-readable display name for the tray menu.
+fn stt_service_display_name(instance_key: &str) -> String {
+    let service_name = instance_key.split('@').next().unwrap_or(instance_key);
+    let base = match service_name {
+        "soniox_stt"               => "Soniox",
+        "assemblyai_stt"           => "AssemblyAI",
+        "openai_whisper_stt"       => "OpenAI Whisper",
+        "gladia_stt"               => "Gladia",
+        "deepgram_stt"             => "Deepgram",
+        "custom_stt"               => "Custom WebSocket",
+        "transkit_cloud_stt"       => "TransKit Cloud",
+        "transkit_cloud_dictation" => "TransKit Dictation",
+        "local_sidecar_stt"        => "Local Sidecar",
+        "onnx_stt"                 => "ONNX (Offline)",
+        _                          => service_name,
+    };
+    // Append a short id suffix when the key has a @id component so the user
+    // can distinguish multiple instances of the same service type.
+    if instance_key.contains('@') {
+        let suffix: String = instance_key
+            .split('@')
+            .nth(1)
+            .unwrap_or("")
+            .chars()
+            .take(6)
+            .collect();
+        format!("{} ({})", base, suffix)
+    } else {
+        base.to_string()
+    }
+}
+
+/// Builds the "Voice Anywhere" submenu dynamically from the current config.
+/// Called on every tray rebuild so its content always reflects the live state.
+/// The selected/checked state is applied separately via set_selected() in
+/// update_tray() after set_menu() completes.
+fn build_voice_anywhere_submenu() -> SystemTraySubmenu {
+    // ── STT Provider section ─────────────────────────────────────────────────
+    let stt_list: Vec<String> = get("transcription_service_list")
+        .and_then(|v| {
+            v.as_array().map(|arr| {
+                arr.iter()
+                    .filter_map(|item| item.as_str().map(str::to_string))
+                    .collect()
+            })
+        })
+        .unwrap_or_default();
+
+    let mut menu = SystemTrayMenu::new()
+        .add_item(CustomMenuItem::new("va_section_stt", "STT Provider").disabled())
+        .add_item(CustomMenuItem::new("va_stt_inherit", "Inherit from Monitor"));
+
+    for key in &stt_list {
+        menu = menu.add_item(CustomMenuItem::new(
+            format!("va_stt_{}", key),
+            stt_service_display_name(key),
+        ));
+    }
+
+    // ── Language section (same curated list as the in-app context menu) ──────
+    let lang_entries: &[(&str, &str)] = &[
+        ("auto", "Auto (Monitor)"),
+        ("en",   "English"),
+        ("vi",   "Tiếng Việt"),
+        ("zh",   "中文"),
+        ("ja",   "日本語"),
+        ("ko",   "한국어"),
+        ("fr",   "Français"),
+        ("de",   "Deutsch"),
+        ("es",   "Español"),
+        ("pt",   "Português"),
+        ("ru",   "Русский"),
+    ];
+
+    menu = menu
+        .add_native_item(SystemTrayMenuItem::Separator)
+        .add_item(CustomMenuItem::new("va_section_lang", "Language").disabled());
+
+    for (code, label) in lang_entries {
+        menu = menu.add_item(CustomMenuItem::new(format!("va_lang_{}", code), *label));
+    }
+
+    // ── After Stop section ───────────────────────────────────────────────────
+    menu = menu
+        .add_native_item(SystemTrayMenuItem::Separator)
+        .add_item(CustomMenuItem::new("va_section_action", "After Stop").disabled())
+        .add_item(CustomMenuItem::new("va_action_clipboard", "Copy to Clipboard"))
+        .add_item(CustomMenuItem::new("va_action_paste",    "Paste to Last App"));
+
+    // ── Inject Mode section (Transkit windows only) ──────────────────────────
+    menu = menu
+        .add_native_item(SystemTrayMenuItem::Separator)
+        .add_item(CustomMenuItem::new("va_section_inject", "Inject Mode (Transkit)").disabled())
+        .add_item(CustomMenuItem::new("va_inject_replace", "Replace"))
+        .add_item(CustomMenuItem::new("va_inject_append",  "Append"));
+
+    // ── Configure shortcut ───────────────────────────────────────────────────
+    menu = menu
+        .add_native_item(SystemTrayMenuItem::Separator)
+        .add_item(CustomMenuItem::new("va_config", "Configure..."));
+
+    SystemTraySubmenu::new("Voice Anywhere", menu)
+}
+
+// ── Voice Anywhere tray-click handlers ────────────────────────────────────
+
+fn on_va_stt_click(app: &AppHandle, stt_key: &str) {
+    info!("VA tray: set STT service → {}", stt_key);
+    set("voice_anywhere_stt_service", stt_key);
+    app.emit_all("voice_anywhere_stt_service_changed", stt_key).unwrap();
+    update_tray(app.app_handle(), String::new(), String::new());
+}
+
+fn on_va_lang_click(app: &AppHandle, lang_code: &str) {
+    info!("VA tray: set language → {}", lang_code);
+    set("voice_anywhere_language", lang_code);
+    app.emit_all("voice_anywhere_language_changed", lang_code).unwrap();
+    update_tray(app.app_handle(), String::new(), String::new());
+}
+
+fn on_va_action_click(app: &AppHandle, action: &str) {
+    info!("VA tray: set action → {}", action);
+    set("voice_anywhere_action", action);
+    app.emit_all("voice_anywhere_action_changed", action).unwrap();
+    update_tray(app.app_handle(), String::new(), String::new());
+}
+
+fn on_va_inject_click(app: &AppHandle, mode: &str) {
+    info!("VA tray: set inject mode → {}", mode);
+    set("voice_anywhere_inject_mode", mode);
+    app.emit_all("voice_anywhere_inject_mode_changed", mode).unwrap();
+    update_tray(app.app_handle(), String::new(), String::new());
+}
+
 fn tray_menu_en() -> tauri::SystemTrayMenu {
     let input_translate = CustomMenuItem::new("input_translate", "Input Translate");
     let audio_monitor = CustomMenuItem::new("audio_monitor", "Realtime Translate");
@@ -241,6 +429,7 @@ fn tray_menu_en() -> tauri::SystemTrayMenu {
         .add_native_item(SystemTrayMenuItem::Separator)
         .add_item(ocr_recognize)
         .add_item(ocr_translate)
+        .add_submenu(build_voice_anywhere_submenu())
         .add_native_item(SystemTrayMenuItem::Separator)
         .add_item(config)
         .add_item(check_update)
@@ -282,6 +471,7 @@ fn tray_menu_zh_cn() -> tauri::SystemTrayMenu {
         .add_item(ocr_recognize)
         .add_item(ocr_translate)
         .add_item(audio_monitor)
+        .add_submenu(build_voice_anywhere_submenu())
         .add_native_item(SystemTrayMenuItem::Separator)
         .add_item(config)
         .add_item(check_update)
@@ -323,6 +513,7 @@ fn tray_menu_zh_tw() -> tauri::SystemTrayMenu {
         .add_item(ocr_recognize)
         .add_item(ocr_translate)
         .add_item(audio_monitor)
+        .add_submenu(build_voice_anywhere_submenu())
         .add_native_item(SystemTrayMenuItem::Separator)
         .add_item(config)
         .add_item(check_update)
@@ -364,6 +555,7 @@ fn tray_menu_ja() -> tauri::SystemTrayMenu {
         .add_item(ocr_recognize)
         .add_item(ocr_translate)
         .add_item(audio_monitor)
+        .add_submenu(build_voice_anywhere_submenu())
         .add_native_item(SystemTrayMenuItem::Separator)
         .add_item(config)
         .add_item(check_update)
@@ -405,6 +597,7 @@ fn tray_menu_ko() -> tauri::SystemTrayMenu {
         .add_item(ocr_recognize)
         .add_item(ocr_translate)
         .add_item(audio_monitor)
+        .add_submenu(build_voice_anywhere_submenu())
         .add_native_item(SystemTrayMenuItem::Separator)
         .add_item(config)
         .add_item(check_update)
@@ -447,6 +640,7 @@ fn tray_menu_fr() -> tauri::SystemTrayMenu {
         .add_item(ocr_recognize)
         .add_item(ocr_translate)
         .add_item(audio_monitor)
+        .add_submenu(build_voice_anywhere_submenu())
         .add_native_item(SystemTrayMenuItem::Separator)
         .add_item(config)
         .add_item(check_update)
@@ -487,6 +681,7 @@ fn tray_menu_de() -> tauri::SystemTrayMenu {
         .add_item(ocr_recognize)
         .add_item(ocr_translate)
         .add_item(audio_monitor)
+        .add_submenu(build_voice_anywhere_submenu())
         .add_native_item(SystemTrayMenuItem::Separator)
         .add_item(config)
         .add_item(check_update)
@@ -528,6 +723,7 @@ fn tray_menu_ru() -> tauri::SystemTrayMenu {
         .add_item(ocr_recognize)
         .add_item(ocr_translate)
         .add_item(audio_monitor)
+        .add_submenu(build_voice_anywhere_submenu())
         .add_native_item(SystemTrayMenuItem::Separator)
         .add_item(config)
         .add_item(check_update)
@@ -569,6 +765,7 @@ fn tray_menu_fa() -> tauri::SystemTrayMenu {
         .add_item(ocr_recognize)
         .add_item(ocr_translate)
         .add_item(audio_monitor)
+        .add_submenu(build_voice_anywhere_submenu())
         .add_native_item(SystemTrayMenuItem::Separator)
         .add_item(config)
         .add_item(check_update)
@@ -611,6 +808,7 @@ fn tray_menu_pt_br() -> tauri::SystemTrayMenu {
         .add_item(ocr_recognize)
         .add_item(ocr_translate)
         .add_item(audio_monitor)
+        .add_submenu(build_voice_anywhere_submenu())
         .add_native_item(SystemTrayMenuItem::Separator)
         .add_item(config)
         .add_item(check_update)
@@ -652,6 +850,7 @@ fn tray_menu_uk() -> tauri::SystemTrayMenu {
         .add_item(ocr_recognize)
         .add_item(ocr_translate)
         .add_item(audio_monitor)
+        .add_submenu(build_voice_anywhere_submenu())
         .add_native_item(SystemTrayMenuItem::Separator)
         .add_item(config)
         .add_item(check_update)
@@ -691,6 +890,7 @@ fn tray_menu_vi() -> tauri::SystemTrayMenu {
         .add_native_item(SystemTrayMenuItem::Separator)
         .add_item(ocr_recognize)
         .add_item(ocr_translate)
+        .add_submenu(build_voice_anywhere_submenu())
         .add_native_item(SystemTrayMenuItem::Separator)
         .add_item(config)
         .add_item(check_update)
