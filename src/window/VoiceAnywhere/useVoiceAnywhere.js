@@ -467,7 +467,7 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, targe
                 const wantTranslation = tgtLang && tgtLang !== 'none';
                 let textToInject = fullText;
 
-                if (wantTranslation && !OFFLINE_STT_SERVICES.includes(activeServiceNameRef.current)) {
+                if (wantTranslation && !OFFLINE_STT_SERVICES.includes(activeServiceNameRef.current) && activeServiceNameRef.current !== 'transkit_cloud_dictation') {
                     // Wait up to 600ms for onTranslation for this last segment
                     const translatedLastSegment = await new Promise((resolve) => {
                         const timer = setTimeout(() => {
@@ -559,7 +559,8 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, targe
         clearStopFallbackTimer();
         // Give extra time if the model is still loading (status message showing).
         // Local sidecar needs time to finish inference before sending is_final.
-        const fallbackDelay = interimIsStatusRef.current ? 12000 : 1500;
+        // Cloud dictation also needs more time for the final roundtrip + translation.
+        const fallbackDelay = (interimIsStatusRef.current || activeServiceNameRef.current === 'transkit_cloud_dictation') ? 12000 : 1500;
         stopFallbackTimerRef.current = setTimeout(async () => {
             if (!finalizingRef.current) return;
             // Cancel any pending translation wait

@@ -34,6 +34,7 @@ export class DictationClient {
         this._ws = null;
         this._config = null;
         this._intentionalDisconnect = false;
+        this._finished = false;
 
         // Set to true once the WebSocket is open and the dictation_connect handshake is sent.
         // Used by Monitor's waitNarrationClientConnected() poll.
@@ -62,6 +63,7 @@ export class DictationClient {
 
         // Abort any previous in-flight connect
         this._intentionalDisconnect = false;
+        this._finished = false;
         if (this._ws) {
             this._ws.onopen = null;
             this._ws.onmessage = null;
@@ -157,10 +159,13 @@ export class DictationClient {
     _handleMessage(msg) {
         switch (msg.type) {
             case 'interim':
+                if (this._finished) return;
                 this.onProvisional?.(msg.text ?? '');
                 break;
 
             case 'final':
+                if (this._finished) return;
+                this._finished = true;
                 this.onOriginal?.(msg.text ?? '');
                 if (msg.seconds_remaining !== undefined) {
                     this.onDictationSession?.({ seconds_remaining: msg.seconds_remaining });
@@ -169,6 +174,7 @@ export class DictationClient {
                 break;
 
             case 'error': {
+                this._finished = true;
                 const meta = { code: msg.code ?? 'server_error' };
                 if (msg.used !== undefined) meta.used = msg.used;
                 if (msg.limit !== undefined) meta.limit = msg.limit;
