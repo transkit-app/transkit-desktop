@@ -43,6 +43,7 @@ export class DictationClient {
         // Standard STT client callbacks
         this.onOriginal = null;      // (text) => {}
         this.onProvisional = null;   // (text) => {}
+        this.onTranslation = null;   // (text) => {}  fired when server-side translation result is available
         this.onStatusChange = null;  // (status: 'connecting'|'recording'|'processing'|'done'|'error'|'disconnected') => {}
         this.onError = null;         // (msg, meta?) => {}
 
@@ -163,15 +164,24 @@ export class DictationClient {
                 this.onProvisional?.(msg.text ?? '');
                 break;
 
-            case 'final':
+            case 'final': {
                 if (this._finished) return;
                 this._finished = true;
-                this.onOriginal?.(msg.text ?? '');
+                const sourceText = msg.text ?? '';
+                const translatedText = (msg.translation ?? '').trim();
+                if (translatedText) {
+                    // Server performed translation: fire onTranslation FIRST so it lands in
+                    // voiceAnywhere's accumulatedTranslationRef before onOriginal's async path runs.
+                    // onOriginal then picks it up immediately without waiting 600ms.
+                    this.onTranslation?.(translatedText);
+                }
+                this.onOriginal?.(sourceText);
                 if (msg.seconds_remaining !== undefined) {
                     this.onDictationSession?.({ seconds_remaining: msg.seconds_remaining });
                 }
                 this._setStatus('done');
                 break;
+            }
 
             case 'error': {
                 this._finished = true;

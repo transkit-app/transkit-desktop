@@ -103,6 +103,9 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, targe
     const accumulatedTranslationRef = useRef('');
     // Resolves the post-stop promise waiting for the final onTranslation
     const pendingTranslationResolverRef = useRef(null);
+    // True once onTranslation has fired for the current session — used to decide whether
+    // the translate-service fallback in injectText should run.
+    const nativeTranslationFiredRef = useRef(false);
     // Tracks whether the current interimRef value is a status/loading message
     // (isStatus:true from local_sidecar). Status messages must never be used as fallback text.
     const interimIsStatusRef = useRef(false);
@@ -274,14 +277,18 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, targe
         try {
             let text = rawText;
 
-            // ── Translate step (fallback for offline STT that can't translate natively) ──
+            // ── Translate step ──────────────────────────────────────────────────────────
+            // Runs when the STT service cannot translate natively:
+            //   • offline STT (onnx, local sidecar) — always
+            //   • any other service that never fired onTranslation (e.g. cloud dictation with
+            //     a Deepgram provider that doesn't support server-side translation)
             const tgtLang = targetLanguageRef.current;
             const translateKey = translateServiceKeyRef.current;
             const srcLang = languageRef.current;
             if (
                 tgtLang && tgtLang !== 'none' &&
                 translateKey && translateKey !== 'none' &&
-                OFFLINE_STT_SERVICES.includes(activeServiceNameRef.current)
+                (OFFLINE_STT_SERVICES.includes(activeServiceNameRef.current) || !nativeTranslationFiredRef.current)
             ) {
                 try {
                     const translateSvcName = getServiceName(translateKey);
@@ -380,6 +387,7 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, targe
         accumulatedRef.current = '';
         accumulatedTranslationRef.current = '';
         pendingTranslationResolverRef.current = null;
+        nativeTranslationFiredRef.current = false;
 
         // Capture focus target immediately (in case user clicked FAB instead of hotkey)
         await invoke('capture_voice_anywhere_target').catch(() => {});
@@ -410,6 +418,8 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, targe
                 const text = event.text?.trim?.() ?? '';
                 if (!text) return;
 
+                nativeTranslationFiredRef.current = true;
+
                 if (isRecordingRef.current) {
                     // Mid-stream: accumulate translated segments
                     const joined = accumulatedTranslationRef.current
@@ -422,6 +432,15 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, targe
                     console.log('[VoiceAnywhere] onTranslation post-stop, resolving with:', text);
                     pendingTranslationResolverRef.current(text);
                     pendingTranslationResolverRef.current = null;
+                } else {
+                    // Translation arrived before onOriginal's async path set up the pending resolver
+                    // (e.g. DictationClient fires onTranslation synchronously before onOriginal).
+                    // Buffer it so onOriginal can pick it up immediately without a 600ms wait.
+                    const joined = accumulatedTranslationRef.current
+                        ? `${accumulatedTranslationRef.current} ${text}`
+                        : text;
+                    accumulatedTranslationRef.current = joined;
+                    console.log('[VoiceAnywhere] onTranslation pre-resolver, buffered:', joined);
                 }
             };
 
@@ -467,33 +486,44 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, targe
                 const wantTranslation = tgtLang && tgtLang !== 'none';
                 let textToInject = fullText;
 
-                if (wantTranslation && !OFFLINE_STT_SERVICES.includes(activeServiceNameRef.current) && activeServiceNameRef.current !== 'transkit_cloud_dictation') {
-                    // Wait up to 600ms for onTranslation for this last segment
-                    const translatedLastSegment = await new Promise((resolve) => {
-                        const timer = setTimeout(() => {
-                            pendingTranslationResolverRef.current = null;
-                            resolve(null);
-                        }, 600);
-                        pendingTranslationResolverRef.current = (t) => {
-                            clearTimeout(timer);
-                            resolve(t);
-                        };
-                    });
-
-                    if (translatedLastSegment) {
-                        const fullTranslation = accumulatedTranslationRef.current
-                            ? `${accumulatedTranslationRef.current} ${translatedLastSegment}`
-                            : translatedLastSegment;
-                        accumulatedTranslationRef.current = '';
-                        textToInject = fullTranslation;
-                        setFinalText(fullTranslation);
-                        console.log('[VoiceAnywhere] Using translation for injection:', fullTranslation);
-                    } else if (accumulatedTranslationRef.current) {
-                        // Timed out but we have accumulated translations from earlier segments
+                if (wantTranslation && !OFFLINE_STT_SERVICES.includes(activeServiceNameRef.current)) {
+                    // Check if translation already landed in the buffer before we got here.
+                    // DictationClient fires onTranslation synchronously before onOriginal, so by the
+                    // time we reach this point (after await stop_audio_capture) it's already buffered.
+                    if (accumulatedTranslationRef.current) {
                         textToInject = accumulatedTranslationRef.current;
                         accumulatedTranslationRef.current = '';
                         setFinalText(textToInject);
-                        console.log('[VoiceAnywhere] Using partial accumulated translation:', textToInject);
+                        console.log('[VoiceAnywhere] Using pre-buffered translation:', textToInject);
+                    } else if (activeServiceNameRef.current !== 'transkit_cloud_dictation') {
+                        // For streaming STTs (Soniox, Deepgram direct, Gladia…): wait up to 600ms
+                        // for the last segment's onTranslation to arrive.
+                        const translatedLastSegment = await new Promise((resolve) => {
+                            const timer = setTimeout(() => {
+                                pendingTranslationResolverRef.current = null;
+                                resolve(null);
+                            }, 600);
+                            pendingTranslationResolverRef.current = (t) => {
+                                clearTimeout(timer);
+                                resolve(t);
+                            };
+                        });
+
+                        if (translatedLastSegment) {
+                            const fullTranslation = accumulatedTranslationRef.current
+                                ? `${accumulatedTranslationRef.current} ${translatedLastSegment}`
+                                : translatedLastSegment;
+                            accumulatedTranslationRef.current = '';
+                            textToInject = fullTranslation;
+                            setFinalText(fullTranslation);
+                            console.log('[VoiceAnywhere] Using translation for injection:', fullTranslation);
+                        } else if (accumulatedTranslationRef.current) {
+                            // Timed out but we have accumulated translations from earlier segments
+                            textToInject = accumulatedTranslationRef.current;
+                            accumulatedTranslationRef.current = '';
+                            setFinalText(textToInject);
+                            console.log('[VoiceAnywhere] Using partial accumulated translation:', textToInject);
+                        }
                     }
                 }
 
