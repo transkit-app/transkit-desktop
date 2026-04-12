@@ -6,7 +6,7 @@ use crate::window::monitor_window;
 use crate::window::ocr_recognize;
 use crate::window::ocr_translate;
 use crate::window::updater_window;
-use log::info;
+use log::{info, warn};
 use tauri::CustomMenuItem;
 use tauri::GlobalShortcutManager;
 use tauri::SystemTrayEvent;
@@ -14,6 +14,18 @@ use tauri::SystemTrayMenu;
 use tauri::SystemTrayMenuItem;
 use tauri::SystemTraySubmenu;
 use tauri::{AppHandle, Manager};
+
+/// In Tauri 1.x, `SystemTrayHandle::get_item()` panics if the ID is absent and, critically,
+/// does so *while holding* the internal `ids` Mutex — which permanently poisons that Mutex so
+/// every subsequent `set_menu` call crashes with `PoisonError`.  `try_get_item` is the safe
+/// fallible alternative: it returns `Option` and never touches the Mutex under panic conditions.
+fn safe_set_selected(tray_handle: &tauri::SystemTrayHandle, id: &str, selected: bool) {
+    if let Some(item) = tray_handle.try_get_item(id) {
+        let _ = item.set_selected(selected);
+    } else {
+        warn!("[tray] set_selected: item '{}' not found in current menu — skipping", id);
+    }
+}
 
 #[tauri::command]
 pub fn update_tray(app_handle: tauri::AppHandle, mut language: String, mut copy_mode: String) {
@@ -72,28 +84,13 @@ pub fn update_tray(app_handle: tauri::AppHandle, mut language: String, mut copy_
         }
     };
 
-    tray_handle
-        .get_item("clipboard_monitor")
-        .set_selected(enable_clipboard_monitor)
-        .unwrap();
+    safe_set_selected(&tray_handle, "clipboard_monitor", enable_clipboard_monitor);
 
     match copy_mode.as_str() {
-        "source" => tray_handle
-            .get_item("copy_source")
-            .set_selected(true)
-            .unwrap(),
-        "target" => tray_handle
-            .get_item("copy_target")
-            .set_selected(true)
-            .unwrap(),
-        "source_target" => tray_handle
-            .get_item("copy_source_target")
-            .set_selected(true)
-            .unwrap(),
-        "disable" => tray_handle
-            .get_item("copy_disable")
-            .set_selected(true)
-            .unwrap(),
+        "source"        => safe_set_selected(&tray_handle, "copy_source",        true),
+        "target"        => safe_set_selected(&tray_handle, "copy_target",        true),
+        "source_target" => safe_set_selected(&tray_handle, "copy_source_target", true),
+        "disable"       => safe_set_selected(&tray_handle, "copy_disable",       true),
         _ => {}
     }
 
@@ -108,35 +105,28 @@ pub fn update_tray(app_handle: tauri::AppHandle, mut language: String, mut copy_
     } else {
         format!("va_stt_{}", va_stt)
     };
-    // Ignore errors: the item may not be in the list if transcription_service_list changed
-    let _ = tray_handle.get_item(&va_stt_id).set_selected(true);
+    safe_set_selected(&tray_handle, &va_stt_id, true);
 
     // Language
     let va_lang = match get("voice_anywhere_language") {
         Some(v) => v.as_str().unwrap_or("auto").to_string(),
         None => "auto".to_string(),
     };
-    let _ = tray_handle
-        .get_item(&format!("va_lang_{}", va_lang))
-        .set_selected(true);
+    safe_set_selected(&tray_handle, &format!("va_lang_{}", va_lang), true);
 
     // After-stop action
     let va_action = match get("voice_anywhere_action") {
         Some(v) => v.as_str().unwrap_or("clipboard").to_string(),
         None => "clipboard".to_string(),
     };
-    let _ = tray_handle
-        .get_item(&format!("va_action_{}", va_action))
-        .set_selected(true);
+    safe_set_selected(&tray_handle, &format!("va_action_{}", va_action), true);
 
     // Inject mode (Transkit windows)
     let va_inject = match get("voice_anywhere_inject_mode") {
         Some(v) => v.as_str().unwrap_or("replace").to_string(),
         None => "replace".to_string(),
     };
-    let _ = tray_handle
-        .get_item(&format!("va_inject_{}", va_inject))
-        .set_selected(true);
+    safe_set_selected(&tray_handle, &format!("va_inject_{}", va_inject), true);
 }
 
 pub fn tray_event_handler<'a>(app: &'a AppHandle, event: SystemTrayEvent) {
@@ -217,10 +207,7 @@ fn on_clipboard_monitor_click(app: &AppHandle) {
         start_clipboard_monitor(app.app_handle());
     }
     // Update Tray Menu Status
-    app.tray_handle()
-        .get_item("clipboard_monitor")
-        .set_selected(current)
-        .unwrap();
+    safe_set_selected(&app.tray_handle(), "clipboard_monitor", current);
 }
 fn on_auto_copy_click(app: &AppHandle, mode: &str) {
     info!("Set copy mode to: {}", mode);

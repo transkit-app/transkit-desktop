@@ -37,6 +37,7 @@ export default function VoiceAnywhere() {
     const [polishServiceKey] = useConfig('voice_anywhere_polish_service', '');
     const [polishPromptOverrides] = useConfig('voice_anywhere_polish_prompt_overrides', {});
     const [polishCustomLevels] = useConfig('voice_anywhere_polish_custom_levels', []);
+    const [translateService] = useConfig('voice_anywhere_translate_service', 'none');
 
     // Resolve the effective prompt for the selected level
     const polishPrompt = React.useMemo(() => {
@@ -56,6 +57,7 @@ export default function VoiceAnywhere() {
         monitorSvcKey,
         language: voiceLanguage,
         targetLanguage,
+        translateServiceKey: translateService,
         injectMode,
         action,
         autostart,

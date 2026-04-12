@@ -50,7 +50,7 @@ Output only the final polished text — no explanations, no commentary.`,
  * @param {string} opts.aiServiceKey — e.g. 'openai_ai', 'groq_ai@abc123'
  * @returns {Promise<string>}
  */
-export async function polishTranscript(text, { prompt, aiServiceKey }) {
+export async function polishTranscript(text, { prompt, aiServiceKey, targetLanguage }) {
     if (!text?.trim()) return text;
     if (!aiServiceKey) throw new Error('No AI service configured for Polish.');
 
@@ -61,7 +61,13 @@ export async function polishTranscript(text, { prompt, aiServiceKey }) {
     }
 
     const config = (await store.get(aiServiceKey)) ?? {};
-    const systemPrompt = prompt || DEFAULT_PROMPTS.mild;
+    let systemPrompt = prompt || DEFAULT_PROMPTS.mild;
+
+    // If a target language is set, instruct the AI to also translate.
+    // This covers STT services that don't support translation (e.g. ONNX, MLX).
+    if (targetLanguage && targetLanguage !== 'none') {
+        systemPrompt += `\nOutput the final result in this language: ${targetLanguage}.`;
+    }
 
     return service.summarize(text, { config: { ...config, systemPrompt } });
 }

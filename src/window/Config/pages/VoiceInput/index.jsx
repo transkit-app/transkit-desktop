@@ -1,6 +1,6 @@
 import { Card, CardBody, CardHeader, Select, SelectItem, Switch, Slider, Textarea } from '@nextui-org/react';
 import { useTranslation } from 'react-i18next';
-import { MdMic, MdLanguage, MdTune, MdAutoFixHigh, MdAdd, MdDeleteOutline, MdRestartAlt } from 'react-icons/md';
+import { MdMic, MdLanguage, MdTune, MdAutoFixHigh, MdAdd, MdDeleteOutline, MdRestartAlt, MdTranslate } from 'react-icons/md';
 import { POLISH_LEVEL_LABELS, AI_SERVICE_FRIENDLY_NAMES, DEFAULT_PROMPTS, BUILTIN_LEVELS } from '../../../../utils/polishTranscript';
 import React from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
@@ -38,6 +38,23 @@ export default function VoiceInput() {
     const [action, setAction] = useConfig('voice_anywhere_action', 'clipboard');
     // Text injection mode for Transkit windows: replace | append
     const [injectMode, setInjectMode] = useConfig('voice_anywhere_inject_mode', 'replace');
+
+    // Translate service fallback — for offline STT that cannot translate natively
+    const [translateService, setTranslateService] = useConfig('voice_anywhere_translate_service', 'none');
+    const [translateServiceList] = useConfig('translate_service_list', []);
+    const [translateDisplayNames, setTranslateDisplayNames] = React.useState({});
+    React.useEffect(() => {
+        if (!translateServiceList?.length) return;
+        Promise.all(
+            translateServiceList.map(async (key) => {
+                const cfg = await store.get(key).catch(() => null);
+                const svcName = getServiceName(key);
+                const label = cfg?.instanceName || cfg?.service_instance_name
+                    || t(`services.translate.${svcName}.title`, { defaultValue: svcName });
+                return [key, label];
+            })
+        ).then((pairs) => setTranslateDisplayNames(Object.fromEntries(pairs)));
+    }, [translateServiceList, t]);
 
     // Polish — AI middleware between STT transcript and inject/paste
     const [polishEnabled, setPolishEnabled] = useConfig('voice_anywhere_polish_enabled', false);
@@ -242,6 +259,35 @@ export default function VoiceInput() {
                             <SelectItem key='ar'>العربية</SelectItem>
                         </Select>
                     </div>
+
+                    {(targetLanguage && targetLanguage !== 'none') && (
+                        <div className='config-item'>
+                            <div>
+                                <h3 className='my-auto'>{t('config.voice_input.translate_service', { defaultValue: 'Translate Service (Fallback)' })}</h3>
+                                <p className='text-xs text-default-400 mt-0.5'>
+                                    {t('config.voice_input.translate_service_desc', { defaultValue: 'Used when the STT provider cannot translate (e.g. Offline ONNX / MLX). Cloud STTs like Soniox translate natively and ignore this.' })}
+                                </p>
+                            </div>
+                            <Select
+                                variant='bordered'
+                                selectedKeys={[translateService ?? 'none']}
+                                className='max-w-[50%]'
+                                onSelectionChange={(keys) => {
+                                    const v = Array.from(keys)[0];
+                                    if (v) setTranslateService(v);
+                                }}
+                            >
+                                <SelectItem key='none'>
+                                    {t('config.voice_input.translate_service_none', { defaultValue: 'None' })}
+                                </SelectItem>
+                                {(translateServiceList ?? []).map((key) => (
+                                    <SelectItem key={key}>
+                                        {translateDisplayNames[key] ?? getServiceName(key)}
+                                    </SelectItem>
+                                ))}
+                            </Select>
+                        </div>
+                    )}
                 </CardBody>
             </Card>
 
