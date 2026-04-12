@@ -38,7 +38,7 @@ sha2 = "0.10"
 cpal = "0.15"
 rodio = { version = "0.17", default-features = false, features = ["wav"] }
 arboard = "3.4"
-reqwest = { version = "0.12", features = ["json"] }
+reqwest = { version = "0.12", features = ["blocking", "json"] }
 reqwest_dav = "=0.1.5"
 zip = "2.2.0"
 walkdir = "2.5"
