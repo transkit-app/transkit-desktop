@@ -1,5 +1,19 @@
 # Changelog
 
+## 3.3.1 (2026-04-13)
+
+### Out-of-the-Box Experience — Zero Config Required:
+- **Default hotkeys registered on first launch**: All six global shortcuts are now active immediately after installation — no manual setup needed. Defaults: `Ctrl+Alt+Q` (Selection Translate), `Ctrl+Alt+W` (Input Translate), `Ctrl+Alt+R` (OCR Recognize), `Ctrl+Alt+O` (OCR Translate), `Ctrl+Alt+M` (Realtime Translate), `Ctrl+Alt+V` (Voice Anywhere). Fully reassignable or clearable in Settings → Hotkey.
+- **Service providers pre-seeded on fresh install**: Translate, TTS, Transcription, and AI service lists now populate with sensible defaults on first run rather than showing an empty list. Translate: Transkit Cloud + Google + Bing. TTS: Transkit Cloud + Google TTS + Edge TTS. Transcription: Transkit Cloud STT + Deepgram. AI: Transkit Cloud AI. Free providers (Google, Bing, Edge TTS) work immediately without any API key.
+- **Consistent defaults across all windows**: Fixed a race condition where the Translate window, Voice Anywhere, and Config pages each used different default values for the same service list keys — whichever rendered first would win and under-populate the list. All entry points now share the same defaults.
+
+### Reset to Defaults — Settings → About:
+- **New "Reset" button** in the System section of the About page.
+- **Two-option confirmation modal**:
+  - *Reset — Keep API Keys*: Wipes all app settings and resets to factory defaults while preserving every service credential (API keys, auth tokens, custom service configs). Service instance configs stored as `key@id` pairs or plain objects are retained automatically.
+  - *Reset Everything*: Clears the entire config store, returning the app to a completely fresh state.
+- App restarts automatically after reset; default hotkeys and service lists are re-applied on first launch.
+
 ## 3.3.0 (2026-04-13)
 
 ### ONNX STT Engine — Windows Support:
