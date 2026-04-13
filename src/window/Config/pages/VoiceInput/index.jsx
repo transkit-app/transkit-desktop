@@ -135,7 +135,7 @@ export default function VoiceInput() {
     const [preferAsyncApi, setPreferAsyncApi] = useConfig('voice_anywhere_prefer_async_api', true);
 
     // FAB size
-    const [fabSize, setFabSize] = useConfig('voice_anywhere_fab_size', 72);
+    const [fabSize, setFabSize] = useConfig('voice_anywhere_fab_size', 56);
     const [idleButtonColor, setIdleButtonColor] = useConfig('voice_anywhere_idle_button_color', DEFAULT_IDLE_BUTTON_COLOR);
 
     // Always visible — show FAB without needing to press the hotkey

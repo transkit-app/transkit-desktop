@@ -29,7 +29,7 @@ export default function VoiceAnywhere() {
     const [sfxEnabled] = useConfig('voice_anywhere_sfx_enabled', true);
     const [showContextMenu] = useConfig('voice_anywhere_show_context_menu', true);
     const [preferAsyncApi] = useConfig('voice_anywhere_prefer_async_api', true);
-    const [fabSize] = useConfig('voice_anywhere_fab_size', 72);
+    const [fabSize] = useConfig('voice_anywhere_fab_size', 56);
     const [idleButtonColor] = useConfig('voice_anywhere_idle_button_color', '#3f3f46');
     const [transcriptionServiceList] = useConfig('transcription_service_list', ['transkit_cloud_stt', 'deepgram_stt']);
     const [polishEnabled] = useConfig('voice_anywhere_polish_enabled', false);
