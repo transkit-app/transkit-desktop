@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.3.2 (2026-04-13)
+
+### ONNX STT Engine — Windows Compatibility (Comprehensive):
+- **Module import fix**: `server.py` now inserts its own directory into `sys.path` at startup, bypassing the `PYTHONPATH`-ignored behaviour of Python embeddable packages on Windows. Resolves `ModuleNotFoundError: No module named 'capabilities'` (and any other sibling-module import failures) that crashed the server immediately on launch.
+- **UTF-8 stdout/stderr**: Embedded Python on Windows defaults to CP1252 encoding; `server.py` now forces UTF-8 on stdout/stderr so JSON output containing Unicode characters (model names, transcripts) is transmitted to Tauri without `UnicodeEncodeError`.
+- **asyncio event loop policy**: Python ≤ 3.11 on Windows defaults to `ProactorEventLoop`; `server.py` now sets `WindowsSelectorEventLoopPolicy` before uvicorn starts, preventing startup failures on certain Windows configurations.
+- **Hidden console windows (install phase)**: Added `CREATE_NO_WINDOW` flag to the `get-pip.py` and `pip install` subprocess spawns in the ONNX engine installer — no terminal flashes during engine installation.
+- **Hidden console window (sidecar start)**: Added `CREATE_NO_WINDOW` to the Local Sidecar process spawn in `local_sidecar.rs`, matching the existing flag in `onnx_engine.rs`.
+- **Cross-platform `setup.py`**: Removed `import select` (Unix-only module, crashes on Windows). Fixed `get_default_env_dir()` to use `%APPDATA%` on Windows. Added `_venv_python()` / `_venv_pip()` helpers returning `Scripts\python.exe` / `Scripts\pip.exe` on Windows (vs `bin/python3` / `bin/pip3` on Unix). Extended `find_system_python()` with Windows `%LOCALAPPDATA%\Programs\Python\*` paths and `python` / `python3` from `PATH`.
+
 ## 3.3.1 (2026-04-13)
 
 ### Out-of-the-Box Experience — Zero Config Required:
