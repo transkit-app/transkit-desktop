@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.3.0 (2026-04-13)
+
+### ONNX STT Engine — Windows Support:
+- **Windows PATH fix**: The ONNX engine process now inherits the correct Windows system `PATH` instead of overriding it with macOS/Linux paths, allowing Python and native sherpa-onnx DLLs to load correctly.
+- **Hidden console window**: Added `CREATE_NO_WINDOW` flag on Windows so no terminal flashes when the ONNX server starts.
+- **Windows bundle path**: Added the correct resource path (`scripts/local_sidecar/server.py` next to the `.exe`) for production Windows builds.
+- **Crash diagnostics**: Python stderr is now captured and forwarded to the UI via the `onnx-engine://stopped` event so users see the actual error message when the server fails to start.
+- **UI error banner**: Start failures (invoke error or process crash) now display a red error banner below the Start/Stop buttons instead of silently logging to console.
+
 ## 3.2.9 (2026-04-13)
 
 ### Voice Anywhere — Tray & Config Improvements:
