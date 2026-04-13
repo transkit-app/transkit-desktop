@@ -19,10 +19,12 @@ import MonitorLog from './components/MonitorLog';
 import ContextPanel from './components/ContextPanel';
 import AIPanel from './components/AIPanel';
 import NarrationPanel from './components/NarrationPanel';
+import NarrationReviewOverlay from './components/NarrationReviewOverlay';
 import * as transcriptionServices from '../../services/transcription';
 import * as translateServices from '../../services/translate';
 import { getTTSQueue } from './tts';
 import { reportUsage, CLOUD_ENABLED, callCloudAI } from '../../lib/transkit-cloud';
+import { polishTranscript, DEFAULT_PROMPTS } from '../../utils/polishTranscript';
 
 const MAX_ENTRIES = 100;
 const SUB_MODE_HEIGHT = 190;
