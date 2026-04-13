@@ -474,6 +474,32 @@ jobs:
                   brew tap transkit-app/tap
                   brew update
                   brew bump-cask-pr transkit-app/tap/transkit --version ${{ env.VERSION }} --no-browse --no-fork
+        - name: Auto-merge Homebrew PR
+          env:
+              GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          run: |
+              # brew bump-cask-pr is synchronous but the PR needs a moment to appear in the API
+              sleep 15
+
+              # Find any open PR in the tap repo that mentions transkit
+              PR_NUMBER=$(gh pr list \
+                  --repo transkit-app/homebrew-tap \
+                  --state open \
+                  --json number,title \
+                  --jq '.[] | select(.title | test("transkit"; "i")) | .number' \
+                  | head -1)
+
+              if [ -z "$PR_NUMBER" ]; then
+                  echo "No open transkit PR found — version may already be current, skipping."
+                  exit 0
+              fi
+
+              echo "Auto-merging PR #$PR_NUMBER in transkit-app/homebrew-tap"
+              gh pr merge "$PR_NUMBER" \
+                  --repo transkit-app/homebrew-tap \
+                  --squash \
+                  --delete-branch \
+                  --yes
 
     # winget:
     #     name: Update WinGet Package
