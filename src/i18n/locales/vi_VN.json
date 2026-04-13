@@ -324,7 +324,13 @@
         "qq_channel": "Kênh QQ",
         "qq_group": "Nhóm QQ",
         "telegram": "Telegram",
-        "discussion": "Thảo luận GitHub"
+        "discussion": "Thảo luận GitHub",
+        "reset_defaults": "Đặt lại",
+        "reset_title": "Đặt lại về mặc định",
+        "reset_desc": "Tất cả cài đặt sẽ được đặt lại. Chọn giữ lại hoặc xóa API keys và thông tin xác thực dịch vụ.",
+        "reset_restart_note": "Ứng dụng sẽ tự động khởi động lại sau khi đặt lại.",
+        "reset_keep_keys": "Đặt lại — Giữ API Keys",
+        "reset_full": "Đặt lại toàn bộ"
       },
       "profile": {
         "label": "Hồ sơ",

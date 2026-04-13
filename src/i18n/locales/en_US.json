@@ -324,7 +324,13 @@
         "qq_channel": "QQ Channel",
         "qq_group": "QQ Group",
         "telegram": "Telegram",
-        "discussion": "Github Discussion"
+        "discussion": "Github Discussion",
+        "reset_defaults": "Reset",
+        "reset_title": "Reset to Defaults",
+        "reset_desc": "All settings will be reset. Choose whether to keep your API keys and service credentials.",
+        "reset_restart_note": "The app will restart automatically after reset.",
+        "reset_keep_keys": "Reset — Keep API Keys",
+        "reset_full": "Reset Everything"
       },
       "profile": {
         "label": "Profile",

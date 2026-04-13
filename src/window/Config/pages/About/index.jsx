@@ -1,9 +1,9 @@
-import { Card, CardBody, Button, Chip, Link } from '@nextui-org/react';
+import { Card, CardBody, Button, Chip, Link, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from '@nextui-org/react';
 import { appLogDir, appConfigDir } from '@tauri-apps/api/path';
 import { useTranslation } from 'react-i18next';
 import { open } from '@tauri-apps/api/shell';
 import { invoke } from '@tauri-apps/api';
-import React from 'react';
+import React, { useState } from 'react';
 import {
     BsGlobe,
     BsGithub,
@@ -14,12 +14,46 @@ import {
     BsFileText,
     BsHeartFill,
     BsBoxArrowUpRight,
+    BsArrowCounterclockwise,
 } from 'react-icons/bs';
+
+import { store } from '../../../../utils/store';
 
 import { appVersion } from '../../../../utils/env';
 
 export default function About() {
     const { t } = useTranslation();
+    const { isOpen, onOpen, onOpenChange } = useDisclosure();
+    const [isResetting, setIsResetting] = useState(false);
+
+    async function handleReset(keepCredentials) {
+        setIsResetting(true);
+        try {
+            const allKeys = await store.keys();
+            for (const key of allKeys) {
+                if (keepCredentials) {
+                    // Keep: service instance configs (contain '@'), known credential keys,
+                    // and old-style service name keys whose value is a plain object.
+                    const value = await store.get(key);
+                    const isCredential =
+                        key.includes('@') ||
+                        key === 'soniox_api_key' ||
+                        (value !== null &&
+                            typeof value === 'object' &&
+                            !Array.isArray(value));
+                    if (!isCredential) {
+                        await store.delete(key);
+                    }
+                } else {
+                    await store.delete(key);
+                }
+            }
+            await store.save();
+            await invoke('restart_app');
+        } finally {
+            setIsResetting(false);
+        }
+    }
 
     const ActionCard = ({ icon: Icon, title, description, onClick, color = 'default' }) => {
         const colorClasses = {
@@ -149,10 +183,84 @@ export default function About() {
                             >
                                 {t('config.about.view_config')}
                             </Button>
+                            <Button
+                                size='sm'
+                                variant='flat'
+                                color='danger'
+                                startContent={<BsArrowCounterclockwise />}
+                                onPress={onOpen}
+                            >
+                                {t('config.about.reset_defaults', { defaultValue: 'Reset' })}
+                            </Button>
                         </div>
                     </CardBody>
                 </Card>
             </div>
+
+            {/* Reset Confirmation Modal */}
+            <Modal
+                isOpen={isOpen}
+                onOpenChange={onOpenChange}
+                size='sm'
+            >
+                <ModalContent>
+                    {(onClose) => (
+                        <>
+                            <ModalHeader className='flex flex-col gap-1'>
+                                {t('config.about.reset_title', { defaultValue: 'Reset to Defaults' })}
+                            </ModalHeader>
+                            <ModalBody>
+                                <p className='text-sm text-default-600'>
+                                    {t('config.about.reset_desc', {
+                                        defaultValue:
+                                            'All settings will be reset. Choose whether to keep your API keys and service credentials.',
+                                    })}
+                                </p>
+                                <p className='text-xs text-default-400 mt-1'>
+                                    {t('config.about.reset_restart_note', {
+                                        defaultValue: 'The app will restart automatically after reset.',
+                                    })}
+                                </p>
+                            </ModalBody>
+                            <ModalFooter className='flex flex-col gap-2'>
+                                <Button
+                                    fullWidth
+                                    color='warning'
+                                    variant='flat'
+                                    isLoading={isResetting}
+                                    onPress={() => {
+                                        onClose();
+                                        handleReset(true);
+                                    }}
+                                    startContent={!isResetting && <BsArrowCounterclockwise />}
+                                >
+                                    {t('config.about.reset_keep_keys', { defaultValue: 'Reset — Keep API Keys' })}
+                                </Button>
+                                <Button
+                                    fullWidth
+                                    color='danger'
+                                    variant='flat'
+                                    isLoading={isResetting}
+                                    onPress={() => {
+                                        onClose();
+                                        handleReset(false);
+                                    }}
+                                    startContent={!isResetting && <BsArrowCounterclockwise />}
+                                >
+                                    {t('config.about.reset_full', { defaultValue: 'Reset Everything' })}
+                                </Button>
+                                <Button
+                                    fullWidth
+                                    variant='light'
+                                    onPress={onClose}
+                                >
+                                    {t('common.cancel', { defaultValue: 'Cancel' })}
+                                </Button>
+                            </ModalFooter>
+                        </>
+                    )}
+                </ModalContent>
+            </Modal>
 
             {/* Footer - Pot Credits */}
             <div className='border-t border-divider mt-auto'>
