@@ -31,7 +31,7 @@ export default function VoiceAnywhere() {
     const [preferAsyncApi] = useConfig('voice_anywhere_prefer_async_api', true);
     const [fabSize] = useConfig('voice_anywhere_fab_size', 72);
     const [idleButtonColor] = useConfig('voice_anywhere_idle_button_color', '#3f3f46');
-    const [transcriptionServiceList] = useConfig('transcription_service_list', []);
+    const [transcriptionServiceList] = useConfig('transcription_service_list', ['transkit_cloud_stt', 'deepgram_stt']);
     const [polishEnabled] = useConfig('voice_anywhere_polish_enabled', false);
     const [polishLevel] = useConfig('voice_anywhere_polish_level', 'mild');
     const [polishServiceKey] = useConfig('voice_anywhere_polish_service', '');

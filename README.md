@@ -72,11 +72,11 @@ TransKit Desktop is a cross-platform translation, OCR, realtime monitor, and TTS
 
 ## Keyboard Shortcuts
 
-All shortcuts are **fully configurable** in **Settings → Hotkey**. The table below is the recommended branded set — none are registered by default, so there are no surprise conflicts on a fresh install.
+All shortcuts are **fully configurable** in **Settings → Hotkey**. The defaults below are registered automatically on a fresh install — you can reassign or clear any of them at any time.
 
-> **Cross-platform note:** `Ctrl+Alt` on Windows / Linux is physically the same key combination as `Ctrl+Option` on macOS. You register the shortcut once and it works on all three platforms without any per-OS adjustment.
+> **Cross-platform note:** `Ctrl+Alt` on Windows / Linux is physically the same key combination as `Ctrl+Option` on macOS. The shortcut is registered once and works on all three platforms without any per-OS adjustment.
 
-| Feature | Recommended Shortcut | Description |
+| Feature | Default Shortcut | Description |
 |---|---|---|
 | **Voice Anywhere** | `Ctrl+Alt+V` | Show / hide the floating mic button for voice input into any app or window |
 | **Realtime Translate** | `Ctrl+Alt+M` | Open the Audio Monitor for live speech-to-text + translation |
@@ -93,7 +93,7 @@ The `Ctrl+Alt+` prefix (`Ctrl+Option+` on macOS) was chosen because:
 - Common developer shortcuts (`Ctrl+Shift+I`, `Ctrl+Shift+R`, `Ctrl+\``) that would conflict with browsers and IDEs are not used
 - Single-hand press is still comfortable with the left hand on `Ctrl+Alt` and a letter key
 
-You can freely reassign any shortcut to whatever fits your workflow.
+You can freely reassign any shortcut in **Settings → Hotkey**, or clear a field (Backspace) to disable it.
 
 ## What Is New In TransKit
 

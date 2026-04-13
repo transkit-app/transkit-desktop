@@ -30,7 +30,7 @@ export default function Audio() {
 
     // ── TTS selector (global) ────────────────────────────────────────────────────
     const [ttsActiveService, setTtsActiveService] = useConfig('tts_active_service', 'edge_tts');
-    const [ttsServiceList] = useConfig('tts_service_list', ['google_tts', 'edge_tts']);
+    const [ttsServiceList] = useConfig('tts_service_list', ['transkit_cloud_tts', 'google_tts', 'edge_tts']);
     const [ttsPlaybackRate, setTtsPlaybackRate] = useConfig('tts_playback_rate', 1);
 
     const [isVisible, setIsVisible] = useState(false);

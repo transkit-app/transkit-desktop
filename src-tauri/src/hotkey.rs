@@ -13,8 +13,17 @@ where
             match get(name) {
                 Some(v) => v.as_str().unwrap().to_string(),
                 None => {
-                    set(name, "");
-                    String::new()
+                    let default = match name {
+                        "hotkey_selection_translate" => "Ctrl+Alt+Q",
+                        "hotkey_input_translate" => "Ctrl+Alt+W",
+                        "hotkey_ocr_recognize" => "Ctrl+Alt+R",
+                        "hotkey_ocr_translate" => "Ctrl+Alt+O",
+                        "hotkey_audio_monitor" => "Ctrl+Alt+M",
+                        "hotkey_voice_anywhere" => "Ctrl+Alt+V",
+                        _ => "",
+                    };
+                    set(name, default);
+                    default.to_string()
                 }
             }
         } else {

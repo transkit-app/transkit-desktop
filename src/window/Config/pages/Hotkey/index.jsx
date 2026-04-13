@@ -46,12 +46,12 @@ const keyMap = {
 };
 
 export default function Hotkey() {
-    const [selectionTranslate, setSelectionTranslate] = useConfig('hotkey_selection_translate', '');
-    const [inputTranslate, setInputTranslate] = useConfig('hotkey_input_translate', '');
-    const [ocrRecognize, setOcrRecognize] = useConfig('hotkey_ocr_recognize', '');
-    const [ocrTranslate, setOcrTranslate] = useConfig('hotkey_ocr_translate', '');
-    const [audioMonitor, setAudioMonitor] = useConfig('hotkey_audio_monitor', '');
-    const [voiceAnywhere, setVoiceAnywhere] = useConfig('hotkey_voice_anywhere', '');
+    const [selectionTranslate, setSelectionTranslate] = useConfig('hotkey_selection_translate', 'Ctrl+Alt+Q');
+    const [inputTranslate, setInputTranslate] = useConfig('hotkey_input_translate', 'Ctrl+Alt+W');
+    const [ocrRecognize, setOcrRecognize] = useConfig('hotkey_ocr_recognize', 'Ctrl+Alt+R');
+    const [ocrTranslate, setOcrTranslate] = useConfig('hotkey_ocr_translate', 'Ctrl+Alt+O');
+    const [audioMonitor, setAudioMonitor] = useConfig('hotkey_audio_monitor', 'Ctrl+Alt+M');
+    const [voiceAnywhere, setVoiceAnywhere] = useConfig('hotkey_voice_anywhere', 'Ctrl+Alt+V');
 
     const { t } = useTranslation();
     const toastStyle = useToastStyle();
