@@ -85,9 +85,9 @@ export default function Translate() {
     const [rememberWindowSize, setRememberWindowSize] = useConfig('translate_remember_window_size', false);
     const [fixedProviders] = useConfig('selection_translate_fixed_providers', false);
     const [translateServiceInstanceList, setTranslateServiceInstanceList] = useConfig('translate_service_list', [
-        'transkit_cloud_translate',
         'google',
         'bing',
+        'transkit_cloud_translate',
     ]);
     const [recognizeServiceInstanceList] = useConfig('recognize_service_list', ['system', 'tesseract']);
     const [ttsServiceInstanceList] = useConfig('tts_service_list', ['transkit_cloud_tts', 'google_tts', 'edge_tts']);

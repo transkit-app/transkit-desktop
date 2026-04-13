@@ -152,8 +152,8 @@ async function getTranscriptFilePath() {
 export default function Monitor() {
     const { t } = useTranslation();
 
-    const [activeTranscriptionService, setActiveTranscriptionService] = useConfig('transcription_active_service', 'deepgram_stt');
-    const [transcriptionServiceList] = useConfig('transcription_service_list', ['deepgram_stt']);
+    const [activeTranscriptionService, setActiveTranscriptionService] = useConfig('transcription_active_service', 'transkit_cloud_stt');
+    const [transcriptionServiceList] = useConfig('transcription_service_list', ['transkit_cloud_stt', 'deepgram_stt']);
     const [sourceLang, setSourceLang] = useConfig('audio_source_lang', 'auto');
     const [targetLang, setTargetLang] = useConfig('audio_target_lang', 'vi');
     const [sourceAudio, setSourceAudio] = useConfig('audio_source', 'system');
@@ -161,7 +161,7 @@ export default function Monitor() {
 
     // TTS config
     const [activeTtsService, setActiveTtsService] = useConfig('tts_active_service', 'edge_tts');
-    const [ttsServiceList] = useConfig('tts_service_list', ['google_tts', 'edge_tts']);
+    const [ttsServiceList] = useConfig('tts_service_list', ['google_tts', 'edge_tts', 'transkit_cloud_tts']);
     const [ttsPlaybackRate] = useConfig('tts_playback_rate', 1);
     const [ttsVolume, setTtsVolume] = useConfig('tts_volume', 1.0);
 
@@ -169,7 +169,7 @@ export default function Monitor() {
     const [offlineTranslateService] = useConfig('offline_stt_translate_service', 'none');
 
     // Active AI service (for context generation)
-    const [aiServiceList] = useConfig('ai_service_list', []);
+    const [aiServiceList] = useConfig('ai_service_list', ['transkit_cloud_ai']);
 
     // AI Suggestion config
     const [aiSuggestionService, setAiSuggestionService] = useConfig('monitor_ai_suggestion_service', '');

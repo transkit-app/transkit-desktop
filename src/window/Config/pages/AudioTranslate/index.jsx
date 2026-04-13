@@ -37,14 +37,14 @@ export default function AudioTranslate() {
     const { t } = useTranslation();
 
     // ── Transcription provider selector ──────────────────────────────────────
-    const [transcriptionServiceList] = useConfig('transcription_service_list', ['deepgram_stt']);
-    const [activeTranscriptionService, setActiveTranscriptionService] = useConfig('transcription_active_service', 'deepgram_stt');
+    const [transcriptionServiceList] = useConfig('transcription_service_list', ['transkit_cloud_stt', 'deepgram_stt']);
+    const [activeTranscriptionService, setActiveTranscriptionService] = useConfig('transcription_active_service', 'transkit_cloud_stt');
 
     // ── Auto-save ────────────────────────────────────────────────────────────
     const [autosaveEnabled, setAutosaveEnabled] = useConfig('monitor_autosave_enabled', false);
 
     // ── AI Suggestion ────────────────────────────────────────────────────────
-    const [aiServiceList] = useConfig('ai_service_list', []);
+    const [aiServiceList] = useConfig('ai_service_list', ['transkit_cloud_ai']);
     const [aiSuggestionService, setAiSuggestionService] = useConfig('monitor_ai_suggestion_service', '');
     const [aiSuggestionContextLines, setAiSuggestionContextLines] = useConfig('monitor_ai_suggestion_context_lines', 10);
     const [aiSuggestionResponseLang, setAiSuggestionResponseLang] = useConfig('monitor_ai_suggestion_response_lang', 'both');
@@ -64,7 +64,7 @@ export default function AudioTranslate() {
 
     // ── TTS selector (global) ────────────────────────────────────────────────
     const [ttsActiveService, setTtsActiveService] = useConfig('tts_active_service', 'edge_tts');
-    const [ttsServiceList] = useConfig('tts_service_list', ['google_tts', 'edge_tts']);
+    const [ttsServiceList] = useConfig('tts_service_list', ['google_tts', 'edge_tts', 'transkit_cloud_tts']);
     const [ttsPlaybackRate, setTtsPlaybackRate] = useConfig('tts_playback_rate', 1);
 
     return (

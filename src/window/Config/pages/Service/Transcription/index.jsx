@@ -15,7 +15,7 @@ export default function Transcription(props) {
     const { pluginList } = props;
     const { isOpen: isSelectOpen, onOpen: onSelectOpen, onOpenChange: onSelectOpenChange } = useDisclosure();
     const { isOpen: isConfigOpen, onOpen: onConfigOpen, onOpenChange: onConfigOpenChange } = useDisclosure();
-    const [currentConfigKey, setCurrentConfigKey] = useState('deepgram_stt');
+    const [currentConfigKey, setCurrentConfigKey] = useState('transkit_cloud_stt');
     const [transcriptionServiceList, setTranscriptionServiceList] = useConfig('transcription_service_list', ['transkit_cloud_stt', 'deepgram_stt']);
 
     const { t } = useTranslation();

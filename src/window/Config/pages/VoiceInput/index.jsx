@@ -28,7 +28,7 @@ export default function VoiceInput() {
     const { t } = useTranslation();
 
     // STT service — inherits from Audio Monitor by default
-    const [transcriptionServiceList] = useConfig('transcription_service_list', ['deepgram_stt']);
+    const [transcriptionServiceList] = useConfig('transcription_service_list', ['transkit_cloud_stt', 'deepgram_stt']);
     const [voiceSttService, setVoiceSttService] = useConfig('voice_anywhere_stt_service', 'inherit');
 
     // Language — inherits from Audio Monitor source lang by default
@@ -73,7 +73,7 @@ export default function VoiceInput() {
     const [polishService, setPolishService] = useConfig('voice_anywhere_polish_service', '');
     const [polishPromptOverrides, setPolishPromptOverrides] = useConfig('voice_anywhere_polish_prompt_overrides', {});
     const [polishCustomLevels, setPolishCustomLevels] = useConfig('voice_anywhere_polish_custom_levels', []);
-    const [aiServiceList] = useConfig('ai_service_list', []);
+    const [aiServiceList] = useConfig('ai_service_list', ['transkit_cloud_ai']);
     const [aiDisplayNames, setAiDisplayNames] = React.useState({});
     React.useEffect(() => {
         if (!aiServiceList?.length) return;
