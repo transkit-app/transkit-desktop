@@ -395,6 +395,7 @@ pub fn onnx_engine_install(window: Window) -> Result<(), String> {
     // ── Windows: embedded Python ──────────────────────────────────────────────
     #[cfg(target_os = "windows")]
     {
+        use std::os::windows::process::CommandExt;
         let python_dir = engine_dir.join("python");
         let python_exe = python_dir.join("python.exe");
 
@@ -461,7 +462,6 @@ pub fn onnx_engine_install(window: Window) -> Result<(), String> {
                 .map_err(|e| format!("Failed to save get-pip.py: {}", e))?;
 
             emit_progress(&window, "install_pip", "Installing pip...", 40);
-            use std::os::windows::process::CommandExt;
             let out = Command::new(&python_exe)
                 .arg(&get_pip_path)
                 .arg("--no-warn-script-location")
