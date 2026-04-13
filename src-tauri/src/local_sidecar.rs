@@ -95,49 +95,42 @@ fn sidecar_env_dir() -> PathBuf {
 }
 
 fn venv_python() -> PathBuf {
-    sidecar_env_dir().join("bin").join("python3")
+    #[cfg(target_os = "windows")]
+    return sidecar_env_dir().join("Scripts").join("python.exe");
+    #[cfg(not(target_os = "windows"))]
+    return sidecar_env_dir().join("bin").join("python3");
 }
 
 fn setup_marker() -> PathBuf {
     sidecar_env_dir().join(".setup_complete")
 }
 
-fn server_script() -> Option<PathBuf> {
+fn scripts_dir() -> Option<PathBuf> {
+    let exe_dir = std::env::current_exe().ok()?.parent()?.to_path_buf();
     let candidates = vec![
         // Development: repo root relative to Cargo.toml
-        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../scripts/local_sidecar/server.py"),
-        // Production bundle
-        std::env::current_exe()
-            .ok()?
-            .parent()?
-            .join("../Resources/scripts/local_sidecar/server.py"),
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../scripts/local_sidecar"),
+        // macOS .app bundle: Contents/MacOS/../Resources/scripts/local_sidecar
+        exe_dir.join("../Resources/scripts/local_sidecar"),
+        // Windows installer / Linux: scripts/ sits next to the exe
+        exe_dir.join("scripts/local_sidecar"),
     ];
     candidates.into_iter().find(|p| p.exists())
+}
+
+fn server_script() -> Option<PathBuf> {
+    let p = scripts_dir()?.join("server.py");
+    p.exists().then_some(p)
 }
 
 fn setup_script() -> Option<PathBuf> {
-    let candidates = vec![
-        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../scripts/local_sidecar/setup.py"),
-        std::env::current_exe()
-            .ok()?
-            .parent()?
-            .join("../Resources/scripts/local_sidecar/setup.py"),
-    ];
-    candidates.into_iter().find(|p| p.exists())
+    let p = scripts_dir()?.join("setup.py");
+    p.exists().then_some(p)
 }
 
 fn download_script() -> Option<PathBuf> {
-    let candidates = vec![
-        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../scripts/local_sidecar/download.py"),
-        std::env::current_exe()
-            .ok()?
-            .parent()?
-            .join("../Resources/scripts/local_sidecar/download.py"),
-    ];
-    candidates.into_iter().find(|p| p.exists())
+    let p = scripts_dir()?.join("download.py");
+    p.exists().then_some(p)
 }
 
 /// Find an available TCP port in the ephemeral range.
@@ -151,25 +144,55 @@ fn find_free_port(start: u16) -> u16 {
 }
 
 fn system_python() -> String {
-    let candidates = [
-        "/opt/homebrew/bin/python3",
-        "/opt/homebrew/bin/python3.12",
-        "/opt/homebrew/bin/python3.11",
-        "/opt/homebrew/bin/python3.10",
-        "/usr/local/bin/python3",
-    ];
-    for p in &candidates {
-        if std::path::Path::new(p).exists() {
-            return p.to_string();
+    #[cfg(target_os = "windows")]
+    {
+        for cmd in &["python", "python3", "py"] {
+            if std::process::Command::new(cmd)
+                .arg("--version")
+                .stdout(std::process::Stdio::null())
+                .stderr(std::process::Stdio::null())
+                .status()
+                .map(|s| s.success())
+                .unwrap_or(false)
+            {
+                return cmd.to_string();
+            }
         }
+        return "python".to_string();
     }
-    "python3".to_string()
+    #[cfg(not(target_os = "windows"))]
+    {
+        let candidates = [
+            "/opt/homebrew/bin/python3",
+            "/opt/homebrew/bin/python3.12",
+            "/opt/homebrew/bin/python3.11",
+            "/opt/homebrew/bin/python3.10",
+            "/usr/local/bin/python3",
+        ];
+        for p in &candidates {
+            if std::path::Path::new(p).exists() {
+                return p.to_string();
+            }
+        }
+        "python3".to_string()
+    }
 }
 
 fn base_env() -> (String, String) {
-    let home     = std::env::var("HOME").unwrap_or_default();
-    let path_env = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin".to_string();
-    (home, path_env)
+    #[cfg(target_os = "windows")]
+    {
+        let home = std::env::var("USERPROFILE")
+            .or_else(|_| std::env::var("HOME"))
+            .unwrap_or_default();
+        let path = std::env::var("PATH").unwrap_or_default();
+        return (home, path);
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let home = std::env::var("HOME").unwrap_or_default();
+        let path_env = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin".to_string();
+        (home, path_env)
+    }
 }
 
 // ── Commands ──────────────────────────────────────────────────────────────────

@@ -2,3 +2,6 @@
 # will have compiled files and executables
 /target/
 
+# Python scripts copied here by build.rs for bundling — source of truth is scripts/local_sidecar/
+/scripts/
+
