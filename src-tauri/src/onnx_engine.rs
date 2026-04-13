@@ -461,9 +461,11 @@ pub fn onnx_engine_install(window: Window) -> Result<(), String> {
                 .map_err(|e| format!("Failed to save get-pip.py: {}", e))?;
 
             emit_progress(&window, "install_pip", "Installing pip...", 40);
+            use std::os::windows::process::CommandExt;
             let out = Command::new(&python_exe)
                 .arg(&get_pip_path)
                 .arg("--no-warn-script-location")
+                .creation_flags(0x08000000) // CREATE_NO_WINDOW
                 .output()
                 .map_err(|e| format!("Failed to run get-pip.py: {}", e))?;
             if !out.status.success() {
@@ -486,6 +488,7 @@ pub fn onnx_engine_install(window: Window) -> Result<(), String> {
             .args(&packages)
             .arg("--no-warn-script-location")
             .arg("--quiet")
+            .creation_flags(0x08000000) // CREATE_NO_WINDOW (CommandExt already imported above)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()

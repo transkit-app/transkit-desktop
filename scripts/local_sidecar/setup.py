@@ -63,6 +63,10 @@ def error(message):
 
 def get_default_env_dir():
     # type: () -> str
+    import platform
+    if platform.system() == "Windows":
+        base = os.environ.get("APPDATA") or os.path.expanduser("~")
+        return os.path.join(base, "com.transkit.desktop", "sidecar-env")
     home = os.path.expanduser("~")
     return os.path.join(home, "Library", "Application Support", "com.transkit.desktop", "sidecar-env")
 
@@ -82,11 +86,27 @@ def read_marker(env_dir):
         return {}
 
 
+def _venv_python(env_dir):
+    # type: (str) -> str
+    import platform
+    if platform.system() == "Windows":
+        return os.path.join(env_dir, "Scripts", "python.exe")
+    return os.path.join(env_dir, "bin", "python3")
+
+
+def _venv_pip(env_dir):
+    # type: (str) -> str
+    import platform
+    if platform.system() == "Windows":
+        return os.path.join(env_dir, "Scripts", "pip.exe")
+    return os.path.join(env_dir, "bin", "pip3")
+
+
 def is_setup_complete(env_dir):
     # type: (str) -> bool
     marker = get_marker_path(env_dir)
-    venv_python = os.path.join(env_dir, "bin", "python3")
-    if not os.path.exists(marker) or not os.path.exists(venv_python):
+    venv_python_path = _venv_python(env_dir)
+    if not os.path.exists(marker) or not os.path.exists(venv_python_path):
         return False
     try:
         data = read_marker(env_dir)
@@ -97,23 +117,40 @@ def is_setup_complete(env_dir):
 
 def find_system_python():
     # type: () -> Tuple[Optional[str], Optional[str]]
-    """Find Python 3.10+ from common locations."""
-    candidates = [
-        "/opt/homebrew/bin/python3",
-        "/opt/homebrew/bin/python3.13",
-        "/opt/homebrew/bin/python3.12",
-        "/opt/homebrew/bin/python3.11",
-        "/opt/homebrew/bin/python3.10",
-        "/usr/local/bin/python3",
-        "/usr/local/bin/python3.12",
-        "/usr/local/bin/python3.11",
-        "/usr/local/bin/python3.10",
-        shutil.which("python3"),
-        shutil.which("python3.13"),
-        shutil.which("python3.12"),
-        shutil.which("python3.11"),
-        shutil.which("python3.10"),
-    ]
+    """Find Python 3.10+ from common locations (cross-platform)."""
+    import platform
+    if platform.system() == "Windows":
+        candidates = [
+            # Windows: prefer versioned launchers then bare names
+            shutil.which("python3.13"),
+            shutil.which("python3.12"),
+            shutil.which("python3.11"),
+            shutil.which("python3.10"),
+            shutil.which("python3"),
+            shutil.which("python"),
+            # Common install locations
+            os.path.join(os.environ.get("LOCALAPPDATA", ""), "Programs", "Python", "Python313", "python.exe"),
+            os.path.join(os.environ.get("LOCALAPPDATA", ""), "Programs", "Python", "Python312", "python.exe"),
+            os.path.join(os.environ.get("LOCALAPPDATA", ""), "Programs", "Python", "Python311", "python.exe"),
+            os.path.join(os.environ.get("LOCALAPPDATA", ""), "Programs", "Python", "Python310", "python.exe"),
+        ]
+    else:
+        candidates = [
+            "/opt/homebrew/bin/python3",
+            "/opt/homebrew/bin/python3.13",
+            "/opt/homebrew/bin/python3.12",
+            "/opt/homebrew/bin/python3.11",
+            "/opt/homebrew/bin/python3.10",
+            "/usr/local/bin/python3",
+            "/usr/local/bin/python3.12",
+            "/usr/local/bin/python3.11",
+            "/usr/local/bin/python3.10",
+            shutil.which("python3"),
+            shutil.which("python3.13"),
+            shutil.which("python3.12"),
+            shutil.which("python3.11"),
+            shutil.which("python3.10"),
+        ]
     for path in candidates:
         if not path or not os.path.exists(path):
             continue
@@ -185,7 +222,7 @@ def create_venv(python_path, env_dir):
     if result.returncode != 0:
         raise RuntimeError("Failed to create venv: " + result.stderr.strip())
 
-    venv_pip = os.path.join(env_dir, "bin", "pip3")
+    venv_pip = _venv_pip(env_dir)
     subprocess.run(
         [venv_pip, "install", "--upgrade", "pip", "--quiet"],
         capture_output=True, text=True, timeout=120,
@@ -196,8 +233,7 @@ def create_venv(python_path, env_dir):
 def install_package_list(env_dir, packages, start_pct, end_pct):
     # type: (str, List[str], int, int) -> None
     """Install a list of packages, streaming output so the UI shows download progress."""
-    import select as _select
-    venv_pip = os.path.join(env_dir, "bin", "pip3")
+    venv_pip = _venv_pip(env_dir)
     total = len(packages)
     for i, pkg in enumerate(packages):
         pct = start_pct + int((i / total) * (end_pct - start_pct))
@@ -228,7 +264,7 @@ def install_package_list(env_dir, packages, start_pct, end_pct):
 def verify_install(env_dir, components, tts_package):
     # type: (str, List[str], str) -> bool
     """Use pip list to verify key packages are installed — avoids slow pip show on large envs."""
-    venv_pip = os.path.join(env_dir, "bin", "pip3")
+    venv_pip = _venv_pip(env_dir)
     required = {"fastapi", "uvicorn", "numpy", "websockets"}
     if "llm" in components:
         required.add("mlx-lm")
@@ -342,7 +378,7 @@ def main():
     progress("check", "Found Python " + str(version), 4)
 
     # Create venv if needed
-    venv_python_path = os.path.join(env_dir, "bin", "python3")
+    venv_python_path = _venv_python(env_dir)
     if not os.path.exists(venv_python_path):
         create_venv(python_path, env_dir)
     else:

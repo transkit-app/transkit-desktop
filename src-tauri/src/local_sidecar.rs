@@ -280,6 +280,13 @@ pub fn start_with_handle(
         cmd.arg("--asr-language").arg(&lang);
     }
 
+    // Hide the console window on Windows so no terminal flashes up
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+    }
+
     let mut child = cmd.spawn().map_err(|e| format!("Failed to start sidecar: {}", e))?;
     info!("[LocalSidecar] Process started PID={}", child.id());
 

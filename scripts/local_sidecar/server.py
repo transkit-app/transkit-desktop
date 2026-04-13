@@ -23,6 +23,32 @@ import os
 import sys
 import time
 
+# Ensure the directory containing this script is always on sys.path so that
+# sibling modules (capabilities, tts, asr, onnx_asr, …) can be imported even
+# when the process working directory is somewhere else (e.g. on Windows where
+# Tauri may launch the server from a different cwd).  This also bypasses the
+# PYTHONPATH-ignored behaviour of Python embeddable packages on Windows.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+# ── Windows compatibility ───────────────────────────────────────────────────────
+if sys.platform == "win32":
+    import io as _io
+    # Embedded Python on Windows may default to a narrow encoding (CP1252).
+    # Force UTF-8 so JSON output that contains Unicode characters is transmitted
+    # correctly to the Tauri process without UnicodeEncodeError.
+    if hasattr(sys.stdout, "buffer"):
+        sys.stdout = _io.TextIOWrapper(
+            sys.stdout.buffer, encoding="utf-8", errors="replace", line_buffering=True
+        )
+    if hasattr(sys.stderr, "buffer"):
+        sys.stderr = _io.TextIOWrapper(
+            sys.stderr.buffer, encoding="utf-8", errors="replace", line_buffering=True
+        )
+    # Python ≤ 3.11 on Windows defaults to ProactorEventLoop; uvicorn (and our
+    # own run_in_executor calls) require SelectorEventLoop.  Set the policy
+    # early, before uvicorn configures its own loop.
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
 import uvicorn  # type: ignore
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect  # type: ignore
 from fastapi.middleware.cors import CORSMiddleware  # type: ignore
