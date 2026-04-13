@@ -640,7 +640,17 @@
       "installed": "Install completed, Restart the application for the changes to take effect",
       "install_complete": "Installation Complete",
       "restart_now": "Restart Now",
-      "restart_later": "Later"
+      "restart_later": "Later",
+      "version_available": "A new version of Transkit is available!",
+      "version_info": "Transkit {{newVersion}} is now available—you have {{currentVersion}}.",
+      "download_prompt": "Would you like to download it now?",
+      "up_to_date": "Transkit is up to date!",
+      "current_version": "You have Transkit {{currentVersion}}, which is the latest version.",
+      "skip_version": "Skip This Version",
+      "remind_later": "Remind Me Later",
+      "auto_update": "Automatically download and install updates in the future",
+      "close": "Close",
+      "view_on_github": "View full release notes on GitHub →"
     },
     "services": {
       "help": "Configuration Guide",

@@ -65,6 +65,7 @@ use tauri::Manager;
 use tauri_plugin_log::LogTarget;
 use tray::*;
 use updater::check_update;
+use updater::skip_version;
 use window::config_window;
 use window::open_config_window;
 use window::show_voice_anywhere_window;
@@ -298,7 +299,8 @@ fn main() {
             onnx_engine_get_port,
             onnx_model_download,
             onnx_model_list,
-            onnx_model_delete
+            onnx_model_delete,
+            skip_version
         ])
         .on_system_tray_event(tray_event_handler)
         .build(tauri::generate_context!())

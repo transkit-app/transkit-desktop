@@ -439,9 +439,9 @@ pub fn ocr_translate() {
 pub fn updater_window() {
     let (window, _exists) = build_window("updater", "Updater");
     window
-        .set_min_size(Some(tauri::LogicalSize::new(600, 400)))
+        .set_min_size(Some(tauri::LogicalSize::new(700, 560)))
         .unwrap();
-    window.set_size(tauri::LogicalSize::new(600, 400)).unwrap();
+    window.set_size(tauri::LogicalSize::new(700, 560)).unwrap();
     window.center().unwrap();
     window.set_always_on_top(true).unwrap_or_default();
     window.show().unwrap_or_default();

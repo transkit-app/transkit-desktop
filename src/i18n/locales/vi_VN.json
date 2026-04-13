@@ -639,7 +639,17 @@
       "installed": "Cài đặt hoàn tất, khởi động lại ứng dụng để áp dụng thay đổi",
       "install_complete": "Cài đặt hoàn tất",
       "restart_now": "Khởi động lại ngay",
-      "restart_later": "Để sau"
+      "restart_later": "Để sau",
+      "version_available": "Có phiên bản Transkit mới!",
+      "version_info": "Transkit {{newVersion}} đã được phát hành — bạn đang dùng {{currentVersion}}.",
+      "download_prompt": "Bạn có muốn tải xuống ngay không?",
+      "up_to_date": "Transkit đã ở phiên bản mới nhất!",
+      "current_version": "Bạn đang dùng Transkit {{currentVersion}}, đây là phiên bản mới nhất.",
+      "skip_version": "Bỏ qua phiên bản này",
+      "remind_later": "Nhắc tôi sau",
+      "auto_update": "Tự động tải và cài đặt cập nhật trong tương lai",
+      "close": "Đóng",
+      "view_on_github": "Xem release notes đầy đủ trên GitHub →"
     },
     "services": {
       "help": "Hướng dẫn cấu hình",
