@@ -20,6 +20,7 @@ TransKit Desktop là ứng dụng dịch thuật, OCR, realtime monitor và TTS 
 
 - [Hướng dẫn sử dụng đầy đủ](./docs/user_guide_vi.md)
 - [Usage](#usage)
+- [Phím tắt mặc định](#phím-tắt-mặc-định)
 - [Điểm Mới Trên TransKit](#điểm-mới-trên-transkit)
 - [Cài Đặt](#cài-đặt)
 - [Cấu hình Phiên âm (Monitor)](#cấu-hình-phiên-âm-monitor)
@@ -68,6 +69,31 @@ TransKit Desktop là ứng dụng dịch thuật, OCR, realtime monitor và TTS 
     </td>
   </tr>
 </table>
+
+## Phím tắt mặc định
+
+Tất cả phím tắt đều **có thể tùy chỉnh** trong **Cài đặt → Phím tắt**. Bảng dưới là bộ phím tắt được khuyến nghị — không có phím nào được đăng ký sẵn khi mới cài, nên sẽ không có xung đột bất ngờ.
+
+> **Lưu ý đa nền tảng:** `Ctrl+Alt` trên Windows / Linux là tổ hợp phím giống hệt `Ctrl+Option` trên macOS về mặt vật lý. Bạn chỉ cần đăng ký một lần và nó hoạt động trên cả ba hệ điều hành mà không cần điều chỉnh thêm.
+
+| Tính năng | Phím tắt khuyến nghị | Mô tả |
+|---|---|---|
+| **Voice Anywhere** | `Ctrl+Alt+V` | Hiện / ẩn nút mic nổi để nhập liệu giọng nói vào bất kỳ ứng dụng nào |
+| **Dịch realtime** | `Ctrl+Alt+M` | Mở Audio Monitor để dịch speech-to-text trực tiếp |
+| **Dịch văn bản đã chọn** | `Ctrl+Alt+Q` | Dịch văn bản đang được bôi đen |
+| **Dịch qua nhập liệu** | `Ctrl+Alt+W` | Mở cửa sổ nhập văn bản để dịch |
+| **OCR nhận diện** | `Ctrl+Alt+R` | Chụp vùng màn hình và trích xuất văn bản |
+| **OCR dịch** | `Ctrl+Alt+O` | Chụp vùng màn hình và dịch nội dung |
+
+### Tại sao chọn bộ phím này?
+
+Prefix `Ctrl+Alt+` (`Ctrl+Option+` trên macOS) được chọn vì:
+- Không bị OS nào chiếm dụng trên Windows, macOS hay Linux
+- Các tổ hợp bị hệ thống giữ (`Ctrl+Alt+Del`, `Ctrl+Alt+T` terminal Linux, `Ctrl+Alt+L` khóa màn hình Linux) đều được tránh hoàn toàn
+- Không đụng chạm các phím tắt phổ biến của developer (`Ctrl+Shift+I`, `Ctrl+Shift+R`, `Ctrl+\``) vốn xung đột với browser và IDE
+- Vẫn nhấn được bằng một tay trái thoải mái
+
+Bạn hoàn toàn có thể đổi bất kỳ phím nào sang tổ hợp phù hợp hơn với workflow của mình.
 
 ## Điểm Mới Trên TransKit
 

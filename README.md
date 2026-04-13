@@ -19,6 +19,7 @@ TransKit Desktop is a cross-platform translation, OCR, realtime monitor, and TTS
 
 - [Full User Guide](./docs/user_guide.md)
 - [Usage](#usage)
+- [Keyboard Shortcuts](#keyboard-shortcuts)
 - [What Is New In TransKit](#what-is-new-in-transkit)
 - [Installation](#installation)
 - [Transcription Setup (Monitor)](#transcription-setup-monitor)
@@ -68,6 +69,31 @@ TransKit Desktop is a cross-platform translation, OCR, realtime monitor, and TTS
   </tr>
 </table>
 
+
+## Keyboard Shortcuts
+
+All shortcuts are **fully configurable** in **Settings → Hotkey**. The table below is the recommended branded set — none are registered by default, so there are no surprise conflicts on a fresh install.
+
+> **Cross-platform note:** `Ctrl+Alt` on Windows / Linux is physically the same key combination as `Ctrl+Option` on macOS. You register the shortcut once and it works on all three platforms without any per-OS adjustment.
+
+| Feature | Recommended Shortcut | Description |
+|---|---|---|
+| **Voice Anywhere** | `Ctrl+Alt+V` | Show / hide the floating mic button for voice input into any app or window |
+| **Realtime Translate** | `Ctrl+Alt+M` | Open the Audio Monitor for live speech-to-text + translation |
+| **Selection Translate** | `Ctrl+Alt+Q` | Translate the currently selected text |
+| **Input Translate** | `Ctrl+Alt+W` | Open the text-input translation window |
+| **OCR Recognize** | `Ctrl+Alt+R` | Capture a screen region and extract text |
+| **OCR Translate** | `Ctrl+Alt+O` | Capture a screen region and translate the text |
+
+### Why these keys?
+
+The `Ctrl+Alt+` prefix (`Ctrl+Option+` on macOS) was chosen because:
+- Not claimed by any OS system shortcut on Windows, macOS, or Linux
+- `Ctrl+Alt+Del`, `Ctrl+Alt+T` (Linux terminal), and `Ctrl+Alt+L` (Linux lock) are the only reserved combinations in this family — all avoided above
+- Common developer shortcuts (`Ctrl+Shift+I`, `Ctrl+Shift+R`, `Ctrl+\``) that would conflict with browsers and IDEs are not used
+- Single-hand press is still comfortable with the left hand on `Ctrl+Alt` and a letter key
+
+You can freely reassign any shortcut to whatever fits your workflow.
 
 ## What Is New In TransKit
 

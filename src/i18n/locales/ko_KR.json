@@ -5,7 +5,8 @@
       "cancel": "취소",
       "save": "저장",
       "write_clipboard": "클립보드에 작성",
-      "plugin": "플러그인"
+      "plugin": "플러그인",
+      "add": "추가"
     },
     "services": {
       "translate": {
@@ -279,7 +280,9 @@
         "autostart": "Auto-start recording on hotkey",
         "autostart_desc": "Immediately begin recording when the hotkey is pressed.",
         "appearance_section": "Button Appearance",
-        "fab_size": "Button Size"
+        "fab_size": "Button Size",
+        "fav_targets": "즐겨찾기 대상 언어 (트레이)",
+        "fav_targets_desc": "시스템 트레이에 표시되는 언어입니다. 여기서 설정한 후 트레이에서 빠르게 전환하세요."
       }
     },
     "updater": {

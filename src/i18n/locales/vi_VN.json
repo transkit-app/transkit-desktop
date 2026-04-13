@@ -7,7 +7,8 @@
       "write_clipboard": "Sao chép vào Clipboard",
       "plugin": "Plugin",
       "coming": "Sắp ra mắt…",
-      "clear": "Xóa"
+      "clear": "Xóa",
+      "add": "Thêm"
     },
     "languages": {
       "auto": "Tự động phát hiện",
@@ -167,7 +168,7 @@
         "is_register": "Phím tắt đã được đăng ký",
         "success": "Đăng ký phím tắt thành công",
         "set_hotkey": "Nhấn để đặt phím tắt",
-        "voice_anywhere": "Nhập liệu bằng giọng nói (Voice Anywhere)" 
+        "voice_anywhere": "Nhập liệu bằng giọng nói (Voice Anywhere)"
       },
       "service": {
         "label": "Dịch vụ",
@@ -389,7 +390,9 @@
         "fab_size": "Kích thước nút",
         "idle_button_color": "Màu nút chờ",
         "idle_button_color_desc": "Chọn màu chờ cho nút Voice Anywhere.",
-        "reset_idle_button_color": "Đặt lại"
+        "reset_idle_button_color": "Đặt lại",
+        "fav_targets": "Ngôn ngữ đích yêu thích (Tray)",
+        "fav_targets_desc": "Danh sách ngôn ngữ hiển thị trên khay hệ thống để chuyển đổi nhanh. Cấu hình tại đây, sau đó dùng tray để đổi nhanh."
       },
       "local_sidecar": {
         "label": "Offline model",

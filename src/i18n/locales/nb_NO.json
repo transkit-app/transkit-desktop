@@ -1,7 +1,8 @@
 {
   "translation": {
     "common": {
-      "ok": "Ok"
+      "ok": "Ok",
+      "add": "Legg til"
     },
     "services": {
       "translate": {
@@ -100,7 +101,9 @@
         "autostart": "Auto-start recording on hotkey",
         "autostart_desc": "Immediately begin recording when the hotkey is pressed.",
         "appearance_section": "Button Appearance",
-        "fab_size": "Button Size"
+        "fab_size": "Button Size",
+        "fav_targets": "Favoritt målspråk (systemkurvbrett)",
+        "fav_targets_desc": "Språk vist i systemkurvbrettet for rask bytting av målspråk."
       }
     },
     "translate": {},

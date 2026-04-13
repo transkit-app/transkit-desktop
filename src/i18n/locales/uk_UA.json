@@ -7,7 +7,8 @@
       "plugin": "Плагіни",
       "write_clipboard": "Записати в Буфер обміну",
       "clear": "Очистити",
-      "coming": "Очікується…"
+      "coming": "Очікується…",
+      "add": "Додати"
     },
     "languages": {
       "zh_cn": "Спрощена Китайська",
@@ -88,7 +89,9 @@
         "autostart": "Auto-start recording on hotkey",
         "autostart_desc": "Immediately begin recording when the hotkey is pressed.",
         "appearance_section": "Button Appearance",
-        "fab_size": "Button Size"
+        "fab_size": "Button Size",
+        "fav_targets": "Улюблені цільові мови (трей)",
+        "fav_targets_desc": "Мови, що відображаються в системному треї для швидкого перемикання цільової мови."
       }
     },
     "services": {

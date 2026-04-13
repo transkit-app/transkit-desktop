@@ -7,7 +7,8 @@
       "write_clipboard": "Escrever na Área de Transferência",
       "save": "Gravar",
       "clear": "Claro",
-      "coming": "Brevemente…"
+      "coming": "Brevemente…",
+      "add": "Adicionar"
     },
     "services": {
       "help": "Guia de Configuração",
@@ -460,7 +461,9 @@
         "autostart": "Auto-start recording on hotkey",
         "autostart_desc": "Immediately begin recording when the hotkey is pressed.",
         "appearance_section": "Button Appearance",
-        "fab_size": "Button Size"
+        "fab_size": "Button Size",
+        "fav_targets": "Idiomas de destino favoritos (bandeja)",
+        "fav_targets_desc": "Idiomas apresentados na bandeja do sistema para alternar rapidamente o idioma de destino."
       }
     },
     "translate": {

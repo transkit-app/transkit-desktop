@@ -7,7 +7,8 @@
       "write_clipboard": "Escribir en el portapapeles",
       "save": "Guardar",
       "clear": "Limpiar",
-      "coming": "Próximamente…"
+      "coming": "Próximamente…",
+      "add": "Añadir"
     },
     "languages": {
       "mn_cy": "Mongol moderno",
@@ -215,7 +216,9 @@
         "autostart": "Auto-start recording on hotkey",
         "autostart_desc": "Immediately begin recording when the hotkey is pressed.",
         "appearance_section": "Button Appearance",
-        "fab_size": "Button Size"
+        "fab_size": "Button Size",
+        "fav_targets": "Idiomas de destino favoritos (bandeja)",
+        "fav_targets_desc": "Idiomas mostrados en la bandeja del sistema para cambiar rápidamente el idioma de destino."
       }
     },
     "updater": {

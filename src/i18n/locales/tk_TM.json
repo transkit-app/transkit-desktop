@@ -58,7 +58,9 @@
         "autostart": "Auto-start recording on hotkey",
         "autostart_desc": "Immediately begin recording when the hotkey is pressed.",
         "appearance_section": "Button Appearance",
-        "fab_size": "Button Size"
+        "fab_size": "Button Size",
+        "fav_targets": "Favori nyşana diller (Tray)",
+        "fav_targets_desc": "Nyşana dili çalt geçirmek üçin ulgam tepsisinde görkezilen diller."
       }
     },
     "languages": {
@@ -101,7 +103,8 @@
       "write_clipboard": "Ýat paneline ýazyň",
       "plugin": "Plugin",
       "coming": "Tiz ýakynda…",
-      "clear": "Arassala"
+      "clear": "Arassala",
+      "add": "Goşmak"
     }
   }
 }

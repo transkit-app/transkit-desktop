@@ -1,5 +1,23 @@
 # Changelog
- 
+
+## 3.2.9 (2026-04-13)
+
+### Voice Anywhere — Tray & Config Improvements:
+- **Favorite Target Languages**: New "Favorite Targets (Tray)" section in Voice Input settings. Configure a personal list of target languages; they appear instantly in the system tray for one-click switching without opening settings.
+- **Tray: Translate to (replaces Language)**: The system tray Voice Anywhere submenu now shows a **"Translate to"** section (No translate + favorites) instead of the rarely-changed source language selector — putting the most-used action one click away.
+- **Tray Event Sync**: Changing the target language from the tray now emits `voice_anywhere_target_language_changed` so the Config window reflects the selection immediately without a restart.
+
+### Tray Reliability & i18n:
+- **Full Tray i18n for Voice Anywhere**: All 12 tray submenu labels (STT Provider, Inherit from Monitor, Translate to, No translate, After Stop, Copy/Paste, Inject Mode, Replace, Append, Configure…) are now localised in all 12 supported tray languages (VI, ZH-CN, ZH-TW, JA, KO, FR, DE, RU, PT-BR, FA, UK, EN).
+- **Error-safe tray handlers**: Replaced all `.unwrap()` panics in tray event handlers and `update_tray()` with `warn!`-logged error paths — `set_menu`, `set_tooltip`, all `emit_all` calls, `unregister_all`, and `open log dir` no longer crash the app on failure.
+
+### i18n — 22 Locales:
+- Added `common.add`, `config.voice_input.fav_targets`, and `config.voice_input.fav_targets_desc` to all 22 locale files with native translations.
+
+### Documentation — Keyboard Shortcuts:
+- Added a **Keyboard Shortcuts** section to all 4 READMEs (EN / VI / CN / KR) documenting the branded `Ctrl+Alt+` hotkey set and explaining cross-platform compatibility (`Ctrl+Alt` = `Ctrl+Option` on macOS, works with one registration across all OS).
+- Recommended defaults: `Ctrl+Alt+V` (Voice Anywhere), `Ctrl+Alt+M` (Realtime Translate), `Ctrl+Alt+Q` (Selection Translate), `Ctrl+Alt+W` (Input Translate), `Ctrl+Alt+R` (OCR Recognize), `Ctrl+Alt+O` (OCR Translate).
+
 ## 3.2.7 (2026-04-11)
  
 ### ONNX STT Engine & Models:

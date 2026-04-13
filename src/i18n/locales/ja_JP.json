@@ -90,7 +90,9 @@
         "autostart": "Auto-start recording on hotkey",
         "autostart_desc": "Immediately begin recording when the hotkey is pressed.",
         "appearance_section": "Button Appearance",
-        "fab_size": "Button Size"
+        "fab_size": "Button Size",
+        "fav_targets": "お気に入りの翻訳先言語（トレイ）",
+        "fav_targets_desc": "システムトレイに表示される言語です。ここで設定後、トレイから素早く切り替えられます。"
       }
     },
     "languages": {
@@ -122,7 +124,8 @@
       "plugin": "プラグイン",
       "cancel": "キャンセル",
       "ok": "Ok",
-      "save": "保存"
+      "save": "保存",
+      "add": "追加"
     },
     "translate": {
       "translate": "翻訳",

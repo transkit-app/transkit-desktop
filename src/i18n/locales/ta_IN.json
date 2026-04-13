@@ -225,7 +225,9 @@
         "autostart": "Auto-start recording on hotkey",
         "autostart_desc": "Immediately begin recording when the hotkey is pressed.",
         "appearance_section": "Button Appearance",
-        "fab_size": "Button Size"
+        "fab_size": "Button Size",
+        "fav_targets": "விருப்பமான இலக்கு மொழிகள் (தட்டு)",
+        "fav_targets_desc": "இலக்கு மொழியை விரைவாக மாற்ற கணினி தட்டில் காட்டப்படும் மொழிகள்."
       }
     },
     "services": {
@@ -469,7 +471,8 @@
       "write_clipboard": "இடைநிலைப்பலகைக்கு எழுதுங்கள்",
       "plugin": "சொருகு",
       "coming": "விரைவில் வருகிறது…",
-      "clear": "தெளிவான"
+      "clear": "தெளிவான",
+      "add": "சேர்"
     },
     "updater": {
       "title": "புதுப்பிப்பைச் சரிபார்க்கவும்",

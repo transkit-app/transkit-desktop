@@ -7,7 +7,8 @@
       "cancel": "ביטול",
       "plugin": "תוסף",
       "save": "שמור",
-      "clear": "נקה"
+      "clear": "נקה",
+      "add": "הוסף"
     },
     "languages": {
       "auto": "זיהוי אוטומטי",
@@ -227,7 +228,9 @@
         "autostart": "Auto-start recording on hotkey",
         "autostart_desc": "Immediately begin recording when the hotkey is pressed.",
         "appearance_section": "Button Appearance",
-        "fab_size": "Button Size"
+        "fab_size": "Button Size",
+        "fav_targets": "שפות יעד מועדפות (מגש המערכת)",
+        "fav_targets_desc": "שפות המוצגות במגש המערכת להחלפה מהירה של שפת היעד."
       }
     },
     "updater": {

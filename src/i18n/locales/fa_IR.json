@@ -37,7 +37,8 @@
       "ok": "تایید",
       "save": "ذخیره",
       "clear": "پاک کردن",
-      "coming": "به زودی …"
+      "coming": "به زودی …",
+      "add": "افزودن"
     },
     "config": {
       "general": {
@@ -127,7 +128,9 @@
         "autostart": "Auto-start recording on hotkey",
         "autostart_desc": "Immediately begin recording when the hotkey is pressed.",
         "appearance_section": "Button Appearance",
-        "fab_size": "Button Size"
+        "fab_size": "Button Size",
+        "fav_targets": "زبان‌های مقصد مورد علاقه (سینی)",
+        "fav_targets_desc": "زبان‌هایی که در سینی سیستم برای تغییر سریع زبان مقصد نمایش داده می‌شوند."
       }
     },
     "translate": {

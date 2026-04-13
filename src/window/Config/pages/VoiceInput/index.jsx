@@ -1,6 +1,6 @@
 import { Card, CardBody, CardHeader, Select, SelectItem, Switch, Slider, Textarea } from '@nextui-org/react';
 import { useTranslation } from 'react-i18next';
-import { MdMic, MdLanguage, MdTune, MdAutoFixHigh, MdAdd, MdDeleteOutline, MdRestartAlt, MdTranslate } from 'react-icons/md';
+import { MdMic, MdLanguage, MdTune, MdAutoFixHigh, MdAdd, MdDeleteOutline, MdRestartAlt, MdTranslate, MdClose } from 'react-icons/md';
 import { POLISH_LEVEL_LABELS, AI_SERVICE_FRIENDLY_NAMES, DEFAULT_PROMPTS, BUILTIN_LEVELS } from '../../../../utils/polishTranscript';
 import React from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
@@ -34,6 +34,9 @@ export default function VoiceInput() {
     // Language — inherits from Audio Monitor source lang by default
     const [voiceLanguage, setVoiceLanguage] = useConfig('voice_anywhere_language', 'auto');
     const [targetLanguage, setTargetLanguage] = useConfig('voice_anywhere_target_language', 'none');
+
+    // Favorite target languages shown in the system tray for quick switching
+    const [favoriteTargets, setFavoriteTargets] = useConfig('voice_anywhere_favorite_targets', ['en']);
 
     React.useEffect(() => {
         const normalizedTargetLanguage = normalizeVoiceLanguageToAppKey(targetLanguage);
@@ -168,7 +171,7 @@ export default function VoiceInput() {
     // this covers changes made inside the Config window.
     React.useEffect(() => {
         invoke('update_tray', { language: '', copyMode: '' }).catch(() => {});
-    }, [voiceSttService, voiceLanguage, action, injectMode]);
+    }, [voiceSttService, voiceLanguage, action, injectMode, favoriteTargets, targetLanguage]);
 
     return (
         <div className='flex flex-col gap-4'>
@@ -290,6 +293,55 @@ export default function VoiceInput() {
                             </Select>
                         </div>
                     )}
+
+                    {/* Favorite target languages — appear in the system tray for quick switching */}
+                    <div className='flex flex-col gap-2'>
+                        <div>
+                            <h3 className='text-sm'>{t('config.voice_input.fav_targets', { defaultValue: 'Favorite Targets (Tray)' })}</h3>
+                            <p className='text-xs text-default-400 mt-0.5'>
+                                {t('config.voice_input.fav_targets_desc', { defaultValue: 'Languages shown in the system tray for quick target language switching.' })}
+                            </p>
+                        </div>
+                        <div className='flex flex-wrap items-center gap-1.5'>
+                            {(favoriteTargets ?? []).map((code) => (
+                                <span
+                                    key={code}
+                                    className='flex items-center gap-1 px-2.5 py-1 rounded-full bg-default-100 text-xs text-default-700'
+                                >
+                                    {t(`languages.${code}`, { defaultValue: code })}
+                                    <button
+                                        type='button'
+                                        onClick={() => setFavoriteTargets((favoriteTargets ?? []).filter((c) => c !== code))}
+                                        className='text-default-400 hover:text-default-600 ml-0.5'
+                                        aria-label={`Remove ${code}`}
+                                    >
+                                        <MdClose className='text-xs' />
+                                    </button>
+                                </span>
+                            ))}
+                            <Select
+                                variant='bordered'
+                                selectedKeys={[]}
+                                size='sm'
+                                placeholder={`+ ${t('common.add', { defaultValue: 'Add' })}`}
+                                className='max-w-[140px]'
+                                onSelectionChange={(keys) => {
+                                    const v = Array.from(keys)[0];
+                                    if (v && !(favoriteTargets ?? []).includes(v)) {
+                                        setFavoriteTargets([...(favoriteTargets ?? []), v]);
+                                    }
+                                }}
+                            >
+                                {VOICE_INPUT_TARGET_LANGUAGES
+                                    .filter((code) => !(favoriteTargets ?? []).includes(code))
+                                    .map((code) => (
+                                        <SelectItem key={code}>
+                                            {t(`languages.${code}`, { defaultValue: code })}
+                                        </SelectItem>
+                                    ))}
+                            </Select>
+                        </div>
+                    </div>
                 </CardBody>
             </Card>
 

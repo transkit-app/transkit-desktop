@@ -54,27 +54,28 @@ pub fn update_tray(app_handle: tauri::AppHandle, mut language: String, mut copy_
         "Update tray with language: {}, copy mode: {}",
         language, copy_mode
     );
-    tray_handle
-        .set_menu(match language.as_str() {
-            "en" => tray_menu_en(),
-            "zh_cn" => tray_menu_zh_cn(),
-            "zh_tw" => tray_menu_zh_tw(),
-            "ja" => tray_menu_ja(),
-            "ko" => tray_menu_ko(),
-            "fr" => tray_menu_fr(),
-            "de" => tray_menu_de(),
-            "ru" => tray_menu_ru(),
-            "pt_br" => tray_menu_pt_br(),
-            "fa" => tray_menu_fa(),
-            "uk" => tray_menu_uk(),
-            "vi" | "vi_vn" => tray_menu_vi(),
-            _ => tray_menu_en(),
-        })
-        .unwrap();
+    let menu = match language.as_str() {
+        "en" => tray_menu_en(),
+        "zh_cn" => tray_menu_zh_cn(),
+        "zh_tw" => tray_menu_zh_tw(),
+        "ja" => tray_menu_ja(),
+        "ko" => tray_menu_ko(),
+        "fr" => tray_menu_fr(),
+        "de" => tray_menu_de(),
+        "ru" => tray_menu_ru(),
+        "pt_br" => tray_menu_pt_br(),
+        "fa" => tray_menu_fa(),
+        "uk" => tray_menu_uk(),
+        "vi" | "vi_vn" => tray_menu_vi(),
+        _ => tray_menu_en(),
+    };
+    if let Err(e) = tray_handle.set_menu(menu) {
+        warn!("[tray] set_menu failed: {:?}", e);
+    }
     #[cfg(not(target_os = "linux"))]
-    tray_handle
-        .set_tooltip(&format!("TransKit {}", app_handle.package_info().version))
-        .unwrap();
+    if let Err(e) = tray_handle.set_tooltip(&format!("TransKit {}", app_handle.package_info().version)) {
+        warn!("[tray] set_tooltip failed: {:?}", e);
+    }
 
     let enable_clipboard_monitor = match get("clipboard_monitor") {
         Some(v) => v.as_bool().unwrap(),
@@ -107,12 +108,12 @@ pub fn update_tray(app_handle: tauri::AppHandle, mut language: String, mut copy_
     };
     safe_set_selected(&tray_handle, &va_stt_id, true);
 
-    // Language
-    let va_lang = match get("voice_anywhere_language") {
-        Some(v) => v.as_str().unwrap_or("auto").to_string(),
-        None => "auto".to_string(),
+    // Target language (quick-switch in tray)
+    let va_target = match get("voice_anywhere_target_language") {
+        Some(v) => v.as_str().unwrap_or("none").to_string(),
+        None => "none".to_string(),
     };
-    safe_set_selected(&tray_handle, &format!("va_lang_{}", va_lang), true);
+    safe_set_selected(&tray_handle, &format!("va_target_{}", va_target), true);
 
     // After-stop action
     let va_action = match get("voice_anywhere_action") {
@@ -156,8 +157,8 @@ pub fn tray_event_handler<'a>(app: &'a AppHandle, event: SystemTrayEvent) {
             "va_inject_append"     => on_va_inject_click(app, "append"),
             // Voice Anywhere: dynamic STT service items (prefix match)
             s if s.starts_with("va_stt_") => on_va_stt_click(app, &s["va_stt_".len()..]),
-            // Voice Anywhere: language items (prefix match)
-            s if s.starts_with("va_lang_") => on_va_lang_click(app, &s["va_lang_".len()..]),
+            // Voice Anywhere: target language items (prefix match)
+            s if s.starts_with("va_target_") => on_va_target_click(app, &s["va_target_".len()..]),
             _ => {}
         },
         _ => {}
@@ -212,7 +213,9 @@ fn on_clipboard_monitor_click(app: &AppHandle) {
 fn on_auto_copy_click(app: &AppHandle, mode: &str) {
     info!("Set copy mode to: {}", mode);
     set("translate_auto_copy", mode);
-    app.emit_all("translate_auto_copy_changed", mode).unwrap();
+    if let Err(e) = app.emit_all("translate_auto_copy_changed", mode) {
+        warn!("[tray] emit translate_auto_copy_changed failed: {:?}", e);
+    }
     update_tray(app.app_handle(), "".to_string(), mode.to_string());
 }
 fn on_ocr_recognize_click() {
@@ -235,15 +238,26 @@ fn on_check_update_click() {
 }
 fn on_view_log_click(app: &AppHandle) {
     use tauri::api::path::app_log_dir;
-    let log_path = app_log_dir(&app.config()).unwrap();
-    tauri::api::shell::open(&app.shell_scope(), log_path.to_str().unwrap(), None).unwrap();
+    let log_path = match app_log_dir(&app.config()) {
+        Some(p) => p,
+        None => { warn!("[tray] could not resolve app log dir"); return; }
+    };
+    let path_str = match log_path.to_str() {
+        Some(s) => s,
+        None => { warn!("[tray] log path is not valid UTF-8"); return; }
+    };
+    if let Err(e) = tauri::api::shell::open(&app.shell_scope(), path_str, None) {
+        warn!("[tray] open log dir failed: {:?}", e);
+    }
 }
 fn on_restart_click(app: &AppHandle) {
     info!("============== Restart App ==============");
     app.restart();
 }
 fn on_quit_click(app: &AppHandle) {
-    app.global_shortcut_manager().unregister_all().unwrap();
+    if let Err(e) = app.global_shortcut_manager().unregister_all() {
+        warn!("[tray] unregister_all shortcuts failed: {:?}", e);
+    }
     info!("============== Quit App ==============");
     app.exit(0);
 }
@@ -283,11 +297,243 @@ fn stt_service_display_name(instance_key: &str) -> String {
     }
 }
 
+/// Maps a target language code to a short English display name for the tray menu.
+fn target_lang_display_name(code: &str) -> String {
+    match code {
+        "en"     => "English",
+        "vi"     => "Vietnamese",
+        "ja"     => "Japanese",
+        "zh_cn"  => "Chinese (Simplified)",
+        "zh_tw"  => "Chinese (Traditional)",
+        "ko"     => "Korean",
+        "fr"     => "French",
+        "de"     => "German",
+        "es"     => "Spanish",
+        "ru"     => "Russian",
+        "it"     => "Italian",
+        "tr"     => "Turkish",
+        "pt_pt"  => "Portuguese",
+        "pt_br"  => "Portuguese (Brazil)",
+        "id"     => "Indonesian",
+        "th"     => "Thai",
+        "ms"     => "Malay",
+        "ar"     => "Arabic",
+        "hi"     => "Hindi",
+        "mn_mo"  => "Mongolian",
+        "mn_cy"  => "Mongolian (Cyrillic)",
+        "km"     => "Khmer",
+        "nb_no"  => "Norwegian Bokmål",
+        "nn_no"  => "Norwegian Nynorsk",
+        "fa"     => "Persian",
+        "sv"     => "Swedish",
+        "pl"     => "Polish",
+        "nl"     => "Dutch",
+        "uk"     => "Ukrainian",
+        "he"     => "Hebrew",
+        other    => other,
+    }.to_string()
+}
+
+/// Localised string bundle for the Voice Anywhere tray submenu.
+struct VaTrayLabels {
+    title:          &'static str,
+    stt_section:    &'static str,
+    inherit:        &'static str,
+    target_section: &'static str,
+    no_translate:   &'static str,
+    after_stop:     &'static str,
+    clipboard:      &'static str,
+    paste:          &'static str,
+    inject_section: &'static str,
+    replace:        &'static str,
+    append:         &'static str,
+    configure:      &'static str,
+}
+
+/// Returns the label bundle for the Voice Anywhere submenu in the given app language.
+fn va_labels(lang: &str) -> VaTrayLabels {
+    match lang {
+        "vi" | "vi_vn" => VaTrayLabels {
+            title:          "Nhập liệu giọng nói",
+            stt_section:    "Nhà cung cấp STT",
+            inherit:        "Giống Audio Monitor",
+            target_section: "Dịch sang",
+            no_translate:   "Không dịch",
+            after_stop:     "Sau khi dừng",
+            clipboard:      "Sao chép vào Clipboard",
+            paste:          "Dán vào ứng dụng trước",
+            inject_section: "Chế độ chèn (Transkit)",
+            replace:        "Thay thế",
+            append:         "Chèn thêm",
+            configure:      "Cài đặt...",
+        },
+        "zh_cn" => VaTrayLabels {
+            title:          "语音输入",
+            stt_section:    "STT 服务",
+            inherit:        "跟随监听器",
+            target_section: "翻译为",
+            no_translate:   "不翻译",
+            after_stop:     "停止后",
+            clipboard:      "复制到剪贴板",
+            paste:          "粘贴到上一个应用",
+            inject_section: "注入模式（Transkit）",
+            replace:        "替换",
+            append:         "追加",
+            configure:      "设置...",
+        },
+        "zh_tw" => VaTrayLabels {
+            title:          "語音輸入",
+            stt_section:    "STT 服務",
+            inherit:        "跟隨監聽器",
+            target_section: "翻譯為",
+            no_translate:   "不翻譯",
+            after_stop:     "停止後",
+            clipboard:      "複製到剪貼簿",
+            paste:          "貼上到上一個應用程式",
+            inject_section: "注入模式（Transkit）",
+            replace:        "取代",
+            append:         "附加",
+            configure:      "設定...",
+        },
+        "ja" => VaTrayLabels {
+            title:          "音声入力",
+            stt_section:    "STT プロバイダー",
+            inherit:        "モニターと同じ",
+            target_section: "翻訳先",
+            no_translate:   "翻訳しない",
+            after_stop:     "停止後",
+            clipboard:      "クリップボードにコピー",
+            paste:          "前のアプリに貼り付け",
+            inject_section: "挿入モード（Transkit）",
+            replace:        "置換",
+            append:         "追加",
+            configure:      "設定...",
+        },
+        "ko" => VaTrayLabels {
+            title:          "음성 입력",
+            stt_section:    "STT 제공자",
+            inherit:        "모니터와 동일",
+            target_section: "번역 언어",
+            no_translate:   "번역 안 함",
+            after_stop:     "정지 후",
+            clipboard:      "클립보드에 복사",
+            paste:          "이전 앱에 붙여넣기",
+            inject_section: "삽입 모드 (Transkit)",
+            replace:        "대체",
+            append:         "추가",
+            configure:      "설정...",
+        },
+        "fr" => VaTrayLabels {
+            title:          "Saisie vocale",
+            stt_section:    "Fournisseur STT",
+            inherit:        "Hériter du moniteur",
+            target_section: "Traduire vers",
+            no_translate:   "Ne pas traduire",
+            after_stop:     "Après arrêt",
+            clipboard:      "Copier dans le presse-papiers",
+            paste:          "Coller dans la dernière app",
+            inject_section: "Mode injection (Transkit)",
+            replace:        "Remplacer",
+            append:         "Ajouter",
+            configure:      "Configurer...",
+        },
+        "de" => VaTrayLabels {
+            title:          "Spracheingabe",
+            stt_section:    "STT-Anbieter",
+            inherit:        "Vom Monitor übernehmen",
+            target_section: "Übersetzen nach",
+            no_translate:   "Nicht übersetzen",
+            after_stop:     "Nach dem Stopp",
+            clipboard:      "In Zwischenablage kopieren",
+            paste:          "In letzte App einfügen",
+            inject_section: "Einfügemodus (Transkit)",
+            replace:        "Ersetzen",
+            append:         "Anhängen",
+            configure:      "Konfigurieren...",
+        },
+        "ru" => VaTrayLabels {
+            title:          "Голосовой ввод",
+            stt_section:    "Провайдер STT",
+            inherit:        "Как в мониторе",
+            target_section: "Перевести на",
+            no_translate:   "Без перевода",
+            after_stop:     "После остановки",
+            clipboard:      "Скопировать в буфер",
+            paste:          "Вставить в последнее приложение",
+            inject_section: "Режим вставки (Transkit)",
+            replace:        "Заменить",
+            append:         "Добавить",
+            configure:      "Настроить...",
+        },
+        "pt_br" => VaTrayLabels {
+            title:          "Entrada de voz",
+            stt_section:    "Provedor STT",
+            inherit:        "Herdar do Monitor",
+            target_section: "Traduzir para",
+            no_translate:   "Sem tradução",
+            after_stop:     "Após parar",
+            clipboard:      "Copiar para área de transferência",
+            paste:          "Colar no último aplicativo",
+            inject_section: "Modo de injeção (Transkit)",
+            replace:        "Substituir",
+            append:         "Acrescentar",
+            configure:      "Configurar...",
+        },
+        "fa" => VaTrayLabels {
+            title:          "ورودی صوتی",
+            stt_section:    "ارائه‌دهنده STT",
+            inherit:        "از مانیتور",
+            target_section: "ترجمه به",
+            no_translate:   "بدون ترجمه",
+            after_stop:     "پس از توقف",
+            clipboard:      "کپی در کلیپ‌بورد",
+            paste:          "چسباندن در آخرین برنامه",
+            inject_section: "حالت تزریق (Transkit)",
+            replace:        "جایگزین",
+            append:         "افزودن",
+            configure:      "پیکربندی...",
+        },
+        "uk" => VaTrayLabels {
+            title:          "Голосовий ввід",
+            stt_section:    "Постачальник STT",
+            inherit:        "Як у моніторі",
+            target_section: "Перекласти на",
+            no_translate:   "Без перекладу",
+            after_stop:     "Після зупинки",
+            clipboard:      "Копіювати в буфер",
+            paste:          "Вставити в останній додаток",
+            inject_section: "Режим вставки (Transkit)",
+            replace:        "Замінити",
+            append:         "Додати",
+            configure:      "Налаштувати...",
+        },
+        _ => VaTrayLabels {
+            title:          "Voice Anywhere",
+            stt_section:    "STT Provider",
+            inherit:        "Inherit from Monitor",
+            target_section: "Translate to",
+            no_translate:   "No translate",
+            after_stop:     "After Stop",
+            clipboard:      "Copy to Clipboard",
+            paste:          "Paste to Last App",
+            inject_section: "Inject Mode (Transkit)",
+            replace:        "Replace",
+            append:         "Append",
+            configure:      "Configure...",
+        },
+    }
+}
+
 /// Builds the "Voice Anywhere" submenu dynamically from the current config.
-/// Called on every tray rebuild so its content always reflects the live state.
+/// Reads `app_language` from config so labels are always in the active UI language.
 /// The selected/checked state is applied separately via set_selected() in
 /// update_tray() after set_menu() completes.
 fn build_voice_anywhere_submenu() -> SystemTraySubmenu {
+    let lang = get("app_language")
+        .and_then(|v| v.as_str().map(str::to_string))
+        .unwrap_or_else(|| "en".to_string());
+    let l = va_labels(&lang);
+
     // ── STT Provider section ─────────────────────────────────────────────────
     let stt_list: Vec<String> = get("transcription_service_list")
         .and_then(|v| {
@@ -300,8 +546,8 @@ fn build_voice_anywhere_submenu() -> SystemTraySubmenu {
         .unwrap_or_default();
 
     let mut menu = SystemTrayMenu::new()
-        .add_item(CustomMenuItem::new("va_section_stt", "STT Provider").disabled())
-        .add_item(CustomMenuItem::new("va_stt_inherit", "Inherit from Monitor"));
+        .add_item(CustomMenuItem::new("va_section_stt", l.stt_section).disabled())
+        .add_item(CustomMenuItem::new("va_stt_inherit", l.inherit));
 
     for key in &stt_list {
         menu = menu.add_item(CustomMenuItem::new(
@@ -310,49 +556,49 @@ fn build_voice_anywhere_submenu() -> SystemTraySubmenu {
         ));
     }
 
-    // ── Language section (same curated list as the in-app context menu) ──────
-    let lang_entries: &[(&str, &str)] = &[
-        ("auto", "Auto (Monitor)"),
-        ("en",   "English"),
-        ("vi",   "Tiếng Việt"),
-        ("zh",   "中文"),
-        ("ja",   "日本語"),
-        ("ko",   "한국어"),
-        ("fr",   "Français"),
-        ("de",   "Deutsch"),
-        ("es",   "Español"),
-        ("pt",   "Português"),
-        ("ru",   "Русский"),
-    ];
+    // ── Translate to section (favorites configured in Settings → Voice Input) ──
+    let fav_targets: Vec<String> = get("voice_anywhere_favorite_targets")
+        .and_then(|v| {
+            v.as_array().map(|arr| {
+                arr.iter()
+                    .filter_map(|item| item.as_str().map(str::to_string))
+                    .collect()
+            })
+        })
+        .unwrap_or_else(|| vec!["en".to_string()]);
 
     menu = menu
         .add_native_item(SystemTrayMenuItem::Separator)
-        .add_item(CustomMenuItem::new("va_section_lang", "Language").disabled());
+        .add_item(CustomMenuItem::new("va_section_target", l.target_section).disabled())
+        .add_item(CustomMenuItem::new("va_target_none", l.no_translate));
 
-    for (code, label) in lang_entries {
-        menu = menu.add_item(CustomMenuItem::new(format!("va_lang_{}", code), *label));
+    for code in &fav_targets {
+        menu = menu.add_item(CustomMenuItem::new(
+            format!("va_target_{}", code),
+            target_lang_display_name(code),
+        ));
     }
 
     // ── After Stop section ───────────────────────────────────────────────────
     menu = menu
         .add_native_item(SystemTrayMenuItem::Separator)
-        .add_item(CustomMenuItem::new("va_section_action", "After Stop").disabled())
-        .add_item(CustomMenuItem::new("va_action_clipboard", "Copy to Clipboard"))
-        .add_item(CustomMenuItem::new("va_action_paste",    "Paste to Last App"));
+        .add_item(CustomMenuItem::new("va_section_action", l.after_stop).disabled())
+        .add_item(CustomMenuItem::new("va_action_clipboard", l.clipboard))
+        .add_item(CustomMenuItem::new("va_action_paste",    l.paste));
 
     // ── Inject Mode section (Transkit windows only) ──────────────────────────
     menu = menu
         .add_native_item(SystemTrayMenuItem::Separator)
-        .add_item(CustomMenuItem::new("va_section_inject", "Inject Mode (Transkit)").disabled())
-        .add_item(CustomMenuItem::new("va_inject_replace", "Replace"))
-        .add_item(CustomMenuItem::new("va_inject_append",  "Append"));
+        .add_item(CustomMenuItem::new("va_section_inject", l.inject_section).disabled())
+        .add_item(CustomMenuItem::new("va_inject_replace", l.replace))
+        .add_item(CustomMenuItem::new("va_inject_append",  l.append));
 
     // ── Configure shortcut ───────────────────────────────────────────────────
     menu = menu
         .add_native_item(SystemTrayMenuItem::Separator)
-        .add_item(CustomMenuItem::new("va_config", "Configure..."));
+        .add_item(CustomMenuItem::new("va_config", l.configure));
 
-    SystemTraySubmenu::new("Voice Anywhere", menu)
+    SystemTraySubmenu::new(l.title, menu)
 }
 
 // ── Voice Anywhere tray-click handlers ────────────────────────────────────
@@ -360,28 +606,36 @@ fn build_voice_anywhere_submenu() -> SystemTraySubmenu {
 fn on_va_stt_click(app: &AppHandle, stt_key: &str) {
     info!("VA tray: set STT service → {}", stt_key);
     set("voice_anywhere_stt_service", stt_key);
-    app.emit_all("voice_anywhere_stt_service_changed", stt_key).unwrap();
+    if let Err(e) = app.emit_all("voice_anywhere_stt_service_changed", stt_key) {
+        warn!("[tray] emit voice_anywhere_stt_service_changed failed: {:?}", e);
+    }
     update_tray(app.app_handle(), String::new(), String::new());
 }
 
-fn on_va_lang_click(app: &AppHandle, lang_code: &str) {
-    info!("VA tray: set language → {}", lang_code);
-    set("voice_anywhere_language", lang_code);
-    app.emit_all("voice_anywhere_language_changed", lang_code).unwrap();
+fn on_va_target_click(app: &AppHandle, target_code: &str) {
+    info!("VA tray: set target language → {}", target_code);
+    set("voice_anywhere_target_language", target_code);
+    if let Err(e) = app.emit_all("voice_anywhere_target_language_changed", target_code) {
+        warn!("[tray] emit voice_anywhere_target_language_changed failed: {:?}", e);
+    }
     update_tray(app.app_handle(), String::new(), String::new());
 }
 
 fn on_va_action_click(app: &AppHandle, action: &str) {
     info!("VA tray: set action → {}", action);
     set("voice_anywhere_action", action);
-    app.emit_all("voice_anywhere_action_changed", action).unwrap();
+    if let Err(e) = app.emit_all("voice_anywhere_action_changed", action) {
+        warn!("[tray] emit voice_anywhere_action_changed failed: {:?}", e);
+    }
     update_tray(app.app_handle(), String::new(), String::new());
 }
 
 fn on_va_inject_click(app: &AppHandle, mode: &str) {
     info!("VA tray: set inject mode → {}", mode);
     set("voice_anywhere_inject_mode", mode);
-    app.emit_all("voice_anywhere_inject_mode_changed", mode).unwrap();
+    if let Err(e) = app.emit_all("voice_anywhere_inject_mode_changed", mode) {
+        warn!("[tray] emit voice_anywhere_inject_mode_changed failed: {:?}", e);
+    }
     update_tray(app.app_handle(), String::new(), String::new());
 }
 

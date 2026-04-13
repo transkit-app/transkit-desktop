@@ -7,7 +7,8 @@
       "coming": "قريبًا…",
       "clear": "نظّف",
       "save": "احفظ",
-      "write_clipboard": "أكتب إلى الحافظة"
+      "write_clipboard": "أكتب إلى الحافظة",
+      "add": "إضافة"
     },
     "languages": {
       "zh_cn": "الصينية المبسطة",
@@ -234,7 +235,9 @@
         "autostart": "Auto-start recording on hotkey",
         "autostart_desc": "Immediately begin recording when the hotkey is pressed.",
         "appearance_section": "Button Appearance",
-        "fab_size": "Button Size"
+        "fab_size": "Button Size",
+        "fav_targets": "اللغات المستهدفة المفضلة (شريط المهام)",
+        "fav_targets_desc": "اللغات المعروضة في شريط المهام للتبديل السريع بين لغات الترجمة."
       }
     },
     "updater": {

@@ -7,7 +7,8 @@
       "write_clipboard": "In die Zwischenablage schreiben",
       "plugin": "Plugin",
       "coming": "Bald verfügbar…",
-      "clear": "Leeren"
+      "clear": "Leeren",
+      "add": "Hinzufügen"
     },
     "languages": {
       "auto": "Automatisch erkennen",
@@ -233,7 +234,9 @@
         "autostart": "Auto-start recording on hotkey",
         "autostart_desc": "Immediately begin recording when the hotkey is pressed.",
         "appearance_section": "Button Appearance",
-        "fab_size": "Button Size"
+        "fab_size": "Button Size",
+        "fav_targets": "Favoriten-Zielsprachen (Tray)",
+        "fav_targets_desc": "Im System-Tray angezeigte Sprachen zum schnellen Wechseln der Zielsprache."
       }
     },
     "updater": {

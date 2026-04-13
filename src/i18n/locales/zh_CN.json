@@ -7,7 +7,8 @@
       "write_clipboard": "写入剪贴板",
       "plugin": "插件",
       "coming": "敬请期待…",
-      "clear": "清空"
+      "clear": "清空",
+      "add": "添加"
     },
     "languages": {
       "auto": "自动检测",
@@ -238,7 +239,9 @@
         "autostart": "Auto-start recording on hotkey",
         "autostart_desc": "Immediately begin recording when the hotkey is pressed.",
         "appearance_section": "Button Appearance",
-        "fab_size": "Button Size"
+        "fab_size": "Button Size",
+        "fav_targets": "常用目标语言（托盘）",
+        "fav_targets_desc": "在系统托盘中显示的语言，用于快速切换目标语言。在此配置后，通过托盘快速切换。"
       }
     },
     "updater": {

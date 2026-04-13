@@ -7,7 +7,8 @@
       "write_clipboard": "Write to Clipboard",
       "plugin": "Plugin",
       "coming": "Coming soon…",
-      "clear": "Clear"
+      "clear": "Clear",
+      "add": "Add"
     },
     "languages": {
       "auto": "Auto Detect",
@@ -389,7 +390,9 @@
         "fab_size": "Button Size",
         "idle_button_color": "Idle Button Color",
         "idle_button_color_desc": "Choose the standby color for the Voice Anywhere button.",
-        "reset_idle_button_color": "Reset"
+        "reset_idle_button_color": "Reset",
+        "fav_targets": "Favorite Targets (Tray)",
+        "fav_targets_desc": "Languages shown in the system tray for quick target language switching. Configure favorites here, then use the tray to switch."
       },
       "local_sidecar": {
         "label": "Local Model",

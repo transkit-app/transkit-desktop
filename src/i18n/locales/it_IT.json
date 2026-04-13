@@ -7,7 +7,8 @@
       "write_clipboard": "Scrivi negli appunti",
       "save": "Salva",
       "clear": "Pulisci",
-      "coming": "Prossimamente…"
+      "coming": "Prossimamente…",
+      "add": "Aggiungi"
     },
     "services": {
       "help": "Guida alla configurazione",
@@ -422,7 +423,9 @@
         "autostart": "Auto-start recording on hotkey",
         "autostart_desc": "Immediately begin recording when the hotkey is pressed.",
         "appearance_section": "Button Appearance",
-        "fab_size": "Button Size"
+        "fab_size": "Button Size",
+        "fav_targets": "Lingue di destinazione preferite (vassoio)",
+        "fav_targets_desc": "Lingue mostrate nel vassoio di sistema per cambiare rapidamente la lingua di destinazione."
       }
     },
     "translate": {

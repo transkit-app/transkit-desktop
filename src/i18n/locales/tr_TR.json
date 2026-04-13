@@ -1,7 +1,8 @@
 {
   "translation": {
     "common": {
-      "ok": "Ok"
+      "ok": "Ok",
+      "add": "Ekle"
     },
     "services": {
       "translate": {
@@ -100,7 +101,9 @@
         "autostart": "Auto-start recording on hotkey",
         "autostart_desc": "Immediately begin recording when the hotkey is pressed.",
         "appearance_section": "Button Appearance",
-        "fab_size": "Button Size"
+        "fab_size": "Button Size",
+        "fav_targets": "Favori Hedef Diller (Tepsi)",
+        "fav_targets_desc": "Hedef dili hızlıca değiştirmek için sistem tepsisinde gösterilen diller."
       }
     },
     "translate": {},

@@ -266,7 +266,8 @@
       "ok": "Ok",
       "save": "Enregistrer",
       "clear": "Effacer",
-      "coming": "À venir…"
+      "coming": "À venir…",
+      "add": "Ajouter"
     },
     "config": {
       "general": {
@@ -460,7 +461,9 @@
         "autostart": "Auto-start recording on hotkey",
         "autostart_desc": "Immediately begin recording when the hotkey is pressed.",
         "appearance_section": "Button Appearance",
-        "fab_size": "Button Size"
+        "fab_size": "Button Size",
+        "fav_targets": "Langues cibles favorites (barre système)",
+        "fav_targets_desc": "Langues affichées dans la barre système pour changer rapidement la langue cible."
       }
     },
     "translate": {

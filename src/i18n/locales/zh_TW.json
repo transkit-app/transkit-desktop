@@ -7,7 +7,8 @@
       "write_clipboard": "寫入剪貼簿",
       "plugin": "外掛程式",
       "coming": "即將推出…",
-      "clear": "清除"
+      "clear": "清除",
+      "add": "新增"
     },
     "languages": {
       "auto": "自動偵測",
@@ -237,7 +238,9 @@
         "autostart": "Auto-start recording on hotkey",
         "autostart_desc": "Immediately begin recording when the hotkey is pressed.",
         "appearance_section": "Button Appearance",
-        "fab_size": "Button Size"
+        "fab_size": "Button Size",
+        "fav_targets": "常用目標語言（托盤）",
+        "fav_targets_desc": "在系統托盤中顯示的語言，用於快速切換目標語言。在此設定後，透過托盤快速切換。"
       }
     },
     "updater": {

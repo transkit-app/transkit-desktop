@@ -7,7 +7,8 @@
       "write_clipboard": "Сохранить в буфер обмена",
       "plugin": "Плагин",
       "coming": "Скоро…",
-      "clear": "Очистить"
+      "clear": "Очистить",
+      "add": "Добавить"
     },
     "languages": {
       "auto": "Автоопределение",
@@ -234,7 +235,9 @@
         "autostart": "Auto-start recording on hotkey",
         "autostart_desc": "Immediately begin recording when the hotkey is pressed.",
         "appearance_section": "Button Appearance",
-        "fab_size": "Button Size"
+        "fab_size": "Button Size",
+        "fav_targets": "Избранные языки перевода (трей)",
+        "fav_targets_desc": "Языки, отображаемые в системном трее для быстрого переключения целевого языка."
       }
     },
     "updater": {
