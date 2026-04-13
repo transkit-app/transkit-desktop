@@ -136,6 +136,7 @@ export default function LocalSidecar() {
     const [onnxDownloading,  setOnnxDownloading]  = useState(false);
     const [onnxDownloadProgress, setOnnxDownloadProgress] = useState(null);
     const [onnxEnabled,      setOnnxEnabled]      = useConfig('onnx_engine_enabled', false);
+    const [onnxStartError,   setOnnxStartError]   = useState(null);
 
     // ── MLX initial load ───────────────────────────────────────────────────────
     useEffect(() => {
@@ -255,10 +256,14 @@ export default function LocalSidecar() {
 
         listen('onnx-engine://ready', (e) => {
             setOnnxEngineStatus({ running: true, port: e.payload.port });
+            setOnnxStartError(null);
         }).then(fn => listeners.push(fn)).catch(() => {});
 
-        listen('onnx-engine://stopped', () => {
+        listen('onnx-engine://stopped', (e) => {
             setOnnxEngineStatus({ running: false, port: 0 });
+            if (e.payload?.error) {
+                setOnnxStartError(`Server crashed: ${e.payload.error}`);
+            }
         }).then(fn => listeners.push(fn)).catch(() => {});
 
         listen('onnx-model://progress', (e) => {
@@ -455,6 +460,7 @@ export default function LocalSidecar() {
     const handleOnnxStart = async () => {
         const selectedModel = onnxActiveModel || onnxModels[0]?.repo_id;
         if (!selectedModel) return;
+        setOnnxStartError(null);
         try {
             await invoke('onnx_engine_start', {
                 config: { asr_model: selectedModel }
@@ -463,6 +469,7 @@ export default function LocalSidecar() {
             invoke('onnx_engine_status').then(setOnnxEngineStatus).catch(() => {});
         } catch (err) {
             console.error('[OnnxSTT] Start failed:', err);
+            setOnnxStartError(String(err));
         }
     };
 
@@ -728,6 +735,12 @@ export default function LocalSidecar() {
                             {t('config.local_sidecar.startup.stop', { defaultValue: 'Stop' })}
                         </Button>
                     </div>
+                    {onnxStartError && (
+                        <div className='flex items-start gap-2 p-2.5 rounded-lg bg-danger-50 dark:bg-danger-900/20 text-danger-700 dark:text-danger-400 text-xs'>
+                            <MdError className='text-base flex-shrink-0 mt-0.5' />
+                            <span>{onnxStartError}</span>
+                        </div>
+                    )}
                 </CardBody>
             </Card>
 

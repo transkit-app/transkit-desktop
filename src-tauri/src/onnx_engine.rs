@@ -142,13 +142,15 @@ fn onnx_python_exe() -> PathBuf {
 
 /// Resolve the server.py script path (same logic as local_sidecar.rs).
 fn server_script() -> Option<PathBuf> {
+    let exe_dir = std::env::current_exe().ok()?.parent()?.to_path_buf();
     let candidates = vec![
+        // Development: relative to Cargo.toml
         PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .join("../scripts/local_sidecar/server.py"),
-        std::env::current_exe()
-            .ok()?
-            .parent()?
-            .join("../Resources/scripts/local_sidecar/server.py"),
+        // macOS app bundle: Contents/MacOS/../Resources/...
+        exe_dir.join("../Resources/scripts/local_sidecar/server.py"),
+        // Windows installer: resources are next to the .exe
+        exe_dir.join("scripts/local_sidecar/server.py"),
     ];
     candidates.into_iter().find(|p| p.exists())
 }
@@ -163,9 +165,22 @@ fn find_free_port(start: u16) -> u16 {
 }
 
 fn base_env() -> (String, String) {
-    let home = std::env::var("HOME").unwrap_or_default();
-    let path_env = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin".to_string();
-    (home, path_env)
+    #[cfg(target_os = "windows")]
+    {
+        // On Windows, inherit the current process PATH so Python can find its DLLs.
+        // HOME doesn't exist on Windows; use USERPROFILE instead.
+        let home = std::env::var("USERPROFILE")
+            .or_else(|_| std::env::var("HOME"))
+            .unwrap_or_default();
+        let path = std::env::var("PATH").unwrap_or_default();
+        return (home, path);
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let home = std::env::var("HOME").unwrap_or_default();
+        let path_env = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin".to_string();
+        (home, path_env)
+    }
 }
 
 /// Determine which Python platform variant we're on.
@@ -603,6 +618,13 @@ pub fn start_with_handle(
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
 
+    // Hide the console window on Windows so no terminal flashes up
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+    }
+
     if let Some(lang) = config.asr_language {
         cmd.arg("--asr-language").arg(&lang);
     }
@@ -616,6 +638,11 @@ pub fn start_with_handle(
 
     let stdout = child.stdout.take().ok_or("Failed to get stdout")?;
     let stderr = child.stderr.take().ok_or("Failed to get stderr")?;
+
+    // Shared stderr buffer so the stdout thread can include crash output in the stopped event.
+    let stderr_buf: std::sync::Arc<Mutex<Vec<String>>> =
+        std::sync::Arc::new(Mutex::new(Vec::new()));
+    let stderr_buf_writer = std::sync::Arc::clone(&stderr_buf);
 
     std::thread::spawn(move || {
         use std::io::BufRead;
@@ -648,7 +675,16 @@ pub fn start_with_handle(
         if let Ok(mut p) = engine.port.lock() {
             *p = 0;
         }
-        let _ = app_handle.emit_all("onnx-engine://stopped", serde_json::json!({}));
+        // Give the stderr thread a moment to flush its last lines
+        std::thread::sleep(std::time::Duration::from_millis(100));
+        let error_output = stderr_buf
+            .lock()
+            .map(|lines| lines.join("\n"))
+            .unwrap_or_default();
+        let _ = app_handle.emit_all(
+            "onnx-engine://stopped",
+            serde_json::json!({ "error": if error_output.is_empty() { serde_json::Value::Null } else { error_output.into() } }),
+        );
     });
 
     std::thread::spawn(move || {
@@ -656,8 +692,14 @@ pub fn start_with_handle(
         let reader = std::io::BufReader::new(stderr);
         for line in reader.lines() {
             if let Ok(line) = line {
+                let line = line.trim().to_string();
                 if !line.is_empty() {
                     info!("[OnnxEngine:stderr] {}", line);
+                    if let Ok(mut buf) = stderr_buf_writer.lock() {
+                        if buf.len() < 30 {
+                            buf.push(line);
+                        }
+                    }
                 }
             }
         }
