@@ -498,8 +498,7 @@ jobs:
                   gh pr merge "$PR_NUMBER" \
                       --repo transkit-app/homebrew-tap \
                       --squash \
-                      --delete-branch \
-                      --yes
+                      --delete-branch
 
     # winget:
     #     name: Update WinGet Package
