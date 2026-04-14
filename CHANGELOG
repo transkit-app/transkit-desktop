@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.3.4 (2026-04-14)
+
+### Stability & Initialization:
+- **App Restart Race Condition**: Resolved a critical race condition that could occur during an application restart (e.g., after resetting to factory defaults). This ensures backend and frontend states remain perfectly synchronized during reboot.
+- **Service List Standardization**: Enhanced the initialization logic for service provider lists (Translation, TTS, STT, and AI). The app now pre-seeds canonical defaults into storage during startup, preventing individual settings pages from accidentally overwriting the list with empty values if visited before the main Service page.
+- **Config Sync Reliability**: Optimized the configuration file watcher to prevent application hangs on Windows, particularly during first-launch or after a full data reset.
+- **UI Refinements**: Minor label and layout fixes in the Local Models and Voice Input configuration pages.
+
 ## 3.3.3 (2026-04-14)
 
 ### Live Interpreter (formerly Monitor):
