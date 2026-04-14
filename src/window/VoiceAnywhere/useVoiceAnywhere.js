@@ -78,7 +78,7 @@ function playSfx(type = 'start', enabled = true) {
     }
 }
 
-export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, targetLanguage, translateServiceKey, injectMode, action, autostart, preferAsyncApi, polishEnabled, polishPrompt, polishServiceKey, sfxEnabled, onFinalText, noCapture, noSfx }) {
+export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, targetLanguage, translateServiceKey, injectMode, action, autostart, preferAsyncApi, polishEnabled, polishPrompt, polishServiceKey, sfxEnabled, onFinalText, noCapture, noSfx, noTrigger }) {
     const { t } = useTranslation();
     const [fabState, setFabState] = useState('idle');
     const [interim, setInterim] = useState('');
@@ -129,6 +129,7 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, targe
     const sfxEnabledRef = useRef(sfxEnabled);
     const noCaptureRef = useRef(noCapture);
     const noSfxRef = useRef(noSfx);
+    const noTriggerRef = useRef(noTrigger);
     const onFinalTextRef = useRef(onFinalText);
     useEffect(() => { sttKeyRef.current = sttServiceKey; }, [sttServiceKey]);
     useEffect(() => { monitorKeyRef.current = monitorSvcKey; }, [monitorSvcKey]);
@@ -144,6 +145,7 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, targe
     useEffect(() => { sfxEnabledRef.current = sfxEnabled; }, [sfxEnabled]);
     useEffect(() => { noCaptureRef.current = noCapture; }, [noCapture]);
     useEffect(() => { noSfxRef.current = noSfx; }, [noSfx]);
+    useEffect(() => { noTriggerRef.current = noTrigger; }, [noTrigger]);
     useEffect(() => { onFinalTextRef.current = onFinalText; }, [onFinalText]);
 
     const clearInjectingTimer = () => {
@@ -656,6 +658,7 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, targe
     useEffect(() => { autostartRef.current = autostart; }, [autostart]);
 
     useEffect(() => {
+        if (noTriggerRef.current) return; // embedded PTT mode — hotkey must not fire here
         let mounted = true;
         listen('voice_anywhere_trigger', async () => {
             if (!mounted) return;

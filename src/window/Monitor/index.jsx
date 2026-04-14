@@ -312,6 +312,7 @@ export default function Monitor() {
         polishServiceKey: narrationPttPolishService,
         noCapture: true,
         noSfx: true,
+        noTrigger: true,
         onFinalText: handlePttFinalText,
     });
 
