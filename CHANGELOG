@@ -1,5 +1,23 @@
 # Changelog
 
+## 3.3.3 (2026-04-14)
+
+### Live Interpreter (formerly Monitor):
+- **Branding Update**: The "Monitor" window has been officially renamed to **"Live Interpreter"** (**"Phiên Dịch Trực Tiếp"**) to better reflect its core functionality for meetings and live audio.
+- **Narration Panel Redesign**: Complete overhaul of the Narration (Push-To-Talk) panel with a modern layout consistent with the Context Panel. Reordered sections for a more logical workflow: **Device** → **PTT** → **Options** → **Polish** → **Zoom**.
+
+### PTT (Push-To-Talk) Enhancements:
+- **PTT Independence**: Fixed a critical conflict where global Voice Anywhere hotkeys were triggering Monitor PTT events. The two systems are now strictly isolated on independent event lanes.
+- **PTT Configuration Expansion**: Added a dedicated sub-panel for PTT settings within the Live Interpreter:
+    - **Polishing**: AI-powered refinement for dictated speech.
+    - **TTS Speed**: Adjustable playback speed for narrated audio.
+    - **Custom Prompt**: Support for custom AI instructions for the polishing step.
+- **UI Stability**: Resolved UI state bugs in the Live Interpreter toolbar and labels where PTT/Recording status could become desynchronized during rapid interaction.
+
+### Tray & i18n Refinements:
+- **Audio Monitoring UI**: Updated Vietnamese translations and labels for audio monitoring items in the system tray menu.
+- **Unified Naming**: Standardized the use of "Phiên Dịch Trực Tiếp" across the entire application interface.
+
 ## 3.3.2 (2026-04-13)
 
 ### ONNX STT Engine — Windows Compatibility (Comprehensive):
