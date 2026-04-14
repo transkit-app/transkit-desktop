@@ -3,13 +3,86 @@ import { invoke } from '@tauri-apps/api/tauri';
 import { Select, SelectItem, Switch } from '@nextui-org/react';
 import { useTranslation } from 'react-i18next';
 import { open as openShell } from '@tauri-apps/api/shell';
-import { MdGraphicEq } from 'react-icons/md';
+import { MdGraphicEq, MdExpandMore, MdExpandLess, MdContentCopy } from 'react-icons/md';
 import { osType } from '../../../../utils/env';
 import { BUILTIN_LEVELS, DEFAULT_PROMPTS, AI_SERVICE_FRIENDLY_NAMES } from '../../../../utils/polishTranscript';
 import { getServiceName } from '../../../../utils/service_instance';
 
-const BLACKHOLE_URL  = 'https://github.com/ExistentialAudio/BlackHole/releases';
-const VBCABLE_URL    = 'https://vb-audio.com/Cable/';
+const BLACKHOLE_URL = 'https://github.com/ExistentialAudio/BlackHole/releases';
+const VBCABLE_URL   = 'https://vb-audio.com/Cable/';
+
+// ─── Shared sub-components (matches ContextPanel style) ──────────────────────
+
+function SectionCard({ children, className = '' }) {
+    return (
+        <div className={`rounded-xl border border-default-200 dark:border-default-700/60 bg-default-50 dark:bg-default-100/[0.04] p-3 ${className}`}>
+            {children}
+        </div>
+    );
+}
+
+function SectionLabel({ label, badge, badgeColor = 'warning' }) {
+    const colorMap = {
+        warning: 'bg-warning/15 text-warning-700 dark:text-warning-400 border-warning/35',
+        primary: 'bg-primary/15 text-primary border-primary/30',
+        success: 'bg-success/15 text-success-700 dark:text-success-400 border-success/35',
+    };
+    return (
+        <div className='flex items-center gap-1.5 mb-2.5'>
+            <span className='text-[10px] font-bold text-default-600 dark:text-default-400 uppercase tracking-widest'>
+                {label}
+            </span>
+            {badge && (
+                <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wide border ${colorMap[badgeColor] ?? colorMap.warning}`}>
+                    {badge}
+                </span>
+            )}
+        </div>
+    );
+}
+
+function ToggleRow({ label, hint, isSelected, onValueChange, isDisabled, children }) {
+    return (
+        <div className='flex items-center gap-2.5'>
+            <Switch
+                size='sm'
+                color='primary'
+                isSelected={isSelected}
+                onValueChange={onValueChange}
+                isDisabled={isDisabled}
+            />
+            <div className='flex-1 min-w-0'>
+                <span className='text-[11px] font-medium text-default-700 dark:text-default-300'>{label}</span>
+                {hint && <span className='ml-1.5 text-[10px] text-default-400'>{hint}</span>}
+                {children}
+            </div>
+        </div>
+    );
+}
+
+function SliderRow({ label, min, max, step, value, onChange, isDisabled, displayValue }) {
+    return (
+        <div className={`flex items-center gap-2.5 ${isDisabled ? 'opacity-40' : ''}`}>
+            <span className='text-[10px] text-default-500 w-24 flex-shrink-0'>{label}</span>
+            <input
+                type='range'
+                min={min}
+                max={max}
+                step={step}
+                value={value}
+                disabled={isDisabled}
+                onChange={e => onChange(Number(e.target.value))}
+                className='flex-1 h-1 cursor-pointer'
+                style={{ accentColor: 'hsl(var(--nextui-primary))' }}
+            />
+            <span className='text-[10px] text-default-400 w-10 text-right font-mono flex-shrink-0'>
+                {displayValue ?? value}
+            </span>
+        </div>
+    );
+}
+
+// ─── Main ────────────────────────────────────────────────────────────────────
 
 export default function NarrationPanel({
     isNarrationActive,
@@ -41,23 +114,29 @@ export default function NarrationPanel({
     isUsingCloudDictation = false,
 }) {
     const { t } = useTranslation();
-    const controlsDisabled = !pttEnabled;
     const [virtualDevices, setVirtualDevices] = useState([]);
     const [allDevices, setAllDevices]         = useState([]);
     const [showAllDevices, setShowAllDevices] = useState(false);
     const [loading, setLoading]               = useState(false);
     const [error, setError]                   = useState('');
-    const [testStatus, setTestStatus]         = useState(''); // '' | 'testing' | 'ok' | 'error'
+    const [testStatus, setTestStatus]         = useState('');
+    const [polishOpen, setPolishOpen]         = useState(pttPolishEnabled);
+    const [deviceOpen, setDeviceOpen]         = useState(true);
+    const [copied, setCopied]                 = useState(false);
+
+    const isMac     = osType === 'Darwin';
+    const isWindows = osType === 'Windows_NT';
 
     useEffect(() => {
         invoke('narration_detect_devices').then(setVirtualDevices).catch(() => {});
         invoke('narration_list_devices').then(setAllDevices).catch(() => {});
     }, []);
 
+    // Keep polish section open when polish is enabled
+    useEffect(() => { if (pttPolishEnabled) setPolishOpen(true); }, [pttPolishEnabled]);
+
+    const hasVirtual    = virtualDevices.length > 0;
     const displayDevices = showAllDevices ? allDevices : virtualDevices;
-    const hasVirtual  = virtualDevices.length > 0;
-    const isMac       = osType === 'Darwin';
-    const isWindows   = osType === 'Windows_NT';
 
     async function handleSetDevice(name) {
         if (!name) return;
@@ -86,14 +165,30 @@ export default function NarrationPanel({
         setTimeout(() => setTestStatus(''), 2500);
     }
 
+    function handleCopyPrompt() {
+        const text = DEFAULT_PROMPTS[pttPolishLevel] ?? '';
+        navigator.clipboard.writeText(text).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1800);
+        }).catch(() => {});
+    }
+
+    const testBtnCls = `flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-medium border transition-colors flex-shrink-0 ${
+        testStatus === 'testing' ? 'border-warning/40 text-warning bg-warning/10 animate-pulse'
+        : testStatus === 'ok'    ? 'border-success/40 text-success bg-success/10'
+        : testStatus === 'error' ? 'border-danger/40 text-danger bg-danger/10'
+        : 'border-default-300 dark:border-default-600 text-default-500 hover:text-primary hover:border-primary/30 bg-default-100 dark:bg-default-50/[0.06]'
+    }`;
+
     return (
-        <div className='space-y-3'>
-            {/* Header */}
-            <div className='flex items-center gap-1.5 mb-1'>
+        <div className='flex flex-col gap-2.5 text-sm'>
+
+            {/* ── Header ── */}
+            <div className='flex items-center gap-1.5 px-0.5'>
                 <span className='text-[11px] font-bold text-success uppercase tracking-widest'>
-                    {`🎙 ${t('monitor.narration_title', { defaultValue: 'Narration' })}`}
+                    🎙 {t('monitor.narration_title', { defaultValue: 'Narration' })}
                 </span>
-                <span className='px-1.5 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wide bg-warning/15 text-warning-700 dark:text-warning-400 border border-warning/35'>
+                <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wide border bg-warning/15 text-warning-700 dark:text-warning-400 border-warning/35`}>
                     {t('monitor.narration_beta', { defaultValue: 'Beta' })}
                 </span>
                 <span className='text-[10px] text-default-400'>
@@ -101,380 +196,296 @@ export default function NarrationPanel({
                 </span>
             </div>
 
-            {/* PTT active toggle */}
-            <div className='flex items-center gap-2'>
-                <span className='text-[11px] text-default-500 w-28 flex-shrink-0'>
-                    {t('monitor.narration_ptt_active', { defaultValue: 'PTT Active' })}
-                </span>
-                <Switch
-                    size='sm'
-                    color='warning'
-                    isSelected={Boolean(pttEnabled)}
-                    onValueChange={onTogglePttEnabled}
-                />
-                <span className='text-[10px] text-default-400'>
-                    {t('monitor.narration_ptt_active_hint', { defaultValue: 'Enable Hold to Speak button' })}
-                </span>
-            </div>
+            {/* ── Output Device ── */}
+            <SectionCard>
+                <button
+                    className='flex items-center justify-between w-full'
+                    onClick={() => setDeviceOpen(v => !v)}
+                >
+                    <SectionLabel
+                        label={t('monitor.narration_device', { defaultValue: 'Device' })}
+                        badge={narrationDeviceName ? null : undefined}
+                    />
+                    {deviceOpen
+                        ? <MdExpandLess className='text-default-400 text-[16px] flex-shrink-0 -mt-2.5' />
+                        : <MdExpandMore className='text-default-400 text-[16px] flex-shrink-0 -mt-2.5' />
+                    }
+                </button>
 
-            {pttEnabled && (
-                <div className='rounded-lg bg-warning/10 border border-warning/25 px-2 py-1.5'>
-                    <p className='text-[10px] text-warning-700 dark:text-warning-400'>
-                        {t('monitor.narration_ptt_cost_warning', {
-                            defaultValue: 'PTT Active may create an extra STT cloud stream while pressed and can consume duplicate token/minutes.',
-                        })}
-                    </p>
-                </div>
-            )}
-
-            <div className={controlsDisabled ? 'opacity-45 pointer-events-none select-none' : ''}>
-                {/* Device selector */}
-                <div className='flex items-start gap-2'>
-                    <span className='text-[11px] text-default-500 w-28 flex-shrink-0 pt-2'>
-                        {t('monitor.narration_device', { defaultValue: 'Device' })}
-                    </span>
-                    <div className='flex-1 space-y-1.5'>
-                        {displayDevices.length > 0 ? (
+                {deviceOpen && (
+                    <div className='flex flex-col gap-2'>
+                        {hasVirtual || showAllDevices ? (
                             <div className='flex gap-1.5 items-center'>
                                 <Select
                                     size='sm'
                                     isLoading={loading}
-                                    isDisabled={controlsDisabled}
                                     placeholder={t('monitor.narration_select_device', { defaultValue: 'Select virtual mic…' })}
                                     selectedKeys={narrationDeviceName ? new Set([narrationDeviceName]) : new Set()}
                                     onSelectionChange={keys => handleSetDevice([...keys][0])}
                                     aria-label={t('monitor.narration_virtual_mic_aria', { defaultValue: 'Virtual mic device' })}
                                     className='flex-1'
+                                    classNames={{ trigger: 'border border-default-200 dark:border-default-700' }}
                                 >
                                     {displayDevices.map(d => (
                                         <SelectItem key={d} textValue={d}>{d}</SelectItem>
                                     ))}
                                 </Select>
-                                {/* Test signal button */}
                                 {narrationDeviceName && (
-                                    <button
-                                        className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-medium border transition-colors
-                                            ${testStatus === 'testing'
-                                                ? 'border-warning/40 text-warning bg-warning/10 animate-pulse'
-                                                : testStatus === 'ok'
-                                                ? 'border-success/40 text-success bg-success/10'
-                                                : testStatus === 'error'
-                                                ? 'border-danger/40 text-danger bg-danger/10'
-                                                : 'border-content3/40 text-default-500 hover:text-primary hover:border-primary/30 bg-content2/50'
-                                            }`}
-                                        onClick={handleTestSignal}
-                                        disabled={controlsDisabled}
-                                        title={t('monitor.narration_test_tone_title', { defaultValue: 'Send 440 Hz test tone to virtual device' })}
-                                    >
+                                    <button className={testBtnCls} onClick={handleTestSignal}>
                                         <MdGraphicEq className='text-[13px]' />
                                         {testStatus === 'testing' ? t('monitor.narration_test_testing', { defaultValue: 'Testing…' })
-                                            : testStatus === 'ok' ? t('monitor.narration_test_ok', { defaultValue: 'OK ✓' })
+                                            : testStatus === 'ok'  ? t('monitor.narration_test_ok', { defaultValue: 'OK ✓' })
                                             : testStatus === 'error' ? t('monitor.narration_test_failed', { defaultValue: 'Failed' })
                                             : t('monitor.narration_test', { defaultValue: 'Test' })}
                                     </button>
                                 )}
                             </div>
                         ) : (
-                            <span className='text-[11px] text-warning/80'>
-                                {t('monitor.narration_no_virtual', { defaultValue: 'No virtual device found' })}
-                            </span>
+                            <div className='rounded-lg bg-warning/8 border border-warning/20 px-2.5 py-2'>
+                                <p className='text-[10px] text-warning-700 dark:text-warning-400 font-medium mb-1'>
+                                    {t('monitor.narration_no_virtual', { defaultValue: 'No virtual device found' })}
+                                </p>
+                                {isMac && (
+                                    <button className='text-[10px] text-primary underline' onClick={() => openShell(BLACKHOLE_URL)}>
+                                        {t('monitor.narration_install_link', { defaultValue: 'Download BlackHole →' })}
+                                    </button>
+                                )}
+                                {isWindows && (
+                                    <button className='text-[10px] text-primary underline' onClick={() => openShell(VBCABLE_URL)}>
+                                        {t('monitor.narration_win_install_link', { defaultValue: 'Download VB-Cable →' })}
+                                    </button>
+                                )}
+                            </div>
                         )}
 
                         <button
-                            className='text-[10px] text-default-400 hover:text-default-600 underline'
+                            className='text-[10px] text-default-400 hover:text-primary transition-colors underline w-fit'
                             onClick={() => setShowAllDevices(v => !v)}
-                            disabled={controlsDisabled}
                         >
                             {showAllDevices
                                 ? t('monitor.narration_show_virtual', { defaultValue: 'Show virtual devices only' })
                                 : t('monitor.narration_show_all', { defaultValue: 'Show all output devices' })}
                         </button>
-                    </div>
-                </div>
 
-            </div>
+                        {error && <p className='text-[10px] text-danger/80'>{error}</p>}
 
-            {/* PTT floating button size */}
-            <div className={`flex items-center gap-2 ${controlsDisabled ? 'opacity-45' : ''}`}>
-                <span className='text-[11px] text-default-500 w-28 flex-shrink-0'>
-                    {t('monitor.narration_ptt_size', { defaultValue: 'PTT size' })}
-                </span>
-                <div className='flex-1 flex items-center gap-2'>
-                    <input
-                        type='range'
-                        min={36}
-                        max={88}
-                        step={2}
-                        value={pttFabSize ?? 52}
-                        disabled={controlsDisabled}
-                        onChange={(e) => onSetPttFabSize?.(Number(e.target.value))}
-                        className='flex-1 h-1 accent-primary cursor-pointer'
-                        style={{ accentColor: 'hsl(var(--nextui-primary))' }}
-                    />
-                    <span className='text-[10px] text-default-400 w-8 text-right'>{pttFabSize ?? 52}</span>
-                </div>
-            </div>
-
-            {/* PTT TTS speed */}
-            <div className={`flex items-center gap-2 ${controlsDisabled ? 'opacity-45' : ''}`}>
-                <span className='text-[11px] text-default-500 w-28 flex-shrink-0'>
-                    {t('monitor.narration_ptt_tts_speed', { defaultValue: 'PTT TTS speed' })}
-                </span>
-                <div className='flex-1 flex items-center gap-2'>
-                    <input
-                        type='range'
-                        min={0.5}
-                        max={2.0}
-                        step={0.05}
-                        value={pttTtsSpeed ?? 1.0}
-                        disabled={controlsDisabled}
-                        onChange={(e) => onSetPttTtsSpeed?.(Number(e.target.value))}
-                        className='flex-1 h-1 cursor-pointer'
-                        style={{ accentColor: 'hsl(var(--nextui-primary))' }}
-                    />
-                    <span className='text-[10px] text-default-400 w-8 text-right'>{(pttTtsSpeed ?? 1.0).toFixed(2)}×</span>
-                </div>
-            </div>
-
-            {/* Polish transcript */}
-            <div className={`space-y-2 ${controlsDisabled ? 'opacity-45 pointer-events-none select-none' : ''}`}>
-                <div className='flex items-center gap-2'>
-                    <span className='text-[11px] text-default-500 w-28 flex-shrink-0'>
-                        {t('monitor.narration_ptt_polish', { defaultValue: 'Polish' })}
-                    </span>
-                    <Switch
-                        size='sm'
-                        color='primary'
-                        isDisabled={controlsDisabled}
-                        isSelected={pttPolishEnabled}
-                        onValueChange={onSetPttPolishEnabled}
-                    />
-                    {isUsingCloudDictation && (
-                        <span className='px-1.5 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wide bg-primary/15 text-primary border border-primary/30'>
-                            {t('monitor.narration_cloud_dictation_badge', { defaultValue: 'Cloud Dictation' })}
-                        </span>
-                    )}
-                </div>
-
-                {pttPolishEnabled && (
-                    <div className='ml-[88px] space-y-2.5 pl-2 border-l-2 border-primary/25'>
-                        {/* Level selector */}
-                        <div className='space-y-1'>
-                            <span className='text-[10px] font-medium text-default-500'>
-                                {t('monitor.narration_polish_level', { defaultValue: 'Level' })}
-                            </span>
-                            <div className='flex gap-1 flex-wrap'>
-                                {[...BUILTIN_LEVELS, 'custom'].map(lvl => (
-                                    <button
-                                        key={lvl}
-                                        onClick={() => onSetPttPolishLevel?.(lvl)}
-                                        className={`px-2 py-1 rounded text-[10px] font-medium border transition-colors
-                                            ${pttPolishLevel === lvl
-                                                ? 'bg-primary text-white border-primary shadow-sm'
-                                                : 'bg-content2 text-default-600 border-default-300 hover:border-primary/50 hover:text-primary'
-                                            }`}
-                                    >
-                                        {t(`monitor.narration_polish_level_${lvl}`, {
-                                            defaultValue: lvl === 'mild' ? 'Mild' : lvl === 'medium' ? 'Medium' : lvl === 'aggressive' ? 'Aggressive' : 'Custom',
-                                        })}
-                                    </button>
+                        {/* Zoom setup checklist */}
+                        {narrationDeviceName && (
+                            <div className='rounded-lg bg-default-100 dark:bg-default-50/[0.06] border border-default-200 dark:border-default-700 p-2 space-y-0.5'>
+                                <p className='text-[10px] font-medium text-default-500 mb-1'>
+                                    {t('monitor.narration_checklist_title', { defaultValue: 'Zoom / Teams setup:' })}
+                                </p>
+                                {[
+                                    t('monitor.narration_checklist_item1', { defaultValue: '① Zoom mic → {{device}}', device: narrationDeviceName }),
+                                    t('monitor.narration_checklist_item2', { defaultValue: '② Mute your real mic in Zoom', device: narrationDeviceName }),
+                                    t('monitor.narration_checklist_item3', { defaultValue: '③ Press & hold "Hold to Speak" to narrate' }),
+                                ].map((item, i) => (
+                                    <p key={i} className='text-[10px] text-default-400'>{item}</p>
                                 ))}
                             </div>
-                        </div>
-
-                        {/* Prompt — read-only preview for built-ins, editable for custom */}
-                        <div className='space-y-1'>
-                            <span className='text-[10px] font-medium text-default-500'>
-                                {t('monitor.narration_polish_prompt', { defaultValue: 'Prompt' })}
-                                {pttPolishLevel !== 'custom' && (
-                                    <span className='ml-1 text-default-400 font-normal'>
-                                        {t('monitor.narration_polish_prompt_readonly', { defaultValue: '(built-in)' })}
-                                    </span>
-                                )}
-                            </span>
-                            {pttPolishLevel === 'custom' ? (
-                                <textarea
-                                    rows={4}
-                                    value={pttPolishPrompt}
-                                    onChange={e => onSetPttPolishPrompt?.(e.target.value)}
-                                    placeholder={t('monitor.narration_polish_prompt_placeholder', { defaultValue: 'Enter custom polish instructions…' })}
-                                    className='w-full text-[10px] bg-content1 border-2 border-default-300 dark:border-default-600 rounded-lg px-2.5 py-1.5 text-default-800 dark:text-default-200 placeholder-default-400 resize-none focus:outline-none focus:border-primary'
-                                />
-                            ) : (
-                                <pre className='w-full text-[9px] leading-relaxed bg-content1 border border-default-200 dark:border-default-700 rounded-lg px-2.5 py-1.5 text-default-500 whitespace-pre-wrap font-mono overflow-hidden'>
-                                    {DEFAULT_PROMPTS[pttPolishLevel] ?? ''}
-                                </pre>
-                            )}
-                        </div>
-
-                        {/* AI service selector */}
-                        {aiServiceList.length > 0 && (
-                            <div className='space-y-1'>
-                                <span className='text-[10px] font-medium text-default-500'>
-                                    {t('monitor.narration_polish_service', { defaultValue: 'AI Service' })}
-                                </span>
-                                <Select
-                                    size='sm'
-                                    placeholder={t('monitor.narration_polish_service_placeholder', { defaultValue: 'Select AI service…' })}
-                                    selectedKeys={pttPolishService ? new Set([pttPolishService]) : new Set([aiServiceList[0]])}
-                                    onSelectionChange={keys => onSetPttPolishService?.([...keys][0] ?? '')}
-                                    aria-label={t('monitor.narration_polish_service_aria', { defaultValue: 'AI service for polish' })}
-                                    classNames={{ trigger: 'border-2 border-default-300 dark:border-default-600 data-[focus=true]:border-primary' }}
-                                >
-                                    {aiServiceList.map(svc => {
-                                        const label = AI_SERVICE_FRIENDLY_NAMES[getServiceName(svc)] ?? getServiceName(svc).replace(/_ai$/, '').replace(/_/g, ' ');
-                                        return (
-                                            <SelectItem key={svc} textValue={label}>
-                                                {label}
-                                            </SelectItem>
-                                        );
-                                    })}
-                                </Select>
-                            </div>
                         )}
-
                     </div>
                 )}
-            </div>
+            </SectionCard>
 
-            {/* Review before send — independent of Polish */}
-            <div className={`flex items-center gap-2 ${controlsDisabled ? 'opacity-45 pointer-events-none select-none' : ''}`}>
-                <span className='text-[11px] text-default-500 w-28 flex-shrink-0'>
-                    {t('monitor.narration_ptt_review_label', { defaultValue: 'Xem trước TTS' })}
-                </span>
-                <Switch
-                    size='sm'
-                    color='warning'
-                    isDisabled={controlsDisabled}
+            {/* ── PTT ── */}
+            <SectionCard>
+                <SectionLabel label='PTT' />
+
+                <div className='flex flex-col gap-2.5'>
+                    <ToggleRow
+                        label={t('monitor.narration_ptt_active', { defaultValue: 'PTT Active' })}
+                        hint={t('monitor.narration_ptt_active_hint', { defaultValue: 'Enable Hold to Speak button' })}
+                        isSelected={Boolean(pttEnabled)}
+                        onValueChange={onTogglePttEnabled}
+                    />
+
+                    {pttEnabled && (
+                        <div className='rounded-lg bg-warning/8 border border-warning/20 px-2.5 py-1.5'>
+                            <p className='text-[10px] text-warning-700 dark:text-warning-400'>
+                                {t('monitor.narration_ptt_cost_warning', {
+                                    defaultValue: 'PTT Active may create an extra STT cloud stream and consume additional tokens/minutes.',
+                                })}
+                            </p>
+                        </div>
+                    )}
+
+                    <div className={`flex flex-col gap-2 pt-1 border-t border-default-200 dark:border-default-700 ${!pttEnabled ? 'opacity-40 pointer-events-none' : ''}`}>
+                        <SliderRow
+                            label={t('monitor.narration_ptt_size', { defaultValue: 'Button size' })}
+                            min={36} max={88} step={2}
+                            value={pttFabSize ?? 52}
+                            onChange={onSetPttFabSize}
+                            isDisabled={!pttEnabled}
+                            displayValue={`${pttFabSize ?? 52}px`}
+                        />
+                        <SliderRow
+                            label={t('monitor.narration_ptt_tts_speed', { defaultValue: 'TTS speed' })}
+                            min={0.5} max={2.0} step={0.05}
+                            value={pttTtsSpeed ?? 1.0}
+                            onChange={onSetPttTtsSpeed}
+                            isDisabled={!pttEnabled}
+                            displayValue={`${(pttTtsSpeed ?? 1.0).toFixed(2)}×`}
+                        />
+                    </div>
+                </div>
+            </SectionCard>
+
+            {/* ── Polish ── */}
+            <SectionCard>
+                <button
+                    className='flex items-center justify-between w-full'
+                    onClick={() => setPolishOpen(v => !v)}
+                >
+                    <SectionLabel
+                        label={t('monitor.narration_ptt_polish', { defaultValue: 'Polish' })}
+                        badge={isUsingCloudDictation ? t('monitor.narration_cloud_dictation_badge', { defaultValue: 'Cloud Dictation' }) : null}
+                        badgeColor='primary'
+                    />
+                    {polishOpen
+                        ? <MdExpandLess className='text-default-400 text-[16px] flex-shrink-0 -mt-2.5' />
+                        : <MdExpandMore className='text-default-400 text-[16px] flex-shrink-0 -mt-2.5' />
+                    }
+                </button>
+
+                {polishOpen && (
+                    <div className='flex flex-col gap-3'>
+                        <ToggleRow
+                            label={t('monitor.narration_ptt_polish', { defaultValue: 'Polish transcript' })}
+                            isSelected={pttPolishEnabled}
+                            onValueChange={onSetPttPolishEnabled}
+                            isDisabled={!pttEnabled}
+                        />
+
+                        <div className={`flex flex-col gap-2.5 ${!pttPolishEnabled ? 'opacity-40 pointer-events-none' : ''}`}>
+                            {/* Level pills */}
+                            <div className='flex flex-col gap-1.5'>
+                                <span className='text-[10px] font-medium text-default-500'>
+                                    {t('monitor.narration_polish_level', { defaultValue: 'Level' })}
+                                </span>
+                                <div className='flex gap-1 flex-wrap'>
+                                    {[...BUILTIN_LEVELS, 'custom'].map(lvl => (
+                                        <button
+                                            key={lvl}
+                                            onClick={() => onSetPttPolishLevel?.(lvl)}
+                                            className={`px-2.5 py-1 rounded-lg text-[10px] font-medium border transition-colors ${
+                                                pttPolishLevel === lvl
+                                                    ? 'bg-primary text-white border-primary shadow-sm'
+                                                    : 'bg-default-100 dark:bg-default-50/[0.06] text-default-600 dark:text-default-400 border-default-200 dark:border-default-700 hover:border-primary/50 hover:text-primary'
+                                            }`}
+                                        >
+                                            {t(`monitor.narration_polish_level_${lvl}`, {
+                                                defaultValue: lvl === 'mild' ? 'Mild' : lvl === 'medium' ? 'Medium' : lvl === 'aggressive' ? 'Aggressive' : 'Custom',
+                                            })}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Prompt */}
+                            <div className='flex flex-col gap-1'>
+                                <div className='flex items-center justify-between'>
+                                    <span className='text-[10px] font-medium text-default-500'>
+                                        {t('monitor.narration_polish_prompt', { defaultValue: 'Prompt' })}
+                                        {pttPolishLevel !== 'custom' && (
+                                            <span className='ml-1 text-default-400 font-normal'>
+                                                {t('monitor.narration_polish_prompt_readonly', { defaultValue: '(built-in)' })}
+                                            </span>
+                                        )}
+                                    </span>
+                                    {pttPolishLevel !== 'custom' && (
+                                        <button
+                                            onClick={handleCopyPrompt}
+                                            className='flex items-center gap-0.5 text-[10px] text-default-400 hover:text-primary transition-colors'
+                                            title='Copy prompt'
+                                        >
+                                            <MdContentCopy className='text-[11px]' />
+                                            {copied ? '✓' : 'Copy'}
+                                        </button>
+                                    )}
+                                </div>
+                                {pttPolishLevel === 'custom' ? (
+                                    <textarea
+                                        rows={4}
+                                        value={pttPolishPrompt}
+                                        onChange={e => onSetPttPolishPrompt?.(e.target.value)}
+                                        placeholder={t('monitor.narration_polish_prompt_placeholder', { defaultValue: 'Enter custom polish instructions…' })}
+                                        className='w-full text-[10px] bg-default-100 dark:bg-default-50/[0.06] border border-default-200 dark:border-default-700 rounded-lg px-2.5 py-1.5 text-foreground placeholder:text-default-400 resize-none focus:outline-none focus:border-primary/60 transition-colors'
+                                    />
+                                ) : (
+                                    <pre className='w-full text-[9px] leading-relaxed bg-default-100 dark:bg-default-50/[0.06] border border-default-200 dark:border-default-700 rounded-lg px-2.5 py-1.5 text-default-500 whitespace-pre-wrap font-mono overflow-hidden'>
+                                        {DEFAULT_PROMPTS[pttPolishLevel] ?? ''}
+                                    </pre>
+                                )}
+                            </div>
+
+                            {/* AI service */}
+                            {aiServiceList.length > 0 && (
+                                <div className='flex flex-col gap-1'>
+                                    <span className='text-[10px] font-medium text-default-500'>
+                                        {t('monitor.narration_polish_service', { defaultValue: 'AI Service' })}
+                                    </span>
+                                    <Select
+                                        size='sm'
+                                        placeholder={t('monitor.narration_polish_service_placeholder', { defaultValue: 'Select AI service…' })}
+                                        selectedKeys={pttPolishService ? new Set([pttPolishService]) : new Set([aiServiceList[0]])}
+                                        onSelectionChange={keys => onSetPttPolishService?.([...keys][0] ?? '')}
+                                        aria-label={t('monitor.narration_polish_service_aria', { defaultValue: 'AI service for polish' })}
+                                        classNames={{ trigger: 'border border-default-200 dark:border-default-700 data-[focus=true]:border-primary/60' }}
+                                    >
+                                        {aiServiceList.map(svc => {
+                                            const label = AI_SERVICE_FRIENDLY_NAMES[getServiceName(svc)] ?? getServiceName(svc).replace(/_ai$/, '').replace(/_/g, ' ');
+                                            return <SelectItem key={svc} textValue={label}>{label}</SelectItem>;
+                                        })}
+                                    </Select>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </SectionCard>
+
+            {/* ── Review & Audio — side by side single-row cards ── */}
+            <SectionCard>
+                <SectionLabel label={t('monitor.narration_ptt_review_label', { defaultValue: 'Review' })} />
+                <ToggleRow
+                    label={t('monitor.narration_ptt_review', { defaultValue: 'Preview before TTS' })}
+                    hint={t('monitor.narration_ptt_review_hint', { defaultValue: 'Confirm before sending to TTS' })}
                     isSelected={pttReviewEnabled}
                     onValueChange={onSetPttReviewEnabled}
+                    isDisabled={!pttEnabled}
                 />
-                <span className='text-[10px] text-default-400'>
-                    {t('monitor.narration_ptt_review_hint', { defaultValue: 'Confirm before sending to TTS' })}
-                </span>
-            </div>
+            </SectionCard>
 
-            {/* Monitor audio toggle */}
-            <div className={`flex items-center gap-2 ${controlsDisabled ? 'opacity-45' : ''}`}>
-                <span className='text-[11px] text-default-500 w-28 flex-shrink-0'>
-                    {t('monitor.narration_monitor_audio', { defaultValue: 'Hear TTS' })}
-                </span>
-                <Switch
-                    size='sm'
-                    color='warning'
-                    isDisabled={controlsDisabled}
-                    isSelected={monitorAudio}
-                    onValueChange={onToggleMonitorAudio}
-                />
-                <span className='text-[10px] text-default-400'>
-                    {monitorAudio
+            <SectionCard>
+                <SectionLabel label={t('monitor.narration_monitor_audio', { defaultValue: 'Local Audio' })} />
+                <ToggleRow
+                    label={monitorAudio
                         ? t('monitor.narration_monitor_on', { defaultValue: 'Playing locally (test mode)' })
                         : t('monitor.narration_monitor_off', { defaultValue: 'Silent — virtual mic only' })}
-                </span>
-            </div>
+                    hint={monitorAudio ? '⚠ ' + t('monitor.narration_monitor_on_warn', { defaultValue: 'echo risk' }) : ''}
+                    isSelected={monitorAudio}
+                    onValueChange={onToggleMonitorAudio}
+                    isDisabled={!pttEnabled}
+                />
+            </SectionCard>
 
+            {/* ── Status ── */}
             {narrationDeviceName && (
-                <p className='text-[10px] text-default-400'>
-                    {t('monitor.narration_ptt_toolbar_hint', {
-                        defaultValue: 'Use "Hold to Speak" on the top toolbar to switch to mic and route TTS → virtual mic.',
-                    })}
-                </p>
-            )}
-
-            {/* Status indicator */}
-            {narrationDeviceName && (
-                <div className='flex items-center gap-1.5'>
+                <div className='flex items-center gap-1.5 px-0.5'>
                     <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-                        isPttActive ? 'bg-success animate-pulse'
-                        : isNarrationActive ? 'bg-success animate-pulse'
-                        : 'bg-default-300'
+                        isPttActive || isNarrationActive ? 'bg-success animate-pulse' : 'bg-default-300'
                     }`} />
                     <span className='text-[10px] text-default-400'>
-                        {isPttActive
-                            ? t('monitor.narration_routing', { defaultValue: 'Routing TTS → virtual mic' })
-                            : isNarrationActive
+                        {isPttActive || isNarrationActive
                             ? t('monitor.narration_routing', { defaultValue: 'Routing TTS → virtual mic' })
                             : t('monitor.narration_idle', { defaultValue: 'Ready' })}
                     </span>
                 </div>
             )}
 
-            {/* Error display */}
-            {error && (
-                <p className='text-[10px] text-danger/80'>{error}</p>
-            )}
-
-            {/* Install hint — macOS: BlackHole */}
-            {!hasVirtual && isMac && (
-                <div className='rounded-lg bg-content3/30 p-2 space-y-1'>
-                    <p className='text-[11px] text-default-500'>
-                        {t('monitor.narration_install_hint', {
-                            defaultValue: 'Install BlackHole to use narration:',
-                        })}
-                    </p>
-                    <button
-                        className='text-[11px] text-primary underline'
-                        onClick={() => openShell(BLACKHOLE_URL)}
-                    >
-                        {t('monitor.narration_install_link', { defaultValue: 'Download BlackHole →' })}
-                    </button>
-                    <p className='text-[10px] text-default-400'>
-                        {t('monitor.narration_zoom_hint', {
-                            defaultValue: 'After install, select "BlackHole 2ch" as mic in Zoom/Teams.',
-                        })}
-                    </p>
-                </div>
-            )}
-
-            {/* Install hint — Windows: VB-Cable */}
-            {!hasVirtual && isWindows && (
-                <div className='rounded-lg bg-content3/30 p-2 space-y-1'>
-                    <p className='text-[11px] text-default-500'>
-                        {t('monitor.narration_win_install_hint', {
-                            defaultValue: 'Install VB-Cable (free) to use narration:',
-                        })}
-                    </p>
-                    <button
-                        className='text-[11px] text-primary underline'
-                        onClick={() => openShell(VBCABLE_URL)}
-                    >
-                        {t('monitor.narration_win_install_link', { defaultValue: 'Download VB-Cable →' })}
-                    </button>
-                    <p className='text-[10px] text-default-400'>
-                        {t('monitor.narration_win_zoom_hint', {
-                            defaultValue: 'After install & reboot, select "CABLE Output" as mic in Zoom/Teams.',
-                        })}
-                    </p>
-                </div>
-            )}
-
-            {/* Zoom setup checklist */}
-            {narrationDeviceName && (
-                <div className='rounded-lg bg-content3/20 border border-content3/30 p-2 space-y-1'>
-                    <p className='text-[10px] font-medium text-default-500'>
-                        {t('monitor.narration_checklist_title', { defaultValue: 'Zoom / Teams setup:' })}
-                    </p>
-                    <p className='text-[10px] text-default-400'>
-                        {t('monitor.narration_checklist_item1', {
-                            defaultValue: '① Zoom mic → {{device}}',
-                            device: narrationDeviceName,
-                        })}
-                    </p>
-                    <p className='text-[10px] text-default-400'>
-                        {t('monitor.narration_checklist_item2', {
-                            defaultValue: '② Mute your real mic in Zoom (participants hear {{device}}, not your real mic)',
-                            device: narrationDeviceName,
-                        })}
-                    </p>
-                    <p className='text-[10px] text-default-400'>
-                        {t('monitor.narration_checklist_item3', {
-                            defaultValue: '③ Press & hold "Hold to Speak" to narrate',
-                        })}
-                    </p>
-                </div>
-            )}
-
-            <p className='text-[10px] text-default-400 pt-1 border-t border-content3/30'>
+            {/* ── Footer ── */}
+            <p className='text-[10px] text-default-400 px-0.5 border-t border-default-200 dark:border-default-700 pt-2'>
                 {t('monitor.narration_footer', {
                     defaultValue: 'TTS audio is sent to the virtual mic. Select it in Zoom/Teams as your microphone.',
                 })}
