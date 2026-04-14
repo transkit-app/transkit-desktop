@@ -120,7 +120,7 @@
         "additionalBrowserArgs": "--disable-web-security"
       },
       {
-        "title": "Realtime Translate",
+        "title": "Live Interpreter",
         "label": "monitor",
         "url": "index.html",
         "transparent": true,

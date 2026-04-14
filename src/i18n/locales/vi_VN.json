@@ -154,8 +154,8 @@
         "hide_window": "Ẩn cửa sổ nhận diện"
       },
       "audio_translate": {
-        "label": "Dịch âm thanh realtime",
-        "title": "Dịch âm thanh thời gian thực"
+        "label": "Phiên Dịch Trực Tiếp",
+        "title": "Cài đặt Phiên Dịch Trực Tiếp"
       },
       "hotkey": {
         "label": "Phím tắt",
@@ -164,7 +164,7 @@
         "input_translate": "Mở hộp thoại dịch",
         "ocr_recognize": "OCR - Nhận diện văn bản",
         "ocr_translate": "OCR - Dịch ảnh chụp màn hình",
-        "audio_monitor": "Dịch âm thanh realtime",
+        "audio_monitor": "Phiên Dịch Trực Tiếp",
         "is_register": "Phím tắt đã được đăng ký",
         "success": "Đăng ký phím tắt thành công",
         "set_hotkey": "Nhấn để đặt phím tắt",
@@ -661,7 +661,8 @@
       "narration_ptt_review_label": "Xem trước TTS",
       "narration_ptt_review_hint": "Xác nhận trước khi phát TTS. Hệ thống sẽ hiển thị hộp thoại xác nhận lại nội dung cần phát, bấm OK để gửi đi.",
       "narration_monitor_audio": "Nghe TTS",
-      "narration_monitor_on": "Phát ở loa của bạn (chỉ dùng để test vì sẽ có tiếng vọng lại nếu chúng ta đang dùng tính năng monitor)",
+      "narration_panel": "Cài đặt PTT / Tường thuật",
+      "narration_monitor_on": "Phát loa (test mode — cảnh báo: có thể bị vọng âm)",
       "narration_monitor_off": "Im lặng — chỉ ra mic ảo",
       "narration_ptt_toolbar_hint": "Dùng \"Nhấn giữ để nói\" trên thanh công cụ để chuyển sang mic và phát TTS → mic ảo.",
       "narration_routing": "Đang chuyển TTS → mic ảo",
