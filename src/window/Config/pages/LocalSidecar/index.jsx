@@ -123,7 +123,7 @@ export default function LocalSidecar() {
 
     // ── Offline STT translate ──────────────────────────────────────────────────
     const [offlineTranslateService, setOfflineTranslateService] = useConfig('offline_stt_translate_service', 'none');
-    const [translateServiceList] = useConfig('translate_service_list', []);
+    const [translateServiceList] = useConfig('translate_service_list', ['google', 'bing', 'transkit_cloud_translate']);
 
     // ── ONNX state ─────────────────────────────────────────────────────────────
     const [onnxActiveModel,  setOnnxActiveModel]  = useConfig('onnx_active_model', '');

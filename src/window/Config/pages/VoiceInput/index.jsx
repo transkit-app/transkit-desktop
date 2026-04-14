@@ -52,7 +52,7 @@ export default function VoiceInput() {
 
     // Translate service fallback — for offline STT that cannot translate natively
     const [translateService, setTranslateService] = useConfig('voice_anywhere_translate_service', 'none');
-    const [translateServiceList] = useConfig('translate_service_list', []);
+    const [translateServiceList] = useConfig('translate_service_list', ['google', 'bing', 'transkit_cloud_translate']);
     const [translateDisplayNames, setTranslateDisplayNames] = React.useState({});
     React.useEffect(() => {
         if (!translateServiceList?.length) return;

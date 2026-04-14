@@ -77,7 +77,32 @@ pub static APP: OnceCell<tauri::AppHandle> = OnceCell::new();
 
 #[tauri::command]
 fn restart_app(app: tauri::AppHandle) {
-    app.restart();
+    // app.restart() spawns the new process BEFORE exiting, causing a race with
+    // tauri_plugin_single_instance: the new process detects the old one and
+    // immediately exits, leaving the app fully closed. Fix: exit first, then a
+    // background shell relaunches the binary after a short delay so the
+    // single-instance socket is already released before the new process starts.
+    #[cfg(not(target_os = "windows"))]
+    {
+        if let Ok(exe) = std::env::current_exe() {
+            let exe = exe.to_string_lossy().into_owned();
+            // Spawn a detached background shell that waits, then relaunches.
+            let _ = std::process::Command::new("sh")
+                .arg("-c")
+                .arg(format!("(sleep 0.8 && exec '{}') &", exe))
+                .spawn();
+        }
+    }
+    #[cfg(target_os = "windows")]
+    {
+        if let Ok(exe) = std::env::current_exe() {
+            let exe = exe.to_string_lossy().into_owned();
+            let _ = std::process::Command::new("cmd")
+                .args(["/C", &format!("timeout /t 1 /nobreak > nul && start \"\" \"{}\"", exe)])
+                .spawn();
+        }
+    }
+    app.exit(0);
 }
 
 // Text to be translated
