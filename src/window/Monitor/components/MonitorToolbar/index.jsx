@@ -62,6 +62,7 @@ export default function MonitorToolbar({
     isNarrationActive,
     showPttButton,
     isPttActive,
+    isPttConfigured,
     isPttEnabled,
     onPttStart,
     onPttEnd,
@@ -243,20 +244,30 @@ export default function MonitorToolbar({
                 </Button>
             </Tooltip>
 
-            {/* Narration toggle */}
+            {/* Narration / PTT toggle — lights up when PTT is enabled */}
             <Tooltip
-                content={t('monitor.narration_panel', { defaultValue: 'Narration (spoken translation)' })}
+                content={t('monitor.narration_panel', { defaultValue: 'PTT / Narration settings' })}
                 size='sm'
                 placement='bottom'
             >
                 <Button
                     isIconOnly size='sm'
-                    variant={showNarrationPanel ? 'solid' : 'light'}
-                    color={isNarrationActive ? 'success' : (showNarrationPanel ? 'primary' : 'default')}
+                    variant={
+                        (isPttActive || isNarrationActive) ? 'solid'
+                        : (isPttConfigured || isPttEnabled) ? 'flat'
+                        : showNarrationPanel ? 'solid'
+                        : 'light'
+                    }
+                    color={
+                        (isPttActive || isNarrationActive) ? 'success'
+                        : (isPttConfigured || isPttEnabled) ? 'success'
+                        : showNarrationPanel ? 'primary'
+                        : 'default'
+                    }
                     className='h-7 w-7 min-w-0'
                     onPress={onToggleNarrationPanel}
                 >
-                    <MdRecordVoiceOver className='text-[14px]' />
+                    <MdRecordVoiceOver className={`text-[14px] ${isPttActive || isNarrationActive ? 'animate-pulse' : ''}`} />
                 </Button>
             </Tooltip>
 

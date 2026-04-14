@@ -881,10 +881,10 @@ export default function MonitorLog({
                                             } ${isBookmarked ? 'ring-1 ring-secondary/30' : ''}`}
                                             style={{ background: bubbleBg, borderColor: bubbleBorder, boxShadow: bubbleShadow, minWidth: 60 }}
                                         >
-                                            {/* Original text */}
-                                            {showOriginal && entry.original && (
+                                            {/* Original text — always shown for Me entries (VI on top) */}
+                                            {(showOriginal || isMeEntry) && entry.original && (
                                                 <p
-                                                    className={`leading-relaxed mb-0.5 ${isMeEntry ? 'text-right' : ''}`}
+                                                    className='leading-relaxed mb-0.5'
                                                     style={{
                                                         fontSize: fontSize - 1,
                                                         color: isMeEntry ? 'rgba(255,255,255,0.65)' : 'hsl(var(--nextui-default-500))',
@@ -896,56 +896,38 @@ export default function MonitorLog({
 
                                             {/* Translation */}
                                             {entry.translation && (
-                                                <div className='flex items-center gap-1.5'>
-                                                    {isMeEntry && aiSuggestionService && (
-                                                        <button
-                                                            className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border transition-all flex-shrink-0
-                                                                ${hasSuggestion
-                                                                    ? 'border-white/40 bg-white/10'
-                                                                    : 'border-transparent opacity-0 group-hover/entry:opacity-60 hover:!opacity-100 hover:border-white/30 hover:bg-white/10'
-                                                                } ${suggestion?.status === 'loading' ? 'cursor-wait' : 'cursor-pointer'}`}
-                                                            style={{ fontSize: 10, color: 'rgba(255,255,255,0.85)' }}
-                                                            onClick={() => hasSuggestion ? dismissSuggestion(entry.id) : handleAiSuggest(entry)}
-                                                            disabled={suggestion?.status === 'loading'}
-                                                        >
-                                                            <MdAutoAwesome
-                                                                className={suggestion?.status === 'loading' ? 'animate-spin' : ''}
-                                                                style={{ fontSize: 11 }}
-                                                            />
-                                                        </button>
-                                                    )}
-                                                    <span
-                                                        className={`font-medium leading-relaxed ${isMeEntry ? 'flex-1 text-right' : ''}`}
-                                                        style={{
-                                                            fontSize,
-                                                            color: isMeEntry ? 'rgba(255,255,255,0.95)' : 'hsl(var(--nextui-foreground))',
-                                                        }}
-                                                    >
-                                                        {entry.translation}
-                                                    </span>
-                                                    {!isMeEntry && aiSuggestionService && (
-                                                        <button
-                                                            className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border transition-all flex-shrink-0
-                                                                ${hasSuggestion
-                                                                    ? 'border-secondary/40 text-secondary bg-secondary/8'
-                                                                    : 'border-transparent opacity-0 group-hover/entry:opacity-60 hover:!opacity-100 text-default-400 hover:text-secondary hover:border-secondary/30 hover:bg-secondary/5'
-                                                                } ${suggestion?.status === 'loading' ? 'cursor-wait' : 'cursor-pointer'}`}
-                                                            style={{ fontSize: 10 }}
-                                                            onClick={() => hasSuggestion ? dismissSuggestion(entry.id) : handleAiSuggest(entry)}
-                                                            disabled={suggestion?.status === 'loading'}
-                                                        >
-                                                            <MdAutoAwesome
-                                                                className={suggestion?.status === 'loading' ? 'animate-spin' : ''}
-                                                                style={{ fontSize: 11 }}
-                                                            />
-                                                        </button>
-                                                    )}
-                                                </div>
+                                                <span
+                                                    className={`font-medium leading-relaxed ${isMeEntry ? 'flex-1' : ''}`}
+                                                    style={{
+                                                        fontSize,
+                                                        color: isMeEntry ? 'rgba(255,255,255,0.95)' : 'hsl(var(--nextui-foreground))',
+                                                    }}
+                                                >
+                                                    {entry.translation}
+                                                </span>
                                             )}
                                         </div>
 
                                         {/* Action buttons — outside bubble, visible on hover */}
                                         <div className='flex flex-col gap-0.5 opacity-0 group-hover/entry:opacity-100 transition-opacity'>
+                                            {aiSuggestionService && (
+                                                <Tooltip label={hasSuggestion ? t('monitor.ai_suggestion_dismiss', { defaultValue: 'Dismiss suggestion' }) : t('monitor.ai_suggestion', { defaultValue: 'AI Suggestion' })} placement={isMeEntry ? 'left' : 'right'}>
+                                                    <button
+                                                        className={`rounded p-0.5 transition-colors ${
+                                                            hasSuggestion
+                                                                ? 'text-secondary'
+                                                                : 'text-default-400 hover:text-secondary'
+                                                        } ${suggestion?.status === 'loading' ? 'cursor-wait' : 'cursor-pointer'}`}
+                                                        onClick={() => hasSuggestion ? dismissSuggestion(entry.id) : handleAiSuggest(entry)}
+                                                        disabled={suggestion?.status === 'loading'}
+                                                    >
+                                                        <MdAutoAwesome
+                                                            className={suggestion?.status === 'loading' ? 'animate-spin' : ''}
+                                                            style={{ fontSize: Math.max(12, fontSize) }}
+                                                        />
+                                                    </button>
+                                                </Tooltip>
+                                            )}
                                             <Tooltip label={t('monitor.tts_replay')} placement={isMeEntry ? 'left' : 'right'}>
                                                 <button
                                                     className='rounded p-0.5'

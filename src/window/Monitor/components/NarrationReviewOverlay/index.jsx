@@ -8,11 +8,13 @@ import { useTranslation } from 'react-i18next';
  * Lets the user read/edit the polished transcript before it is sent to TTS.
  * Auto-discards after `timeoutSeconds` if no action is taken.
  */
-export default function NarrationReviewOverlay({ pending, onAccept, onDiscard, timeoutSeconds = 30 }) {
+export default function NarrationReviewOverlay({ pending, onAccept, onDiscard, timeoutSeconds = 30, bottomOffset = 56 }) {
     const { t } = useTranslation();
     const [editedText, setEditedText] = useState('');
     const [countdown, setCountdown] = useState(timeoutSeconds);
     const intervalRef = useRef(null);
+    const onDiscardRef = useRef(onDiscard);
+    useEffect(() => { onDiscardRef.current = onDiscard; }, [onDiscard]);
 
     // Reset text + countdown whenever a new pending item arrives
     useEffect(() => {
@@ -21,22 +23,24 @@ export default function NarrationReviewOverlay({ pending, onAccept, onDiscard, t
         setCountdown(timeoutSeconds);
     }, [pending, timeoutSeconds]);
 
-    // Countdown tick → auto-discard at 0
+    // Countdown tick
     useEffect(() => {
         if (!pending) return;
         intervalRef.current = setInterval(() => {
-            setCountdown(prev => {
-                if (prev <= 1) {
-                    onDiscard();
-                    return 0;
-                }
-                return prev - 1;
-            });
+            setCountdown(prev => (prev <= 1 ? 0 : prev - 1));
         }, 1000);
         return () => {
             if (intervalRef.current) clearInterval(intervalRef.current);
         };
-    }, [pending, onDiscard]);
+    }, [pending]);
+
+    // Auto-discard when countdown hits 0 — separate effect to avoid calling
+    // onDiscard() inside a setState updater (triggers React setState-in-render warning)
+    useEffect(() => {
+        if (countdown === 0 && pending) {
+            onDiscardRef.current();
+        }
+    }, [countdown, pending]);
 
     if (!pending) return null;
 
@@ -44,8 +48,8 @@ export default function NarrationReviewOverlay({ pending, onAccept, onDiscard, t
 
     return (
         <div
-            className='absolute right-3 z-30 w-72 rounded-xl border border-warning/30 shadow-2xl overflow-hidden'
-            style={{ bottom: 56, background: 'hsl(var(--nextui-content2))' }}
+            className='absolute right-3 z-31 w-72 rounded-xl border border-warning/30 shadow-2xl overflow-hidden'
+            style={{ bottom: bottomOffset, background: 'hsl(var(--nextui-content2))' }}
         >
             {/* Header */}
             <div className='flex items-center justify-between px-3 py-2 border-b border-content3/30'>

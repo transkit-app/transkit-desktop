@@ -29,22 +29,36 @@ function hexToRgba(hex, alpha) {
  * Distinguishes tap (toggle recording) from drag (reposition window).
  * A press > 300ms OR mouse travel > 4px is treated as a drag.
  */
-export default function VoiceFab({ fabState, amplitude, onToggle, errorMsg, size = 72, idleColor = '#3f3f46' }) {
+/**
+ * embeddedMode — disables window-drag behaviour (use when FAB is inside a normal window)
+ * holdMode     — PTT mode: pointerDown=start, pointerUp/Cancel=stop
+ *                When false (default): click-to-toggle (original behaviour)
+ * onPttStart   — called on pointerDown in holdMode
+ * onPttEnd     — called on pointerUp/Cancel in holdMode
+ */
+export default function VoiceFab({ fabState, amplitude, onToggle, onPttStart, onPttEnd, errorMsg, size = 72, idleColor = '#3f3f46', embeddedMode = false, holdMode = false }) {
     const dragTimerRef = useRef(null);
     const startPosRef = useRef({ x: 0, y: 0 });
     const isDraggingRef = useRef(false);
 
     function handlePointerDown(e) {
+        if (holdMode) {
+            e.currentTarget.setPointerCapture(e.pointerId);
+            onPttStart?.();
+            return;
+        }
         isDraggingRef.current = false;
         startPosRef.current = { x: e.clientX, y: e.clientY };
-        dragTimerRef.current = setTimeout(() => {
-            isDraggingRef.current = true;
-            appWindow.startDragging();
-        }, 300);
+        if (!embeddedMode) {
+            dragTimerRef.current = setTimeout(() => {
+                isDraggingRef.current = true;
+                appWindow.startDragging();
+            }, 300);
+        }
     }
 
     function handlePointerMove(e) {
-        if (isDraggingRef.current) return;
+        if (holdMode || embeddedMode || isDraggingRef.current) return;
         const dx = e.clientX - startPosRef.current.x;
         const dy = e.clientY - startPosRef.current.y;
         if (Math.hypot(dx, dy) > 4) {
@@ -55,9 +69,13 @@ export default function VoiceFab({ fabState, amplitude, onToggle, errorMsg, size
     }
 
     function handlePointerUp() {
+        if (holdMode) {
+            onPttEnd?.();
+            return;
+        }
         clearTimeout(dragTimerRef.current);
         if (!isDraggingRef.current) {
-            onToggle();
+            onToggle?.();
         }
         isDraggingRef.current = false;
     }
@@ -105,6 +123,7 @@ export default function VoiceFab({ fabState, amplitude, onToggle, errorMsg, size
                 onPointerDown={handlePointerDown}
                 onPointerMove={handlePointerMove}
                 onPointerUp={handlePointerUp}
+                onPointerCancel={holdMode ? handlePointerUp : undefined}
                 style={{
                     width: size,
                     height: size,

@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { Button, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from '@nextui-org/react';
 import { BsPinFill } from 'react-icons/bs';
 import { MdOpenInFull, MdBlurOn, MdVolumeUp, MdVolumeOff, MdSettings, MdSave, MdSaveAlt, MdFolderOpen, MdDownload, MdClose, MdRemove, MdMic, MdRecordVoiceOver } from 'react-icons/md';
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useConfig } from '../../hooks';
 import { osType } from '../../utils/env';
 import { store } from '../../utils/store';
@@ -20,11 +20,14 @@ import ContextPanel from './components/ContextPanel';
 import AIPanel from './components/AIPanel';
 import NarrationPanel from './components/NarrationPanel';
 import NarrationReviewOverlay from './components/NarrationReviewOverlay';
+import PttCaption from './components/PttCaption';
+import VoiceFab from '../VoiceAnywhere/VoiceFab';
 import * as transcriptionServices from '../../services/transcription';
 import * as translateServices from '../../services/translate';
 import { getTTSQueue } from './tts';
 import { reportUsage, CLOUD_ENABLED, callCloudAI } from '../../lib/transkit-cloud';
 import { polishTranscript, DEFAULT_PROMPTS } from '../../utils/polishTranscript';
+import { useVoiceAnywhere } from '../VoiceAnywhere/useVoiceAnywhere';
 
 const MAX_ENTRIES = 100;
 const SUB_MODE_HEIGHT = 190;
@@ -187,9 +190,23 @@ export default function Monitor() {
     const [narrationDeviceName, setNarrationDeviceName] = useConfig('narration_device_name', '');
     const [narrationMonitorAudio, setNarrationMonitorAudio] = useConfig('narration_monitor_audio', false);
     const [narrationPttFabSize, setNarrationPttFabSize] = useConfig('narration_ptt_fab_size', 52);
+    const [narrationPttPolishEnabled, setNarrationPttPolishEnabled] = useConfig('narration_ptt_polish_enabled', false);
+    const [narrationPttPolishLevel, setNarrationPttPolishLevel] = useConfig('narration_ptt_polish_level', 'mild');
+    const [narrationPttPolishPrompt, setNarrationPttPolishPrompt] = useConfig('narration_ptt_polish_prompt', '');
+    const [narrationPttPolishService, setNarrationPttPolishService] = useConfig('narration_ptt_polish_service', '');
+    const [narrationPttReviewEnabled, setNarrationPttReviewEnabled] = useConfig('narration_ptt_review_enabled', false);
+    const [narrationPttTtsSpeed, setNarrationPttTtsSpeed] = useConfig('narration_ptt_tts_speed', 1.0);
+    const [cloudIdleWarningMinutes] = useConfig('cloud_idle_warning_minutes', 5);
     const [showNarrationPanel, setShowNarrationPanel] = useState(false);
     const [narrationPttActive, setNarrationPttActive] = useState(false);
     const [narrationDrainActive, setNarrationDrainActive] = useState(false);
+    // PTT button drag position — null = default (bottom-right corner)
+    const [pttBtnPos, setPttBtnPos] = useState(null);
+    const pttDragRef = useRef(null);
+    const monitorRootRef = useRef(null);
+    const [narrationPendingReview, setNarrationPendingReview] = useState(null);
+    const [narrationUsingDictation, setNarrationUsingDictation] = useState(false);
+    const [showCloudIdleWarning, setShowCloudIdleWarning] = useState(false);
     const prevSourceAudioRef = useRef(null);
     const pttDrainTimerRef = useRef(null);
     const pttReleaseDeadlineRef = useRef(0);
@@ -201,7 +218,102 @@ export default function Monitor() {
     const narrationClientKeyRef = useRef('');
     const narrationConfigRef = useRef(null); // { serviceName, config }
     const pttActiveRef = useRef(false);
+    const pttPressAtRef = useRef(0); // timestamp of last PTT press start (ms)
+    const pttPendingRawTextRef = useRef('');
     const narrationEnabledRef = useRef(narrationEnabled);
+    const pttReviewEnabledRef = useRef(false);
+    const narrationPttTtsSpeedRef = useRef(1.0);
+    const cloudIdleWarnTimerRef = useRef(null);
+    const aiServiceListRef = useRef([]);
+
+    // ── PTT VA embed ──────────────────────────────────────────────────────────
+    // Resolve the effective STT key for PTT: Cloud STT auto-routes to Cloud Dictation
+    const narrationSttKey = useMemo(() => {
+        if (!activeTranscriptionService) return 'transkit_cloud_stt';
+        return getServiceName(activeTranscriptionService) === 'transkit_cloud_stt'
+            ? 'transkit_cloud_dictation'
+            : activeTranscriptionService;
+    }, [activeTranscriptionService]);
+
+    // Resolve the polish prompt for the current level/custom setting
+    const pttPolishPromptResolved = useMemo(() => {
+        if (!narrationPttPolishEnabled) return '';
+        const level = narrationPttPolishLevel ?? 'mild';
+        return level === 'custom'
+            ? (narrationPttPolishPrompt || DEFAULT_PROMPTS.mild)
+            : (DEFAULT_PROMPTS[level] ?? DEFAULT_PROMPTS.mild);
+    }, [narrationPttPolishEnabled, narrationPttPolishLevel, narrationPttPolishPrompt]);
+
+    // Called by pttVA once STT + polish are done.
+    // Translates PTT text (user spoke in targetLang) → sourceLang for TTS,
+    // adds a "Me" entry to the transcript, then routes to review or TTS.
+    // nativeOriginal: VI text from the STT's own translation (Soniox/Deepgram/Gladia).
+    // When provided, `text` is already EN — no Cloud AI roundtrip needed.
+    // When null (offline STT or service without native translation), `text` is VI and we translate.
+    const handlePttFinalText = useCallback(async (text, nativeOriginal = null) => {
+        pttAwaitingTranslationRef.current = false;
+        const pttSourceLang = targetLang;   // language user spoke in (PTT source)
+        const pttTargetLang = sourceLang;   // language to translate to (for TTS / transcript)
+
+        let rawText, ttsText;
+        if (nativeOriginal) {
+            // STT already translated natively — use both fields directly, zero extra AI call
+            rawText = nativeOriginal;
+            ttsText = text;
+        } else {
+            rawText = text;
+            ttsText = text;
+            if (pttTargetLang && pttTargetLang !== 'auto' && pttTargetLang !== pttSourceLang) {
+                try {
+                    const result = await callCloudAI(
+                        [{ role: 'user', content: rawText }],
+                        'translate',
+                        { source_lang: pttSourceLang, target_lang: pttTargetLang }
+                    );
+                    ttsText = result?.text || rawText;
+                } catch (e) {
+                    console.warn('[PTT] translate failed, using raw text:', e);
+                }
+            }
+        }
+
+        if (pttReviewEnabledRef.current) {
+            // Defer adding the transcript entry until the user accepts the review
+            pttPendingRawTextRef.current = rawText;
+            setNarrationPendingReview({ text: ttsText });
+        } else {
+            const entry = {
+                id: `${Date.now()}-${Math.random()}`,
+                original: rawText,
+                translation: ttsText,
+                speaker: 'me',
+                isMe: true,
+            };
+            setEntries(prev => {
+                const next = [...prev, entry];
+                return next.length > MAX_ENTRIES ? next.slice(-MAX_ENTRIES) : next;
+            });
+            getTTSQueue().stop();
+            getTTSQueue().enqueue(ttsText, { injectNarration: true, force: true, rateOverride: narrationPttTtsSpeedRef.current });
+        }
+    }, [sourceLang, targetLang]);
+
+    const pttVA = useVoiceAnywhere({
+        sttServiceKey: narrationSttKey,
+        monitorSvcKey: narrationSttKey,
+        // PTT reverses the language pair: user speaks in targetLang (e.g. VI).
+        // Cloud STTs (Soniox, Deepgram…) translate natively and deliver (EN, nativeOriginal=VI)
+        // to onFinalText — no extra Cloud AI call needed. Offline STTs fall back to Cloud AI.
+        language: targetLang,
+        targetLanguage: sourceLang,
+        translateServiceKey: 'none',
+        polishEnabled: narrationPttPolishEnabled,
+        polishPrompt: pttPolishPromptResolved,
+        polishServiceKey: narrationPttPolishService,
+        noCapture: true,
+        noSfx: true,
+        onFinalText: handlePttFinalText,
+    });
 
     // User profile (for AI suggestion context)
     const [userProfile] = useConfig('user_profile', {});
@@ -398,7 +510,10 @@ export default function Monitor() {
     const narrationEffectivelyActive =
         narrationPttActive
         || narrationDrainActive
-        || (narrationEnabled && sourceAudio === 'microphone');
+        || (narrationEnabled && sourceAudio === 'microphone')
+        // Keep BlackHole stream open whenever PTT is configured so inject_audio
+        // never races against narration_start/stop between presses.
+        || (narrationPttEnabled && Boolean(narrationDeviceName) && isRunning);
     useEffect(() => {
         const tts = getTTSQueue();
         tts.narrationEnabled = narrationEffectivelyActive;
@@ -455,11 +570,16 @@ export default function Monitor() {
             }
             return false;
         }
-        const service = transcriptionServices[cfg.serviceName];
+        // Auto-route: Cloud STT → Cloud Dictation (on-demand billing for PTT)
+        const effectiveServiceName = cfg.serviceName === 'transkit_cloud_stt'
+            ? 'transkit_cloud_dictation'
+            : cfg.serviceName;
+        const service = transcriptionServices[effectiveServiceName];
         if (!service?.createClient) return;
-        const nextClientKey = `${cfg.serviceName}|${reverseSourceLang}|${reverseTargetLang}`;
+        const nextClientKey = `${effectiveServiceName}|${reverseSourceLang}|${reverseTargetLang}`;
 
-        if (narrationClientRef.current && narrationClientKeyRef.current === nextClientKey) {
+        // Reuse only if still connected — DictationClient closes WS after each session
+        if (narrationClientRef.current && narrationClientKeyRef.current === nextClientKey && narrationClientRef.current.isConnected) {
             return true;
         }
 
@@ -468,20 +588,36 @@ export default function Monitor() {
         narrationClientKeyRef.current = '';
         const client = service.createClient();
 
-        const isDictationClient = cfg.serviceName === 'transkit_cloud_dictation';
+        const isDictationClient = effectiveServiceName === 'transkit_cloud_dictation';
+
+        const _enqueuePttFinal = (ttsText, rawText) => {
+            if (pttReviewEnabledRef.current) {
+                pttPendingRawTextRef.current = rawText || ttsText;
+                setNarrationPendingReview({ text: ttsText });
+            } else {
+                const entry = {
+                    id: `${Date.now()}-${Math.random()}`,
+                    original: rawText || ttsText,
+                    translation: ttsText,
+                    speaker: 'me',
+                    isMe: true,
+                };
+                setEntries(prev => {
+                    const next = [...prev, entry];
+                    return next.length > MAX_ENTRIES ? next.slice(-MAX_ENTRIES) : next;
+                });
+                setProvisional('');
+                getTTSQueue().stop();
+                getTTSQueue().enqueue(ttsText, { injectNarration: true, force: true, rateOverride: narrationPttTtsSpeedRef.current });
+            }
+        };
 
         if (isDictationClient) {
             // DictationClient only fires onOriginal (no provider-side translation).
             // Translate the transcript client-side via Cloud AI, then enqueue TTS.
             client.onOriginal = async (text) => {
                 pttAwaitingTranslationRef.current = false;
-                const entry = {
-                    id: `${Date.now()}-${Math.random()}`,
-                    original: text,
-                    translation: '',
-                    speaker: 'me',
-                    isMe: true,
-                };
+                let ttsText = text;
                 if (reverseTargetLang && reverseTargetLang !== reverseSourceLang) {
                     try {
                         const result = await callCloudAI(
@@ -489,20 +625,12 @@ export default function Monitor() {
                             'translate',
                             { source_lang: reverseSourceLang, target_lang: reverseTargetLang }
                         );
-                        entry.translation = result.text;
+                        ttsText = result.text;
                     } catch (e) {
                         console.warn('[Narration PTT] translate failed:', e);
-                        entry.translation = text; // fall back to original
                     }
-                } else {
-                    entry.translation = text;
                 }
-                setEntries(prev => {
-                    const next = [...prev, entry];
-                    return next.length > MAX_ENTRIES ? next.slice(-MAX_ENTRIES) : next;
-                });
-                setProvisional('');
-                getTTSQueue().enqueue(entry.translation, { injectNarration: true, force: true });
+                _enqueuePttFinal(ttsText, text);
             };
             client.onTranslation = null;
         } else {
@@ -513,22 +641,10 @@ export default function Monitor() {
                 pttAwaitingTranslationRef.current = false;
                 const pending = pendingOriginalRef.current;
                 pendingOriginalRef.current = null;
-                const entry = {
-                    id: `${Date.now()}-${Math.random()}`,
-                    original: pending?.text ?? '',
-                    translation: text,
-                    speaker: 'me',
-                    isMe: true,
-                };
-                setEntries(prev => {
-                    const next = [...prev, entry];
-                    return next.length > MAX_ENTRIES ? next.slice(-MAX_ENTRIES) : next;
-                });
-                setProvisional('');
-                getTTSQueue().enqueue(text, { injectNarration: true, force: true });
+                _enqueuePttFinal(text, pending?.text ?? '');
             };
         }
-        client.onProvisional = (text) => setProvisional(text || '');
+        client.onProvisional = () => {};
         client.onStatusChange = () => {};
         client.onError = (err) => console.warn('[Narration STT]', err);
 
@@ -540,10 +656,17 @@ export default function Monitor() {
 
         narrationClientRef.current = client;
         narrationClientKeyRef.current = nextClientKey;
+
+        if (effectiveServiceName === 'transkit_cloud_dictation' && cfg.serviceName === 'transkit_cloud_stt') {
+            setNarrationUsingDictation(true);
+        } else {
+            setNarrationUsingDictation(false);
+        }
+
         return true;
     }, [sourceLang, targetLang, t]);
 
-    const waitNarrationClientConnected = useCallback(async (timeoutMs = 3500) => {
+    const waitNarrationClientConnected = useCallback(async (timeoutMs = 6000) => {
         const deadline = Date.now() + timeoutMs;
         while (Date.now() < deadline) {
             if (narrationClientRef.current?.isConnected) return true;
@@ -583,23 +706,19 @@ export default function Monitor() {
 
     const handlePttStart = useCallback(async () => {
         if (!narrationPttEnabled || !narrationDeviceName) return;
+        // PTT translates to sourceLang — require a fixed source language
+        if (!sourceLang || sourceLang === 'auto') {
+            setErrorMsg(t('monitor.narration_ptt_requires_fixed_source'));
+            setTimeout(() => setErrorMsg(''), 5000);
+            return;
+        }
         clearPttDrainTimer();
         clearPttRestoreCaptureTimer();
         setNarrationDrainActive(false);
         pttAwaitingTranslationRef.current = false;
         prevSourceAudioRef.current = sourceAudioRef.current;
 
-        // Ensure narration STT client is ready with mirrored language pair
-        const narrationReady = startNarrationClient();
-        if (!narrationReady) return;
-        const connected = await waitNarrationClientConnected();
-        if (!connected) {
-            setErrorMsg('[PTT] Narration STT is still connecting. Please hold and try again.');
-            setTimeout(() => setErrorMsg(''), 3000);
-            return;
-        }
-
-        // Switch audio capture to microphone
+        // Switch audio capture to microphone if currently on system audio
         if (isRunning && sourceAudioRef.current !== 'microphone') {
             const switched = await restartCaptureWithSource('microphone');
             if (!switched) {
@@ -608,17 +727,35 @@ export default function Monitor() {
             }
         }
 
+        // Eagerly open the virtual-mic stream before recording starts so the
+        // BlackHole output is ready when TTS tries to inject_audio. Without
+        // this, the useEffect that drives narration_start is async (runs after
+        // render) and short utterances can miss the injection window.
+        if (narrationDeviceName) {
+            try { await invoke('narration_start', { deviceName: narrationDeviceName }); } catch (_) {}
+        }
+
+        pttPressAtRef.current = Date.now();
         pttActiveRef.current = true;
         setNarrationPttActive(true);
-    }, [narrationPttEnabled, narrationDeviceName, isRunning, restartCaptureWithSource, startNarrationClient, waitNarrationClientConnected, clearPttDrainTimer, clearPttRestoreCaptureTimer]);
+        pttVA.startRecording();
+    }, [narrationPttEnabled, narrationDeviceName, sourceLang, isRunning, restartCaptureWithSource, pttVA, clearPttDrainTimer, clearPttRestoreCaptureTimer, t]);
 
     const handlePttEnd = useCallback(async () => {
+        // Short tap (< 350 ms) — not a real utterance, show hold hint
+        const pressDuration = pttPressAtRef.current > 0 ? Date.now() - pttPressAtRef.current : 999;
+        pttPressAtRef.current = 0;
+        if (pressDuration < 350) {
+            setErrorMsg(t('monitor.ptt_hold_hint', { defaultValue: 'Hold the button to speak' }));
+            setTimeout(() => setErrorMsg(''), 2200);
+        }
+
         const prev = prevSourceAudioRef.current;
         setNarrationPttActive(false);
         prevSourceAudioRef.current = null;
         clearPttDrainTimer();
         clearPttRestoreCaptureTimer();
-        narrationClientRef.current?.finalize?.();
+        pttVA.stopRecording();
 
         // Always keep narration route alive when a device is configured so the full
         // STT → translate → TTS fetch → narration_inject_audio pipeline has time to
@@ -671,7 +808,53 @@ export default function Monitor() {
         } else {
             pttActiveRef.current = false;
         }
-    }, [isRunning, narrationDeviceName, restartCaptureWithSource, clearPttDrainTimer, clearPttRestoreCaptureTimer]);
+    }, [isRunning, narrationDeviceName, restartCaptureWithSource, pttVA, clearPttDrainTimer, clearPttRestoreCaptureTimer]);
+
+    const handlePttAcceptReview = useCallback((text) => {
+        const rawText = pttPendingRawTextRef.current || text;
+        pttPendingRawTextRef.current = '';
+        const entry = {
+            id: `${Date.now()}-${Math.random()}`,
+            original: rawText,
+            translation: text,
+            speaker: 'me',
+            isMe: true,
+        };
+        setEntries(prev => {
+            const next = [...prev, entry];
+            return next.length > MAX_ENTRIES ? next.slice(-MAX_ENTRIES) : next;
+        });
+        setNarrationPendingReview(null);
+        getTTSQueue().enqueue(text, { injectNarration: true, force: true });
+    }, []);
+
+    const handlePttDiscardReview = useCallback(() => {
+        pttPendingRawTextRef.current = '';
+        setNarrationPendingReview(null);
+    }, []);
+
+    // ── PTT button drag-to-reposition ────────────────────────────────────────
+    const handlePttGripPointerDown = useCallback((e) => {
+        e.currentTarget.setPointerCapture(e.pointerId);
+        const container = monitorRootRef.current;
+        if (!container) return;
+        const cr = container.getBoundingClientRect();
+        const curX = pttBtnPos ? pttBtnPos.x : cr.width - 200;
+        const curY = pttBtnPos ? pttBtnPos.y : cr.height - 120;
+        pttDragRef.current = { startX: e.clientX, startY: e.clientY, origX: curX, origY: curY, cw: cr.width, ch: cr.height };
+    }, [pttBtnPos]);
+
+    const handlePttGripPointerMove = useCallback((e) => {
+        const d = pttDragRef.current;
+        if (!d) return;
+        const newX = Math.max(0, Math.min(d.cw - 180, d.origX + (e.clientX - d.startX)));
+        const newY = Math.max(0, Math.min(d.ch - 100, d.origY + (e.clientY - d.startY)));
+        setPttBtnPos({ x: newX, y: newY });
+    }, []);
+
+    const handlePttGripPointerUp = useCallback(() => {
+        pttDragRef.current = null;
+    }, []);
 
     // ── Narration test signal (440 Hz, 1 s) ──────────────────────────────────
     const handleNarrationTestSignal = useCallback(async () => {
@@ -739,6 +922,9 @@ export default function Monitor() {
     const sourceAudioRef = useRef(sourceAudio);
     useEffect(() => { sourceAudioRef.current = sourceAudio; }, [sourceAudio]);
     useEffect(() => { narrationEnabledRef.current = narrationEnabled; }, [narrationEnabled]);
+    useEffect(() => { pttReviewEnabledRef.current = narrationPttReviewEnabled ?? false; }, [narrationPttReviewEnabled]);
+    useEffect(() => { narrationPttTtsSpeedRef.current = narrationPttTtsSpeed ?? 1.0; }, [narrationPttTtsSpeed]);
+    useEffect(() => { aiServiceListRef.current = aiServiceList ?? []; }, [aiServiceList]);
     const batchIntervalRef = useRef(100);
 
 
@@ -752,11 +938,9 @@ export default function Monitor() {
             const bytes = new Uint8Array(binary.length);
             for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
             const buffer = bytes.buffer;
-            const routeToNarration = narrationClientRef.current && (
-                pttActiveRef.current ||
-                (narrationEnabledRef.current && sourceAudioRef.current === 'microphone')
-            );
-            if (routeToNarration) {
+            if (pttActiveRef.current) {
+                // pttVA has its own audio_chunk listener during PTT — block main STT
+            } else if (narrationEnabledRef.current && sourceAudioRef.current === 'microphone' && narrationClientRef.current) {
                 narrationClientRef.current.sendAudio(buffer);
             } else {
                 transcriptionClientRef.current?.client?.sendAudio(buffer);
@@ -1070,6 +1254,18 @@ export default function Monitor() {
             setCloudWarningLevel('danger');
         }
     }, [cloudCountdown, stop]);
+
+    // ── Cloud idle warning: show banner after N idle minutes on Cloud STT ─────
+    useEffect(() => {
+        if (cloudIdleWarnTimerRef.current) clearTimeout(cloudIdleWarnTimerRef.current);
+        if (!isRunning) { setShowCloudIdleWarning(false); return; }
+        const isCloud = getServiceName(activeTranscriptionService ?? '') === 'transkit_cloud_stt';
+        const warnMs = (cloudIdleWarningMinutes ?? 5) * 60_000;
+        if (isCloud && warnMs > 0) {
+            cloudIdleWarnTimerRef.current = setTimeout(() => setShowCloudIdleWarning(true), warnMs);
+        }
+        return () => { if (cloudIdleWarnTimerRef.current) clearTimeout(cloudIdleWarnTimerRef.current); };
+    }, [isRunning, activeTranscriptionService, cloudIdleWarningMinutes]);
 
     const toggleTTS = useCallback(() => {
         const next = !isTTSEnabled;
@@ -1445,6 +1641,7 @@ export default function Monitor() {
     // ── Normal mode layout ────────────────────────────────────────────────────
     return (
         <div
+            ref={monitorRootRef}
             className='w-screen h-screen flex flex-col overflow-hidden rounded-[12px] border border-white/[0.08] relative'
             style={{
                 background: bgAlpha >= 1
@@ -1581,6 +1778,7 @@ export default function Monitor() {
                 isNarrationActive={narrationEffectivelyActive}
                 showPttButton={false}
                 isPttActive={narrationPttActive}
+                isPttConfigured={narrationPttEnabled && Boolean(narrationDeviceName)}
                 isPttEnabled={Boolean(narrationDeviceName) && narrationPttEnabled && isRunning}
                 onPttStart={handlePttStart}
                 onPttEnd={handlePttEnd}
@@ -1657,6 +1855,20 @@ export default function Monitor() {
                                 onToggleMonitorAudio={() => setNarrationMonitorAudio(!narrationMonitorAudio)}
                                 pttFabSize={narrationPttFabSize ?? 52}
                                 onSetPttFabSize={setNarrationPttFabSize}
+                                pttPolishEnabled={narrationPttPolishEnabled ?? false}
+                                onSetPttPolishEnabled={setNarrationPttPolishEnabled}
+                                pttPolishLevel={narrationPttPolishLevel ?? 'mild'}
+                                onSetPttPolishLevel={setNarrationPttPolishLevel}
+                                pttPolishPrompt={narrationPttPolishPrompt ?? ''}
+                                onSetPttPolishPrompt={setNarrationPttPolishPrompt}
+                                pttPolishService={narrationPttPolishService ?? ''}
+                                onSetPttPolishService={setNarrationPttPolishService}
+                                pttReviewEnabled={narrationPttReviewEnabled ?? false}
+                                onSetPttReviewEnabled={setNarrationPttReviewEnabled}
+                                pttTtsSpeed={narrationPttTtsSpeed ?? 1.0}
+                                onSetPttTtsSpeed={setNarrationPttTtsSpeed}
+                                aiServiceList={aiServiceList ?? []}
+                                isUsingCloudDictation={narrationUsingDictation}
                             />
                         </div>
                     </div>
@@ -1745,6 +1957,35 @@ export default function Monitor() {
                 </div>
             )}
 
+            {/* Cloud idle warning */}
+            {showCloudIdleWarning && (
+                <div className='mx-2 mt-1 px-3 py-2 bg-warning/10 border border-warning/20 rounded-lg flex items-start gap-2'>
+                    <span className='text-warning-600 dark:text-warning-400 text-[13px] flex-shrink-0 mt-0.5'>⚠</span>
+                    <div className='flex-1 min-w-0'>
+                        <p className='text-xs text-warning-700 dark:text-warning-400 font-medium'>
+                            {t('monitor.cloud_idle_warning_title', { defaultValue: 'Cloud STT running — no activity detected' })}
+                        </p>
+                        <p className='text-[10px] text-default-500 mt-0.5'>
+                            {t('monitor.cloud_idle_warning_hint', { defaultValue: 'Press Stop when not in use to avoid charges.' })}
+                        </p>
+                    </div>
+                    <div className='flex items-center gap-1 flex-shrink-0'>
+                        <button
+                            onClick={() => { setShowCloudIdleWarning(false); stop(); }}
+                            className='text-[10px] font-semibold text-danger hover:opacity-80 transition-opacity px-2 py-1 rounded bg-danger/10 border border-danger/20'
+                        >
+                            {t('monitor.stop')}
+                        </button>
+                        <button
+                            onClick={() => setShowCloudIdleWarning(false)}
+                            className='text-default-400 hover:text-default-600 transition-colors'
+                        >
+                            <MdClose className='text-[13px]' />
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Log */}
             <MonitorLog
                 entries={entries}
@@ -1777,43 +2018,106 @@ export default function Monitor() {
                 aiSuggestionModes={aiSuggestionModes}
             />
 
-            {/* Floating PTT button (Siri-style) */}
-            {Boolean(narrationDeviceName) && narrationPttEnabled && (
-                <div className='absolute right-3 bottom-10 z-30'>
-                    <button
-                        className={`relative rounded-full flex items-center justify-center select-none touch-none transition-all
-                            ${isRunning
-                                ? narrationPttActive
-                                    ? 'bg-success text-success-foreground shadow-lg shadow-success/30'
-                                    : 'bg-primary/20 text-primary hover:bg-primary/30 border border-primary/35'
-                                : 'bg-content2 text-default-400 border border-content3/40 cursor-not-allowed'
-                            }`}
-                        style={{
-                            width: Math.min(Math.max(narrationPttFabSize ?? 52, 36), 88),
-                            height: Math.min(Math.max(narrationPttFabSize ?? 52, 36), 88),
-                        }}
-                        disabled={!isRunning}
-                        onPointerDown={(e) => {
-                            if (!isRunning) return;
-                            e.currentTarget.setPointerCapture(e.pointerId);
-                            handlePttStart();
-                        }}
-                        onPointerUp={() => handlePttEnd()}
-                        onPointerCancel={() => handlePttEnd()}
-                        title={isRunning
-                            ? t('monitor.narration_ptt_hold', { defaultValue: 'Hold to Speak' })
-                            : t('monitor.start')}
-                    >
-                        {narrationPttActive && (
-                            <>
-                                <span className='absolute inset-0 rounded-full border border-success/60 animate-ping' />
-                                <span className='absolute -inset-1 rounded-full border border-success/30 animate-pulse' />
-                            </>
-                        )}
-                        <MdMic className='relative z-10' style={{ fontSize: Math.max(16, (narrationPttFabSize ?? 52) * 0.38) }} />
-                    </button>
-                </div>
-            )}
+            {/* PTT area — centered caption + review overlay + VoiceFab button */}
+            {Boolean(narrationDeviceName) && narrationPttEnabled && (() => {
+                const fabH = Math.min(Math.max(narrationPttFabSize ?? 52, 36), 88);
+                const aboveFabBottom = 40 + fabH + 10;
+                const captionVisible = narrationPttActive || pttVA.fabState === 'processing' || pttVA.fabState === 'injecting' || narrationDrainActive;
+
+                return (
+                    <>
+                        {/* Review overlay */}
+                        <NarrationReviewOverlay
+                            pending={narrationPendingReview}
+                            onAccept={handlePttAcceptReview}
+                            onDiscard={handlePttDiscardReview}
+                            timeoutSeconds={30}
+                            bottomOffset={aboveFabBottom}
+                        />
+
+                        {/* Centered caption with animated waves */}
+                        <PttCaption
+                            fabState={pttVA.fabState}
+                            interim={pttVA.finalText || pttVA.interim}
+                            visible={captionVisible}
+                        />
+
+                        {/* PTT button — draggable within Monitor window */}
+                        <div
+                            style={pttBtnPos
+                                ? { position: 'absolute', left: pttBtnPos.x, top: pttBtnPos.y, zIndex: 30 }
+                                : { position: 'absolute', right: 12, bottom: 40, zIndex: 30 }
+                            }
+                        >
+                            {/* Inner column: drag handle + FAB + label all centered */}
+                            <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center' }}>
+                                {/* Drag handle */}
+                                <div
+                                    onPointerDown={handlePttGripPointerDown}
+                                    onPointerMove={handlePttGripPointerMove}
+                                    onPointerUp={handlePttGripPointerUp}
+                                    onPointerCancel={handlePttGripPointerUp}
+                                    style={{
+                                        cursor: 'grab',
+                                        width: fabH,
+                                        display: 'flex',
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        height: 12,
+                                        borderRadius: '6px 6px 0 0',
+                                        background: 'rgba(255,255,255,0.05)',
+                                        marginBottom: 2,
+                                        touchAction: 'none',
+                                        userSelect: 'none',
+                                    }}
+                                    title={t('monitor.ptt_drag_hint', { defaultValue: 'Drag to reposition' })}
+                                >
+                                    <span style={{ color: 'rgba(255,255,255,0.28)', fontSize: 9, letterSpacing: 3 }}>• • •</span>
+                                </div>
+                                <VoiceFab
+                                    fabState={isRunning
+                                        ? (narrationDrainActive && pttVA.fabState === 'idle' ? 'processing' : pttVA.fabState)
+                                        : 'idle'}
+                                    onPttStart={isRunning ? handlePttStart : undefined}
+                                    onPttEnd={isRunning ? handlePttEnd : undefined}
+                                    size={fabH}
+                                    embeddedMode={true}
+                                    holdMode={true}
+                                    idleColor='#1e3a5f'
+                                />
+                                {/* Context label — always blue, reflects current state */}
+                                {(() => {
+                                    const effectiveFabState = isRunning
+                                        ? (narrationDrainActive && pttVA.fabState === 'idle' ? 'processing' : pttVA.fabState)
+                                        : 'idle';
+                                    const isGenerating = isRunning && narrationDrainActive && pttVA.fabState === 'idle';
+                                    const labelText = effectiveFabState === 'listening'
+                                        ? t('monitor.narration_ptt_speaking', { defaultValue: 'Speaking…' })
+                                        : (effectiveFabState === 'processing' || effectiveFabState === 'injecting')
+                                        ? t('monitor.narration_ptt_processing', { defaultValue: 'Processing…' })
+                                        : isGenerating
+                                        ? t('monitor.narration_ptt_generating', { defaultValue: 'Generating voice…' })
+                                        : t('monitor.narration_ptt_hold', { defaultValue: 'Push to Talk' });
+                                    return (
+                                        <span style={{
+                                            marginTop: 5,
+                                            fontSize: 9,
+                                            fontWeight: 600,
+                                            letterSpacing: '0.06em',
+                                            textTransform: 'uppercase',
+                                            pointerEvents: 'none',
+                                            color: 'rgba(59,130,246,0.85)',
+                                            whiteSpace: 'nowrap',
+                                        }}>
+                                            {labelText}
+                                        </span>
+                                    );
+                                })()}
+                            </div>
+                        </div>
+                    </>
+                );
+            })()}
 
             {/* ── Bottom status bar ────────────────────────────────────────── */}
             <div className='flex items-center justify-between px-2 h-[22px] border-t border-content2/60 flex-shrink-0 select-none'>
@@ -1872,7 +2176,14 @@ export default function Monitor() {
                         <MdRecordVoiceOver className='text-[11px]' />
                         {t('monitor.narration_ptt_label', { defaultValue: 'PTT' })} ({t('monitor.narration_beta', { defaultValue: 'Beta' })}):{' '}
                         {narrationPttEnabled
-                            ? t('monitor.narration_ptt_on', { defaultValue: 'ON' })
+                            ? <>
+                                {t('monitor.narration_ptt_on', { defaultValue: 'ON' })}
+                                {targetLang && targetLang !== 'auto' && sourceLang && sourceLang !== 'auto' && (
+                                    <span className='opacity-60 ml-0.5'>
+                                        ({targetLang.split('-')[0].toUpperCase()}→{sourceLang.split('-')[0].toUpperCase()})
+                                    </span>
+                                )}
+                              </>
                             : t('monitor.narration_ptt_off', { defaultValue: 'OFF' })}
                     </button>
                 </div>

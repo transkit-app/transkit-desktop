@@ -262,7 +262,7 @@ export class TTSQueue {
             console.log(`[PTT-TTS] ${Date.now()} enqueue SKIPPED — enabled:${this.enabled} hasText:${!!text?.trim()}`);
             return;
         }
-        const { injectNarration } = options;
+        const { injectNarration, rateOverride } = options;
         const trimmed = text.trim();
         console.log(`[PTT-TTS] ${Date.now()} enqueue START — apiType:${this.apiType} text:"${trimmed.slice(0, 40)}"`);
 
@@ -276,7 +276,7 @@ export class TTSQueue {
             return;
         }
 
-        this._enqueueScheduled(trimmed, injectNarration, force);
+        this._enqueueScheduled(trimmed, injectNarration, force, rateOverride);
     }
 
     // ── replay ─────────────────────────────────────────────────────────────
@@ -398,7 +398,7 @@ export class TTSQueue {
      * always reach _playQueue in enqueue order even when fetch N+1 is faster
      * than fetch N.
      */
-    _enqueueScheduled(text, injectNarration, force = false) {
+    _enqueueScheduled(text, injectNarration, force = false, rateOverride = null) {
         const chunks = this.apiType === 'edge_tts'
             ? this._splitTextChunks(text)
             : [text];
@@ -452,7 +452,7 @@ export class TTSQueue {
                     }
 
                     console.log(`[PTT-TTS] ${Date.now()} orderChain[${i}] → playQueue — mime:${mime} queueActive:${this._playQueueActive} queueLen:${this._playQueue.length}`);
-                    this._playQueue.push({ buffer, mime, text, rate: this._calcRate(), injectNarration });
+                    this._playQueue.push({ buffer, mime, text, rate: rateOverride ?? this._calcRate(), injectNarration });
 
                     // Start the player if it's idle.
                     if (!this._playQueueActive) this._advancePlayQueue();

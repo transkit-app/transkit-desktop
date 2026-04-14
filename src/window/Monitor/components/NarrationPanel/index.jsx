@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { open as openShell } from '@tauri-apps/api/shell';
 import { MdGraphicEq } from 'react-icons/md';
 import { osType } from '../../../../utils/env';
+import { BUILTIN_LEVELS, DEFAULT_PROMPTS, AI_SERVICE_FRIENDLY_NAMES } from '../../../../utils/polishTranscript';
+import { getServiceName } from '../../../../utils/service_instance';
 
 const BLACKHOLE_URL  = 'https://github.com/ExistentialAudio/BlackHole/releases';
 const VBCABLE_URL    = 'https://vb-audio.com/Cable/';
@@ -23,6 +25,20 @@ export default function NarrationPanel({
     onToggleMonitorAudio,
     pttFabSize = 52,
     onSetPttFabSize,
+    pttPolishEnabled = false,
+    onSetPttPolishEnabled,
+    pttPolishLevel = 'mild',
+    onSetPttPolishLevel,
+    pttPolishPrompt = '',
+    onSetPttPolishPrompt,
+    pttPolishService = '',
+    onSetPttPolishService,
+    pttReviewEnabled = false,
+    onSetPttReviewEnabled,
+    pttTtsSpeed = 1.0,
+    onSetPttTtsSpeed,
+    aiServiceList = [],
+    isUsingCloudDictation = false,
 }) {
     const { t } = useTranslation();
     const controlsDisabled = !pttEnabled;
@@ -87,7 +103,7 @@ export default function NarrationPanel({
 
             {/* PTT active toggle */}
             <div className='flex items-center gap-2'>
-                <span className='text-[11px] text-default-500 w-20 flex-shrink-0'>
+                <span className='text-[11px] text-default-500 w-28 flex-shrink-0'>
                     {t('monitor.narration_ptt_active', { defaultValue: 'PTT Active' })}
                 </span>
                 <Switch
@@ -114,7 +130,7 @@ export default function NarrationPanel({
             <div className={controlsDisabled ? 'opacity-45 pointer-events-none select-none' : ''}>
                 {/* Device selector */}
                 <div className='flex items-start gap-2'>
-                    <span className='text-[11px] text-default-500 w-20 flex-shrink-0 pt-2'>
+                    <span className='text-[11px] text-default-500 w-28 flex-shrink-0 pt-2'>
                         {t('monitor.narration_device', { defaultValue: 'Device' })}
                     </span>
                     <div className='flex-1 space-y-1.5'>
@@ -176,27 +192,11 @@ export default function NarrationPanel({
                     </div>
                 </div>
 
-                {/* Always-on toggle (secondary) */}
-                <div className='flex items-center gap-2'>
-                    <span className='text-[11px] text-default-500 w-20 flex-shrink-0'>
-                        {t('monitor.narration_sticky', { defaultValue: 'Always on' })}
-                    </span>
-                    <Switch
-                        size='sm'
-                        color='success'
-                        isSelected={Boolean(narrationEnabled)}
-                        isDisabled={controlsDisabled || !narrationDeviceName}
-                        onValueChange={onToggleNarration}
-                    />
-                    <span className='text-[10px] text-default-400'>
-                        {t('monitor.narration_sticky_hint', { defaultValue: 'ON when mic mode is active' })}
-                    </span>
-                </div>
             </div>
 
             {/* PTT floating button size */}
             <div className={`flex items-center gap-2 ${controlsDisabled ? 'opacity-45' : ''}`}>
-                <span className='text-[11px] text-default-500 w-20 flex-shrink-0'>
+                <span className='text-[11px] text-default-500 w-28 flex-shrink-0'>
                     {t('monitor.narration_ptt_size', { defaultValue: 'PTT size' })}
                 </span>
                 <div className='flex-1 flex items-center gap-2'>
@@ -215,9 +215,148 @@ export default function NarrationPanel({
                 </div>
             </div>
 
+            {/* PTT TTS speed */}
+            <div className={`flex items-center gap-2 ${controlsDisabled ? 'opacity-45' : ''}`}>
+                <span className='text-[11px] text-default-500 w-28 flex-shrink-0'>
+                    {t('monitor.narration_ptt_tts_speed', { defaultValue: 'PTT TTS speed' })}
+                </span>
+                <div className='flex-1 flex items-center gap-2'>
+                    <input
+                        type='range'
+                        min={0.5}
+                        max={2.0}
+                        step={0.05}
+                        value={pttTtsSpeed ?? 1.0}
+                        disabled={controlsDisabled}
+                        onChange={(e) => onSetPttTtsSpeed?.(Number(e.target.value))}
+                        className='flex-1 h-1 cursor-pointer'
+                        style={{ accentColor: 'hsl(var(--nextui-primary))' }}
+                    />
+                    <span className='text-[10px] text-default-400 w-8 text-right'>{(pttTtsSpeed ?? 1.0).toFixed(2)}×</span>
+                </div>
+            </div>
+
+            {/* Polish transcript */}
+            <div className={`space-y-2 ${controlsDisabled ? 'opacity-45 pointer-events-none select-none' : ''}`}>
+                <div className='flex items-center gap-2'>
+                    <span className='text-[11px] text-default-500 w-28 flex-shrink-0'>
+                        {t('monitor.narration_ptt_polish', { defaultValue: 'Polish' })}
+                    </span>
+                    <Switch
+                        size='sm'
+                        color='primary'
+                        isDisabled={controlsDisabled}
+                        isSelected={pttPolishEnabled}
+                        onValueChange={onSetPttPolishEnabled}
+                    />
+                    {isUsingCloudDictation && (
+                        <span className='px-1.5 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wide bg-primary/15 text-primary border border-primary/30'>
+                            {t('monitor.narration_cloud_dictation_badge', { defaultValue: 'Cloud Dictation' })}
+                        </span>
+                    )}
+                </div>
+
+                {pttPolishEnabled && (
+                    <div className='ml-[88px] space-y-2.5 pl-2 border-l-2 border-primary/25'>
+                        {/* Level selector */}
+                        <div className='space-y-1'>
+                            <span className='text-[10px] font-medium text-default-500'>
+                                {t('monitor.narration_polish_level', { defaultValue: 'Level' })}
+                            </span>
+                            <div className='flex gap-1 flex-wrap'>
+                                {[...BUILTIN_LEVELS, 'custom'].map(lvl => (
+                                    <button
+                                        key={lvl}
+                                        onClick={() => onSetPttPolishLevel?.(lvl)}
+                                        className={`px-2 py-1 rounded text-[10px] font-medium border transition-colors
+                                            ${pttPolishLevel === lvl
+                                                ? 'bg-primary text-white border-primary shadow-sm'
+                                                : 'bg-content2 text-default-600 border-default-300 hover:border-primary/50 hover:text-primary'
+                                            }`}
+                                    >
+                                        {t(`monitor.narration_polish_level_${lvl}`, {
+                                            defaultValue: lvl === 'mild' ? 'Mild' : lvl === 'medium' ? 'Medium' : lvl === 'aggressive' ? 'Aggressive' : 'Custom',
+                                        })}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Prompt — read-only preview for built-ins, editable for custom */}
+                        <div className='space-y-1'>
+                            <span className='text-[10px] font-medium text-default-500'>
+                                {t('monitor.narration_polish_prompt', { defaultValue: 'Prompt' })}
+                                {pttPolishLevel !== 'custom' && (
+                                    <span className='ml-1 text-default-400 font-normal'>
+                                        {t('monitor.narration_polish_prompt_readonly', { defaultValue: '(built-in)' })}
+                                    </span>
+                                )}
+                            </span>
+                            {pttPolishLevel === 'custom' ? (
+                                <textarea
+                                    rows={4}
+                                    value={pttPolishPrompt}
+                                    onChange={e => onSetPttPolishPrompt?.(e.target.value)}
+                                    placeholder={t('monitor.narration_polish_prompt_placeholder', { defaultValue: 'Enter custom polish instructions…' })}
+                                    className='w-full text-[10px] bg-content1 border-2 border-default-300 dark:border-default-600 rounded-lg px-2.5 py-1.5 text-default-800 dark:text-default-200 placeholder-default-400 resize-none focus:outline-none focus:border-primary'
+                                />
+                            ) : (
+                                <pre className='w-full text-[9px] leading-relaxed bg-content1 border border-default-200 dark:border-default-700 rounded-lg px-2.5 py-1.5 text-default-500 whitespace-pre-wrap font-mono overflow-hidden'>
+                                    {DEFAULT_PROMPTS[pttPolishLevel] ?? ''}
+                                </pre>
+                            )}
+                        </div>
+
+                        {/* AI service selector */}
+                        {aiServiceList.length > 0 && (
+                            <div className='space-y-1'>
+                                <span className='text-[10px] font-medium text-default-500'>
+                                    {t('monitor.narration_polish_service', { defaultValue: 'AI Service' })}
+                                </span>
+                                <Select
+                                    size='sm'
+                                    placeholder={t('monitor.narration_polish_service_placeholder', { defaultValue: 'Select AI service…' })}
+                                    selectedKeys={pttPolishService ? new Set([pttPolishService]) : new Set([aiServiceList[0]])}
+                                    onSelectionChange={keys => onSetPttPolishService?.([...keys][0] ?? '')}
+                                    aria-label={t('monitor.narration_polish_service_aria', { defaultValue: 'AI service for polish' })}
+                                    classNames={{ trigger: 'border-2 border-default-300 dark:border-default-600 data-[focus=true]:border-primary' }}
+                                >
+                                    {aiServiceList.map(svc => {
+                                        const label = AI_SERVICE_FRIENDLY_NAMES[getServiceName(svc)] ?? getServiceName(svc).replace(/_ai$/, '').replace(/_/g, ' ');
+                                        return (
+                                            <SelectItem key={svc} textValue={label}>
+                                                {label}
+                                            </SelectItem>
+                                        );
+                                    })}
+                                </Select>
+                            </div>
+                        )}
+
+                    </div>
+                )}
+            </div>
+
+            {/* Review before send — independent of Polish */}
+            <div className={`flex items-center gap-2 ${controlsDisabled ? 'opacity-45 pointer-events-none select-none' : ''}`}>
+                <span className='text-[11px] text-default-500 w-28 flex-shrink-0'>
+                    {t('monitor.narration_ptt_review_label', { defaultValue: 'Xem trước TTS' })}
+                </span>
+                <Switch
+                    size='sm'
+                    color='warning'
+                    isDisabled={controlsDisabled}
+                    isSelected={pttReviewEnabled}
+                    onValueChange={onSetPttReviewEnabled}
+                />
+                <span className='text-[10px] text-default-400'>
+                    {t('monitor.narration_ptt_review_hint', { defaultValue: 'Confirm before sending to TTS' })}
+                </span>
+            </div>
+
             {/* Monitor audio toggle */}
             <div className={`flex items-center gap-2 ${controlsDisabled ? 'opacity-45' : ''}`}>
-                <span className='text-[11px] text-default-500 w-20 flex-shrink-0'>
+                <span className='text-[11px] text-default-500 w-28 flex-shrink-0'>
                     {t('monitor.narration_monitor_audio', { defaultValue: 'Hear TTS' })}
                 </span>
                 <Switch

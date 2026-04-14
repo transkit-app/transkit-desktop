@@ -78,7 +78,7 @@ function playSfx(type = 'start', enabled = true) {
     }
 }
 
-export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, targetLanguage, translateServiceKey, injectMode, action, autostart, preferAsyncApi, polishEnabled, polishPrompt, polishServiceKey, sfxEnabled }) {
+export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, targetLanguage, translateServiceKey, injectMode, action, autostart, preferAsyncApi, polishEnabled, polishPrompt, polishServiceKey, sfxEnabled, onFinalText, noCapture, noSfx }) {
     const { t } = useTranslation();
     const [fabState, setFabState] = useState('idle');
     const [interim, setInterim] = useState('');
@@ -127,6 +127,9 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, targe
     const polishPromptRef = useRef(polishPrompt);
     const polishServiceKeyRef = useRef(polishServiceKey);
     const sfxEnabledRef = useRef(sfxEnabled);
+    const noCaptureRef = useRef(noCapture);
+    const noSfxRef = useRef(noSfx);
+    const onFinalTextRef = useRef(onFinalText);
     useEffect(() => { sttKeyRef.current = sttServiceKey; }, [sttServiceKey]);
     useEffect(() => { monitorKeyRef.current = monitorSvcKey; }, [monitorSvcKey]);
     useEffect(() => { languageRef.current = language; }, [language]);
@@ -139,6 +142,9 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, targe
     useEffect(() => { polishPromptRef.current = polishPrompt; }, [polishPrompt]);
     useEffect(() => { polishServiceKeyRef.current = polishServiceKey; }, [polishServiceKey]);
     useEffect(() => { sfxEnabledRef.current = sfxEnabled; }, [sfxEnabled]);
+    useEffect(() => { noCaptureRef.current = noCapture; }, [noCapture]);
+    useEffect(() => { noSfxRef.current = noSfx; }, [noSfx]);
+    useEffect(() => { onFinalTextRef.current = onFinalText; }, [onFinalText]);
 
     const clearInjectingTimer = () => {
         if (injectingTimerRef.current) {
@@ -269,7 +275,7 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, targe
 
     // ── Inject ───────────────────────────────────────────────────────────────
 
-    const injectText = useCallback(async (rawText) => {
+    const injectText = useCallback(async (rawText, nativeOriginal = null) => {
         if (!rawText?.trim()) return;
         if (isInjectingRef.current) return;  // prevent race between fallback timer and onOriginal
         isInjectingRef.current = true;
@@ -336,23 +342,40 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, targe
             const injectMode = injectModeRef.current ?? 'replace';
             const action = actionRef.current ?? 'clipboard';
 
-            const currentFocusedWindow = await invoke('get_current_voice_anywhere_target').catch(() => null);
-            const previousFocusedWindow = await invoke('get_voice_anywhere_focused').catch(() => null);
-            const focusedWindow = currentFocusedWindow || previousFocusedWindow;
-            const transKitWindows = ['translate', 'monitor', 'config'];
-
-            if (focusedWindow && transKitWindows.includes(focusedWindow)) {
-                // Inject into Transkit window using replace/append mode
-                await invoke('voice_inject_to_window', { label: focusedWindow, text, mode: injectMode });
-                console.log('[VoiceAnywhere] injected into window:', focusedWindow, 'mode:', injectMode);
-            } else if (action === 'paste') {
-                // Focus last external app and paste (VA is focus:false so input focus is preserved)
-                await invoke('voice_focus_and_paste', { text });
-                console.log('[VoiceAnywhere] pasted to last external app');
+            if (onFinalTextRef.current) {
+                // PTT/embedded mode: await so async work (translate + review) happens before
+                // we reset state. This keeps fabState='processing' during the caller's async
+                // work and avoids showing a premature green checkmark before review appears.
+                // Pass nativeOriginal so the caller can skip an extra Cloud AI translation call
+                // when the STT service already translated natively (Soniox, Deepgram, Gladia…).
+                await onFinalTextRef.current(text, nativeOriginal);
+                finalizingRef.current = false;
+                clearStopFallbackTimer();
+                disconnectClient();
+                setFabState('idle');
+                setInterim('');
+                setFinalText('');
+                isInjectingRef.current = false;
+                return;
             } else {
-                // Default: copy to clipboard only
-                await invoke('voice_copy_to_clipboard', { text });
-                console.log('[VoiceAnywhere] copied to clipboard');
+                const currentFocusedWindow = await invoke('get_current_voice_anywhere_target').catch(() => null);
+                const previousFocusedWindow = await invoke('get_voice_anywhere_focused').catch(() => null);
+                const focusedWindow = currentFocusedWindow || previousFocusedWindow;
+                const transKitWindows = ['translate', 'monitor', 'config'];
+
+                if (focusedWindow && transKitWindows.includes(focusedWindow)) {
+                    // Inject into Transkit window using replace/append mode
+                    await invoke('voice_inject_to_window', { label: focusedWindow, text, mode: injectMode });
+                    console.log('[VoiceAnywhere] injected into window:', focusedWindow, 'mode:', injectMode);
+                } else if (action === 'paste') {
+                    // Focus last external app and paste (VA is focus:false so input focus is preserved)
+                    await invoke('voice_focus_and_paste', { text });
+                    console.log('[VoiceAnywhere] pasted to last external app');
+                } else {
+                    // Default: copy to clipboard only
+                    await invoke('voice_copy_to_clipboard', { text });
+                    console.log('[VoiceAnywhere] copied to clipboard');
+                }
             }
             setFabState('injecting');
             setInjected(true);
@@ -390,8 +413,8 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, targe
         nativeTranslationFiredRef.current = false;
 
         // Capture focus target immediately (in case user clicked FAB instead of hotkey)
-        await invoke('capture_voice_anywhere_target').catch(() => {});
-        playSfx('start', sfxEnabledRef.current ?? true);
+        if (!noCaptureRef.current) await invoke('capture_voice_anywhere_target').catch(() => {});
+        if (!noSfxRef.current) playSfx('start', sfxEnabledRef.current ?? true);
 
         try {
             const client = await createSTTClient();
@@ -476,7 +499,7 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, targe
                 lastTranscriptRef.current = fullText;
                 setFinalText(fullText);
                 isRecordingRef.current = false;
-                await invoke('stop_audio_capture').catch(() => {});
+                if (!noCaptureRef.current) await invoke('stop_audio_capture').catch(() => {});
                 unlistenAudioRef.current?.();
                 unlistenAudioRef.current = null;
 
@@ -485,12 +508,16 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, targe
                 const tgtLang = targetLanguageRef.current;
                 const wantTranslation = tgtLang && tgtLang !== 'none';
                 let textToInject = fullText;
+                // When native STT translation fires, preserve the source-language original
+                // so callers (e.g. PTT handlePttFinalText) can use both without an extra AI call.
+                let nativeOriginal = null;
 
                 if (wantTranslation && !OFFLINE_STT_SERVICES.includes(activeServiceNameRef.current)) {
                     // Check if translation already landed in the buffer before we got here.
                     // DictationClient fires onTranslation synchronously before onOriginal, so by the
                     // time we reach this point (after await stop_audio_capture) it's already buffered.
                     if (accumulatedTranslationRef.current) {
+                        nativeOriginal = fullText;
                         textToInject = accumulatedTranslationRef.current;
                         accumulatedTranslationRef.current = '';
                         setFinalText(textToInject);
@@ -514,11 +541,13 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, targe
                                 ? `${accumulatedTranslationRef.current} ${translatedLastSegment}`
                                 : translatedLastSegment;
                             accumulatedTranslationRef.current = '';
+                            nativeOriginal = fullText;
                             textToInject = fullTranslation;
                             setFinalText(fullTranslation);
                             console.log('[VoiceAnywhere] Using translation for injection:', fullTranslation);
                         } else if (accumulatedTranslationRef.current) {
                             // Timed out but we have accumulated translations from earlier segments
+                            nativeOriginal = fullText;
                             textToInject = accumulatedTranslationRef.current;
                             accumulatedTranslationRef.current = '';
                             setFinalText(textToInject);
@@ -527,7 +556,7 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, targe
                     }
                 }
 
-                await injectText(textToInject);
+                await injectText(textToInject, nativeOriginal);
             };
             client.onStatusChange = (status) => {
                 if (status === 'error') setError('STT connection error');
@@ -562,13 +591,13 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, targe
                 }
                 setError(String(err));
                 isRecordingRef.current = false;
-                invoke('stop_audio_capture').catch(() => {});
+                if (!noCaptureRef.current) invoke('stop_audio_capture').catch(() => {});
                 disconnectClient();
             };
 
             clientRef.current = client;
             await attachAudioListener();
-            await invoke('start_audio_capture', { source: 'microphone', batchIntervalMs: 100 });
+            if (!noCaptureRef.current) await invoke('start_audio_capture', { source: 'microphone', batchIntervalMs: 100 });
             isRecordingRef.current = true;
             setFabState('listening');
         } catch (err) {
@@ -578,10 +607,10 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, targe
 
     const stopRecording = useCallback(async () => {
         if (!isRecordingRef.current) return;
-        playSfx('stop', sfxEnabledRef.current ?? true);
+        if (!noSfxRef.current) playSfx('stop', sfxEnabledRef.current ?? true);
         isRecordingRef.current = false;
         finalizingRef.current = true;
-        await invoke('stop_audio_capture').catch(() => {});
+        if (!noCaptureRef.current) await invoke('stop_audio_capture').catch(() => {});
         unlistenAudioRef.current?.();
         unlistenAudioRef.current = null;
         try { clientRef.current?.finalize?.(); } catch (_) {}
@@ -645,7 +674,7 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, targe
     useEffect(() => {
         return () => {
             isRecordingRef.current = false;
-            invoke('stop_audio_capture').catch(() => {});
+            if (!noCaptureRef.current) invoke('stop_audio_capture').catch(() => {});
             unlistenAudioRef.current?.();
             unlistenTriggerRef.current?.();
             clearStopFallbackTimer();
@@ -658,5 +687,5 @@ export function useVoiceAnywhere({ sttServiceKey, monitorSvcKey, language, targe
         };
     }, [disconnectClient]);
 
-    return { fabState, interim, finalText, injected, errorMsg, toggle };
+    return { fabState, interim, finalText, injected, errorMsg, toggle, startRecording, stopRecording };
 }
