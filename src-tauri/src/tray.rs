@@ -1103,7 +1103,7 @@ fn tray_menu_uk() -> tauri::SystemTrayMenu {
 
 fn tray_menu_vi() -> tauri::SystemTrayMenu {
     let input_translate = CustomMenuItem::new("input_translate", "Mở hộp thoại dịch");
-    let audio_monitor = CustomMenuItem::new("audio_monitor", "Dịch âm thanh realtime");
+    let audio_monitor = CustomMenuItem::new("audio_monitor", "Phiên dịch trực tiếp");
     let clipboard_monitor = CustomMenuItem::new("clipboard_monitor", "Dịch từ clipboard");
     let copy_source = CustomMenuItem::new("copy_source", "Ngôn ngữ nguồn");
     let copy_target = CustomMenuItem::new("copy_target", "Ngôn ngữ đích");

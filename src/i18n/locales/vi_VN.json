@@ -154,8 +154,8 @@
         "hide_window": "Ẩn cửa sổ nhận diện"
       },
       "audio_translate": {
-        "label": "Phiên Dịch Trực Tiếp",
-        "title": "Cài đặt Phiên Dịch Trực Tiếp"
+        "label": "Phiên dịch trực tiếp",
+        "title": "Cài đặt Phiên dịch trực tiếp"
       },
       "hotkey": {
         "label": "Phím tắt",
@@ -164,7 +164,7 @@
         "input_translate": "Mở hộp thoại dịch",
         "ocr_recognize": "OCR - Nhận diện văn bản",
         "ocr_translate": "OCR - Dịch ảnh chụp màn hình",
-        "audio_monitor": "Phiên Dịch Trực Tiếp",
+        "audio_monitor": "Phiên dịch trực tiếp",
         "is_register": "Phím tắt đã được đăng ký",
         "success": "Đăng ký phím tắt thành công",
         "set_hotkey": "Nhấn để đặt phím tắt",
@@ -497,7 +497,7 @@
       "unpin": "Bỏ ghim cửa sổ",
       "minimize": "Thu nhỏ",
       "close": "Ẩn cửa sổ",
-      "placeholder": "Nhấn Bắt đầu để bắt đầu nghe...",
+      "placeholder": "Bắt đầu phiên dịch trực tiếp",
       "placeholder_context_hint": "Với nội dung chuyên ngành, hãy nhấn nút Ngữ cảnh (⚙) để cài đặt bối cảnh dịch cho phù hợp.",
       "listening": "Đang nghe...",
       "no_api_key": "Vui lòng nhập API key trong Cài đặt › {{service}} › {{transcription}}",
