@@ -662,6 +662,7 @@
       "narration_ptt_review_hint": "Xác nhận trước khi phát TTS. Hệ thống sẽ hiển thị hộp thoại xác nhận lại nội dung cần phát, bấm OK để gửi đi.",
       "narration_monitor_audio": "Nghe TTS",
       "narration_panel": "Cài đặt PTT / Tường thuật",
+      "narration_options": "Tùy chọn",
       "narration_monitor_on": "Đang phát loa (test mode)",
       "narration_monitor_on_warn": "có thể bị vọng âm",
       "narration_monitor_off": "Im lặng — chỉ ra mic ảo",

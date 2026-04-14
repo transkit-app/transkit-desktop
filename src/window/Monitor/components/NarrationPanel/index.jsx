@@ -24,8 +24,8 @@ function SectionCard({ children, className = '' }) {
 function SectionLabel({ label, badge, badgeColor = 'warning' }) {
     const colorMap = {
         warning: 'bg-warning/15 text-warning-700 dark:text-warning-400 border-warning/35',
-        primary:  'bg-primary/15 text-primary border-primary/30',
-        success:  'bg-success/15 text-success-700 dark:text-success-400 border-success/35',
+        primary: 'bg-primary/15 text-primary border-primary/30',
+        success: 'bg-success/15 text-success-700 dark:text-success-400 border-success/35',
     };
     return (
         <div className='flex items-center gap-1.5 mb-2.5'>
@@ -175,54 +175,10 @@ export default function NarrationPanel({
                 </span>
             </div>
 
-            {/* ── 1. PTT ── */}
-            <SectionCard>
-                <SectionLabel label='PTT' />
-
-                <div className='flex flex-col gap-2.5'>
-                    <ToggleRow
-                        label={t('monitor.narration_ptt_active', { defaultValue: 'PTT Active' })}
-                        hint={t('monitor.narration_ptt_active_hint', { defaultValue: 'Enable Hold to Speak button' })}
-                        isSelected={Boolean(pttEnabled)}
-                        onValueChange={onTogglePttEnabled}
-                    />
-
-                    {pttEnabled && (
-                        <div className='rounded-lg bg-warning/8 border border-warning/20 px-2.5 py-1.5'>
-                            <p className='text-[10px] text-warning-700 dark:text-warning-400'>
-                                {t('monitor.narration_ptt_cost_warning', {
-                                    defaultValue: 'PTT Active may create an extra STT cloud stream and consume additional tokens/minutes.',
-                                })}
-                            </p>
-                        </div>
-                    )}
-
-                    <div className={`flex flex-col gap-2 pt-0.5 ${!pttEnabled ? 'opacity-40 pointer-events-none' : ''}`}>
-                        <Divider />
-                        <SliderRow
-                            label={t('monitor.narration_ptt_size', { defaultValue: 'Button size' })}
-                            min={36} max={88} step={2}
-                            value={pttFabSize ?? 52}
-                            onChange={onSetPttFabSize}
-                            isDisabled={!pttEnabled}
-                            displayValue={`${pttFabSize ?? 52}px`}
-                        />
-                        <SliderRow
-                            label={t('monitor.narration_ptt_tts_speed', { defaultValue: 'TTS speed' })}
-                            min={0.5} max={2.0} step={0.05}
-                            value={pttTtsSpeed ?? 1.0}
-                            onChange={onSetPttTtsSpeed}
-                            isDisabled={!pttEnabled}
-                            displayValue={`${(pttTtsSpeed ?? 1.0).toFixed(2)}×`}
-                        />
-                    </div>
-                </div>
-            </SectionCard>
-
-            {/* ── 2. Device + Review + Audio ── */}
+            {/* ── 1. Thiết bị ── */}
             <SectionCard>
                 <button className='flex items-center justify-between w-full' onClick={() => setDeviceOpen(v => !v)}>
-                    <SectionLabel label={t('monitor.narration_device', { defaultValue: 'Device' })} />
+                    <SectionLabel label={t('monitor.narration_device', { defaultValue: 'Thiết bị' })} />
                     {deviceOpen
                         ? <MdExpandLess className='text-default-400 text-[16px] flex-shrink-0 -mt-2.5' />
                         : <MdExpandMore className='text-default-400 text-[16px] flex-shrink-0 -mt-2.5' />
@@ -230,14 +186,13 @@ export default function NarrationPanel({
                 </button>
 
                 {deviceOpen && (
-                    <div className='flex flex-col gap-2.5'>
-                        {/* Device select */}
+                    <div className='flex flex-col gap-2'>
                         {hasVirtual || showAllDevices ? (
                             <div className='flex gap-1.5 items-center'>
                                 <Select
                                     size='sm'
                                     isLoading={loading}
-                                    placeholder={t('monitor.narration_select_device', { defaultValue: 'Select virtual mic…' })}
+                                    placeholder={t('monitor.narration_select_device', { defaultValue: 'Chọn mic ảo…' })}
                                     selectedKeys={narrationDeviceName ? new Set([narrationDeviceName]) : new Set()}
                                     onSelectionChange={keys => handleSetDevice([...keys][0])}
                                     aria-label={t('monitor.narration_virtual_mic_aria', { defaultValue: 'Virtual mic device' })}
@@ -277,68 +232,88 @@ export default function NarrationPanel({
                         )}
 
                         <button
-                            className='text-[10px] text-default-400 hover:text-primary transition-colors underline w-fit -mt-1'
+                            className='text-[10px] text-default-400 hover:text-primary transition-colors underline w-fit'
                             onClick={() => setShowAllDevices(v => !v)}
                         >
                             {showAllDevices
-                                ? t('monitor.narration_show_virtual', { defaultValue: 'Show virtual devices only' })
-                                : t('monitor.narration_show_all', { defaultValue: 'Show all output devices' })}
+                                ? t('monitor.narration_show_virtual', { defaultValue: 'Chỉ mic ảo' })
+                                : t('monitor.narration_show_all', { defaultValue: 'Xem tất cả thiết bị' })}
                         </button>
 
                         {error && <p className='text-[10px] text-danger/80'>{error}</p>}
-
-                        <Divider />
-
-                        {/* Review before TTS */}
-                        <ToggleRow
-                            label={t('monitor.narration_ptt_review_label', { defaultValue: 'Xem trước TTS' })}
-                            hint={t('monitor.narration_ptt_review_hint', { defaultValue: 'Confirm before sending to TTS' })}
-                            isSelected={pttReviewEnabled}
-                            onValueChange={onSetPttReviewEnabled}
-                            isDisabled={!pttEnabled}
-                        />
-
-                        {/* Local audio monitor */}
-                        <ToggleRow
-                            label={t('monitor.narration_monitor_audio', { defaultValue: 'Hear TTS' })}
-                            hint={monitorAudio
-                                ? '⚠ ' + t('monitor.narration_monitor_on_warn', { defaultValue: 'echo risk' })
-                                : t('monitor.narration_monitor_off', { defaultValue: 'Silent — virtual mic only' })}
-                            isSelected={monitorAudio}
-                            onValueChange={onToggleMonitorAudio}
-                            isDisabled={!pttEnabled}
-                        />
-
-                        {/* Zoom setup checklist */}
-                        {narrationDeviceName && (
-                            <>
-                                <Divider />
-                                <div className='rounded-lg bg-default-100 dark:bg-default-50/[0.06] border border-default-200 dark:border-default-700 p-2 flex flex-col gap-0.5'>
-                                    <p className='text-[10px] font-medium text-default-500 mb-0.5'>
-                                        {t('monitor.narration_checklist_title', { defaultValue: 'Zoom / Teams setup:' })}
-                                    </p>
-                                    {[
-                                        t('monitor.narration_checklist_item1', { defaultValue: '① Zoom mic → {{device}}', device: narrationDeviceName }),
-                                        t('monitor.narration_checklist_item2', { defaultValue: '② Mute your real mic in Zoom', device: narrationDeviceName }),
-                                        t('monitor.narration_checklist_item3', { defaultValue: '③ Press & hold "Hold to Speak" to narrate' }),
-                                    ].map((item, i) => (
-                                        <p key={i} className='text-[10px] text-default-400'>{item}</p>
-                                    ))}
-                                </div>
-                            </>
-                        )}
                     </div>
                 )}
             </SectionCard>
 
-            {/* ── 3. Polish — always expanded ── */}
+            {/* ── 2. PTT — toggle only ── */}
+            <SectionCard>
+                <SectionLabel label='PTT' />
+                <div className='flex flex-col gap-2.5'>
+                    <ToggleRow
+                        label={t('monitor.narration_ptt_active', { defaultValue: 'PTT Active' })}
+                        hint={t('monitor.narration_ptt_active_hint', { defaultValue: 'Enable Hold to Speak button' })}
+                        isSelected={Boolean(pttEnabled)}
+                        onValueChange={onTogglePttEnabled}
+                    />
+                    {pttEnabled && (
+                        <div className='rounded-lg bg-warning/8 border border-warning/20 px-2.5 py-1.5'>
+                            <p className='text-[10px] text-warning-700 dark:text-warning-400'>
+                                {t('monitor.narration_ptt_cost_warning', {
+                                    defaultValue: 'PTT Active may create an extra STT cloud stream and consume additional tokens/minutes.',
+                                })}
+                            </p>
+                        </div>
+                    )}
+                </div>
+            </SectionCard>
+
+            {/* ── 3. Tùy chọn — sliders + Review + Hear TTS ── */}
+            <SectionCard>
+                <SectionLabel label={t('monitor.narration_options', { defaultValue: 'Tùy chọn' })} />
+                <div className={`flex flex-col gap-2.5 ${!pttEnabled ? 'opacity-40 pointer-events-none' : ''}`}>
+                    <SliderRow
+                        label={t('monitor.narration_ptt_size', { defaultValue: 'Kích thước PTT' })}
+                        min={36} max={88} step={2}
+                        value={pttFabSize ?? 52}
+                        onChange={onSetPttFabSize}
+                        isDisabled={!pttEnabled}
+                        displayValue={`${pttFabSize ?? 52}px`}
+                    />
+                    <SliderRow
+                        label={t('monitor.narration_ptt_tts_speed', { defaultValue: 'Tốc độ TTS' })}
+                        min={0.5} max={2.0} step={0.05}
+                        value={pttTtsSpeed ?? 1.0}
+                        onChange={onSetPttTtsSpeed}
+                        isDisabled={!pttEnabled}
+                        displayValue={`${(pttTtsSpeed ?? 1.0).toFixed(2)}×`}
+                    />
+                    <Divider />
+                    <ToggleRow
+                        label={t('monitor.narration_ptt_review_label', { defaultValue: 'Xem trước TTS' })}
+                        hint={t('monitor.narration_ptt_review_hint', { defaultValue: 'Xác nhận trước khi phát TTS' })}
+                        isSelected={pttReviewEnabled}
+                        onValueChange={onSetPttReviewEnabled}
+                        isDisabled={!pttEnabled}
+                    />
+                    <ToggleRow
+                        label={t('monitor.narration_monitor_audio', { defaultValue: 'Nghe TTS' })}
+                        hint={monitorAudio
+                            ? '⚠ ' + t('monitor.narration_monitor_on_warn', { defaultValue: 'có thể bị vọng âm' })
+                            : t('monitor.narration_monitor_off', { defaultValue: 'Im lặng — chỉ ra mic ảo' })}
+                        isSelected={monitorAudio}
+                        onValueChange={onToggleMonitorAudio}
+                        isDisabled={!pttEnabled}
+                    />
+                </div>
+            </SectionCard>
+
+            {/* ── 4. Làm mượt — always expanded ── */}
             <SectionCard>
                 <SectionLabel
                     label={t('monitor.narration_ptt_polish', { defaultValue: 'Làm mượt văn bản' })}
                     badge={isUsingCloudDictation ? t('monitor.narration_cloud_dictation_badge', { defaultValue: 'Cloud Dictation' }) : null}
                     badgeColor='primary'
                 />
-
                 <div className='flex flex-col gap-3'>
                     <ToggleRow
                         label={t('monitor.narration_ptt_polish', { defaultValue: 'Bật làm mượt' })}
@@ -351,7 +326,7 @@ export default function NarrationPanel({
                         {/* Level pills */}
                         <div className='flex flex-col gap-1.5'>
                             <span className='text-[10px] font-medium text-default-500'>
-                                {t('monitor.narration_polish_level', { defaultValue: 'Level' })}
+                                {t('monitor.narration_polish_level', { defaultValue: 'Mức độ' })}
                             </span>
                             <div className='flex gap-1 flex-wrap'>
                                 {[...BUILTIN_LEVELS, 'custom'].map(lvl => (
@@ -365,7 +340,7 @@ export default function NarrationPanel({
                                         }`}
                                     >
                                         {t(`monitor.narration_polish_level_${lvl}`, {
-                                            defaultValue: lvl === 'mild' ? 'Mild' : lvl === 'medium' ? 'Medium' : lvl === 'aggressive' ? 'Aggressive' : 'Custom',
+                                            defaultValue: lvl === 'mild' ? 'Nhẹ' : lvl === 'medium' ? 'Vừa' : lvl === 'aggressive' ? 'Mạnh' : 'Tùy chỉnh',
                                         })}
                                     </button>
                                 ))}
@@ -379,7 +354,7 @@ export default function NarrationPanel({
                                     {t('monitor.narration_polish_prompt', { defaultValue: 'Prompt' })}
                                     {pttPolishLevel !== 'custom' && (
                                         <span className='ml-1 text-default-400 font-normal'>
-                                            {t('monitor.narration_polish_prompt_readonly', { defaultValue: '(built-in)' })}
+                                            {t('monitor.narration_polish_prompt_readonly', { defaultValue: '(có sẵn)' })}
                                         </span>
                                     )}
                                 </span>
@@ -398,7 +373,7 @@ export default function NarrationPanel({
                                     rows={4}
                                     value={pttPolishPrompt}
                                     onChange={e => onSetPttPolishPrompt?.(e.target.value)}
-                                    placeholder={t('monitor.narration_polish_prompt_placeholder', { defaultValue: 'Enter custom polish instructions…' })}
+                                    placeholder={t('monitor.narration_polish_prompt_placeholder', { defaultValue: 'Nhập hướng dẫn tùy chỉnh…' })}
                                     className='w-full text-[10px] bg-default-100 dark:bg-default-50/[0.06] border border-default-200 dark:border-default-700 rounded-lg px-2.5 py-1.5 text-foreground placeholder:text-default-400 resize-none focus:outline-none focus:border-primary/60 transition-colors'
                                 />
                             ) : (
@@ -412,11 +387,11 @@ export default function NarrationPanel({
                         {aiServiceList.length > 0 && (
                             <div className='flex flex-col gap-1'>
                                 <span className='text-[10px] font-medium text-default-500'>
-                                    {t('monitor.narration_polish_service', { defaultValue: 'AI Service' })}
+                                    {t('monitor.narration_polish_service', { defaultValue: 'Dịch vụ AI' })}
                                 </span>
                                 <Select
                                     size='sm'
-                                    placeholder={t('monitor.narration_polish_service_placeholder', { defaultValue: 'Select AI service…' })}
+                                    placeholder={t('monitor.narration_polish_service_placeholder', { defaultValue: 'Chọn dịch vụ AI…' })}
                                     selectedKeys={pttPolishService ? new Set([pttPolishService]) : new Set([aiServiceList[0]])}
                                     onSelectionChange={keys => onSetPttPolishService?.([...keys][0] ?? '')}
                                     aria-label={t('monitor.narration_polish_service_aria', { defaultValue: 'AI service for polish' })}
@@ -441,16 +416,32 @@ export default function NarrationPanel({
                     }`} />
                     <span className='text-[10px] text-default-400'>
                         {isPttActive || isNarrationActive
-                            ? t('monitor.narration_routing', { defaultValue: 'Routing TTS → virtual mic' })
-                            : t('monitor.narration_idle', { defaultValue: 'Ready' })}
+                            ? t('monitor.narration_routing', { defaultValue: 'Đang phát TTS → mic ảo' })
+                            : t('monitor.narration_idle', { defaultValue: 'Sẵn sàng' })}
                     </span>
+                </div>
+            )}
+
+            {/* ── Cài đặt Zoom (bottom) ── */}
+            {narrationDeviceName && (
+                <div className='rounded-lg bg-default-100 dark:bg-default-50/[0.06] border border-default-200 dark:border-default-700 p-2.5 flex flex-col gap-0.5'>
+                    <p className='text-[10px] font-medium text-default-500 mb-1'>
+                        {t('monitor.narration_checklist_title', { defaultValue: 'Cài đặt Zoom / Teams:' })}
+                    </p>
+                    {[
+                        t('monitor.narration_checklist_item1', { defaultValue: '① Mic trong Zoom → {{device}}', device: narrationDeviceName }),
+                        t('monitor.narration_checklist_item2', { defaultValue: '② Tắt mic thật trong Zoom', device: narrationDeviceName }),
+                        t('monitor.narration_checklist_item3', { defaultValue: '③ Nhấn giữ "Hold to Speak" để nói' }),
+                    ].map((item, i) => (
+                        <p key={i} className='text-[10px] text-default-400'>{item}</p>
+                    ))}
                 </div>
             )}
 
             {/* ── Footer ── */}
             <p className='text-[10px] text-default-400 px-0.5 border-t border-default-200 dark:border-default-700 pt-2'>
                 {t('monitor.narration_footer', {
-                    defaultValue: 'TTS audio is sent to the virtual mic. Select it in Zoom/Teams as your microphone.',
+                    defaultValue: 'TTS audio được gửi tới mic ảo. Chọn nó trong Zoom/Teams làm microphone.',
                 })}
             </p>
         </div>
