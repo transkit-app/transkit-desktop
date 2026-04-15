@@ -46,7 +46,7 @@ TransKit Desktop is a cross-platform translation, OCR, realtime monitor, and TTS
 
 <b>Voice Anywhere</b><br/>
 Voice input into any app or window. All services are configurable in the Service settings.<br/>
-      <video src="asset/voice-anywhere.mp4" width="100%"/>
+      [![Youtube Video](asset/youtube-demo.webp)](https://youtu.be/Gp4wn5wb17A)
     </td>
   </tr>
 </table>
