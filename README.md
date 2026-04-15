@@ -35,13 +35,39 @@ TransKit Desktop is a cross-platform translation, OCR, realtime monitor, and TTS
 
 </div>
 
-| Translation by selection                        | Translate by input                                                    | External calls                                                                           |
-| ----------------------------------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Select text and press the shortcut to translate | Press shortcut to open translation window, translate by hitting Enter | More efficient workflow by integrating with other apps |
-| <img src="asset/eg1.gif"/>                    | <img src="asset/eg2.gif"/>                                          | <img src="asset/eg1.gif"/>                                                             |
+
+<table>
+ 
+  <tr>
+    <td colspan="3" align="center">
+      <b>Live Interpreter</b><br/>
+      Live Interpreter with AI suggestions, Submode, and TTS and PTT (Talking native language and listen to translated language). All services are configurable in the Service settings.<br/>
+      <img src="asset/live-interpreter.png" width="100%"/>
+
+<b>Voice Anywhere</b><br/>
+Voice input into any app or window. All services are configurable in the Service settings.<br/>
+      <video src="asset/voice-anywhere.mp4" width="100%"/>
+    </td>
+  </tr>
+</table>
 
 <table>
   <tr>
+    <th width="33%">Translation by selection</th>
+    <th width="33%">Translate by input</th>
+    <th width="33%">External calls</th>
+  </tr>
+  <tr>
+    <td>Select text and press the shortcut to translate</td>
+    <td>Press shortcut to open translation window, translate by hitting Enter</td>
+    <td>More efficient workflow by integrating with other apps</td>
+  </tr>
+  <tr>
+    <td><img src="asset/eg1.gif"/></td>
+    <td><img src="asset/eg2.gif"/></td>
+    <td><img src="asset/eg1.gif"/></td>
+  </tr>
+   <tr>
     <th width="33%">Clipboard Listening</th>
     <th width="33%">Screenshot OCR</th>
     <th width="33%">Screenshot Translation</th>
@@ -56,19 +82,7 @@ TransKit Desktop is a cross-platform translation, OCR, realtime monitor, and TTS
     <td><img src="asset/eg5.gif"/></td>
     <td><img src="asset/eg6.gif"/></td>
   </tr>
-  <tr>
-    <td colspan="3" align="center">
-      <b>Realtime Audio Monitor</b><br/>
-      Realtime Audio Monitor with AI suggestions, Submode, and TTS. All services are configurable in the Service settings.<br/>
-      <img src="asset/eg7.gif" width="100%"/>
-
-<b>Watch video demo</b>
-
-[![Youtube Video](asset/youtube-demo.png)](https://youtu.be/a8rR6RzHokc)
-    </td>
-  </tr>
 </table>
-
 
 ## Keyboard Shortcuts
 
