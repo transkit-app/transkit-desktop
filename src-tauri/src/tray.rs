@@ -641,7 +641,7 @@ fn on_va_inject_click(app: &AppHandle, mode: &str) {
 
 fn tray_menu_en() -> tauri::SystemTrayMenu {
     let input_translate = CustomMenuItem::new("input_translate", "Input Translate");
-    let audio_monitor = CustomMenuItem::new("audio_monitor", "Realtime Translate");
+    let audio_monitor = CustomMenuItem::new("audio_monitor", "Live Interpreter");
     let copy_source = CustomMenuItem::new("copy_source", "Source");
     let copy_target = CustomMenuItem::new("copy_target", "Target");
     let clipboard_monitor = CustomMenuItem::new("clipboard_monitor", "Clipboard Monitor");
