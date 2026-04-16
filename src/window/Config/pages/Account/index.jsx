@@ -500,7 +500,12 @@ function GuestView() {
       else await signInWithGitHub()
     } catch (err) {
       console.error('Login error:', err)
-      toast.error('Sign in failed. Please try again.')
+      const msg = err?.message ?? ''
+      if (msg.startsWith('oauth_port_in_use')) {
+        toast.error('Please fully quit and relaunch Transkit, then try again.', { duration: 6000 })
+      } else {
+        toast.error('Sign in failed. Please try again.')
+      }
     } finally {
       setLoading(null)
     }

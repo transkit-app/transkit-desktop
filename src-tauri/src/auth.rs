@@ -1,3 +1,4 @@
+use std::sync::mpsc;
 use tauri::Manager;
 use tiny_http::{Response, Server};
 
@@ -5,16 +6,21 @@ use tiny_http::{Response, Server};
 /// When the browser redirects to http://127.0.0.1:<port>/callback?code=...,
 /// the server captures the full URL, serves a success page, and emits
 /// the "oauth-callback" Tauri event with the callback URL string.
+///
+/// Returns an error immediately if the port is already in use, so the
+/// caller can surface the error to the user instead of silently timing out.
 #[tauri::command]
 pub async fn start_oauth_server(window: tauri::Window, port: u16) -> Result<(), String> {
+    // Bind the server synchronously before returning so the caller knows
+    // whether the port was available.
+    let server = Server::http(format!("127.0.0.1:{}", port))
+        .map_err(|e| format!("port_in_use: {}", e))?;
+
+    let (tx, rx) = mpsc::channel::<()>();
+
     std::thread::spawn(move || {
-        let server = match Server::http(format!("127.0.0.1:{}", port)) {
-            Ok(s) => s,
-            Err(e) => {
-                let _ = window.emit("oauth-callback-error", e.to_string());
-                return;
-            }
-        };
+        // Signal that the server is ready (already bound above, just notify)
+        let _ = tx.send(());
 
         if let Some(request) = server.incoming_requests().next() {
             let callback_url = format!("http://127.0.0.1:{}{}", port, request.url());
@@ -41,6 +47,9 @@ pub async fn start_oauth_server(window: tauri::Window, port: u16) -> Result<(), 
             let _ = window.emit("oauth-callback", callback_url);
         }
     });
+
+    // Wait briefly to ensure the thread is running before returning
+    let _ = rx.recv_timeout(std::time::Duration::from_millis(200));
 
     Ok(())
 }

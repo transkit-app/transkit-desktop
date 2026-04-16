@@ -98,8 +98,13 @@ export async function signOut(): Promise<void> {
 async function _oauthFlow(provider: 'google' | 'github'): Promise<void> {
   const redirectTo = `http://127.0.0.1:${OAUTH_CALLBACK_PORT}/callback`
 
-  // Start one-shot HTTP server in Rust to capture the callback
-  await invoke('start_oauth_server', { port: OAUTH_CALLBACK_PORT })
+  // Start one-shot HTTP server in Rust to capture the callback.
+  // This now fails fast (throws) if the port is already in use.
+  try {
+    await invoke('start_oauth_server', { port: OAUTH_CALLBACK_PORT })
+  } catch (e: any) {
+    throw new Error(`oauth_port_in_use: Port ${OAUTH_CALLBACK_PORT} is already occupied. Please fully quit and relaunch Transkit, then try again.`)
+  }
 
   // Get OAuth URL without opening browser (PKCE flow)
   const { data, error } = await supabase!.auth.signInWithOAuth({
